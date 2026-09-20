@@ -215,12 +215,15 @@ export function applyVacantOccupancy(
 	rows: OccupancyRow[],
 ): CompiledGraph {
 	for (const row of rows) {
-		const id = resolveSeatId(graph, row.id)
-		const node = id ? graph.nodes[id] : undefined
+		const seatId = resolveSeatId(graph, row.id)
+		if (seatId === null) {
+			continue
+		}
+		const node = graph.nodes[seatId]
 		if (!node || node.people.length > 0) {
 			continue
 		}
-		if (id.includes('-unlisted-')) {
+		if (seatId.includes('-unlisted-')) {
 			const state = Object.keys(DISTRICTS)
 				.sort((a, b) => b.length - a.length)
 				.find((item) => row.id.startsWith(`ng-rep-${item}-`))
