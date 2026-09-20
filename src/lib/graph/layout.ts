@@ -14,7 +14,12 @@ const SECTOR_ARC: Record<Sector, { start: number; end: number }> = {
 	independent: { start: Math.PI * 1.32, end: Math.PI * 1.82 },
 }
 
-export function layoutGraph(graph: CompiledGraph, width: number, height: number): PlacedNode[] {
+export function layoutGraph(
+	graph: CompiledGraph,
+	width: number,
+	height: number,
+	options?: { mode?: 'orgs' | 'people' | 'chamber' },
+): PlacedNode[] {
 	const cx = width / 2
 	const cy = height / 2
 	const hub = graph.nodes[graph.constituency]
@@ -53,6 +58,64 @@ export function layoutGraph(graph: CompiledGraph, width: number, height: number)
 	}
 
 	relax(placed, cx, cy, Math.min(width, height))
+	if (options?.mode === 'people') {
+		const holders: PlacedNode[] = []
+		for (const item of placed) {
+			if (item.node.type === 'constituency' || item.node.type === 'dept_head') {
+				continue
+			}
+			const person = item.node.people[0]
+			if (!person) {
+				continue
+			}
+			holders.push({
+				id: `holder:${item.id}`,
+				x: item.x + 16,
+				y: item.y - 16,
+				node: {
+					...item.node,
+					id: `holder:${item.id}`,
+					name: person.name,
+					type: 'dept_head',
+					people: [person],
+					parentId: item.id,
+				},
+			})
+		}
+		placed.push(...holders)
+		relax(placed, cx, cy, Math.min(width, height))
+	}
+	if (options?.mode === 'chamber') {
+		const byParent = new Map(placed.map((item) => [item.id, item]))
+		const holders: PlacedNode[] = []
+		for (const node of Object.values(graph.nodes)) {
+			if (node.type !== 'dept_head' || node.people.length === 0) {
+				continue
+			}
+			if (
+				!node.id.startsWith('ng-senator-') &&
+				!node.id.startsWith('ng-rep-')
+			) {
+				continue
+			}
+			const parent = node.parentId ? byParent.get(node.parentId) : undefined
+			if (!parent) {
+				continue
+			}
+			holders.push({
+				id: `holder:${node.id}`,
+				x: parent.x + (holders.length % 12) * 8 - 40,
+				y: parent.y + Math.floor(holders.length / 12) * 8 + 20,
+				node: {
+					...node,
+					id: `holder:${node.id}`,
+					name: node.people[0].name,
+				},
+			})
+		}
+		placed.push(...holders)
+		relax(placed, cx, cy, Math.min(width, height))
+	}
 	for (const item of placed) {
 		item.x = round(item.x)
 		item.y = round(item.y)

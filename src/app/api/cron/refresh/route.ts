@@ -6,7 +6,12 @@ export async function GET(request: Request) {
 	if (!secret || auth !== `Bearer ${secret}`) {
 		return new Response('unauthorized', { status: 401 })
 	}
-	const graph = await persistNigeriaGraph({ liveNass: true })
+	const graph = await persistNigeriaGraph({
+		liveNass: true,
+		wikiFill: true,
+		portraits: true,
+		monitor: true,
+	})
 	return Response.json({
 		ok: true,
 		nodes: Object.keys(graph.nodes).length,

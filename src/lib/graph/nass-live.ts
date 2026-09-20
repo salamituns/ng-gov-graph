@@ -2,7 +2,7 @@ import type { CompiledGraph, Officeholder } from './types'
 
 const NASS = 'https://nass.gov.ng/mps/get_legislators/'
 
-const DISTRICTS: Record<string, string[]> = {
+export const DISTRICTS: Record<string, string[]> = {
 	abia: ['north', 'south', 'central'],
 	adamawa: ['north', 'south', 'central'],
 	'akwa-ibom': ['north-east', 'north-west', 'south'],
@@ -42,7 +42,7 @@ const DISTRICTS: Record<string, string[]> = {
 	fct: ['fct'],
 }
 
-const STATE_SLUG: Record<string, string> = {
+export const STATE_SLUG: Record<string, string> = {
 	abia: 'abia',
 	adamawa: 'adamawa',
 	'akwa ibom': 'akwa-ibom',
@@ -84,7 +84,7 @@ const STATE_SLUG: Record<string, string> = {
 	fct: 'fct',
 }
 
-function slug(value: string) {
+export function slug(value: string) {
 	return value
 		.toLowerCase()
 		.replace(/[–—]/g, '-')
@@ -92,7 +92,7 @@ function slug(value: string) {
 		.replace(/^-|-$/g, '')
 }
 
-function districtKey(stateSlug: string, district: string) {
+export function districtKey(stateSlug: string, district: string) {
 	let key = district.toLowerCase().replace(/nassarawa/g, 'nasarawa')
 	for (const token of [stateSlug.replace(/-/g, ' '), ...stateSlug.split('-')]) {
 		if (key.startsWith(token)) {

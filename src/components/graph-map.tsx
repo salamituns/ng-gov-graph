@@ -16,13 +16,17 @@ interface GraphMapProps {
 	gov: string
 	graph: CompiledGraph
 	selectedId?: string
+	mode?: 'orgs' | 'people' | 'chamber'
 }
 
-export function GraphMap({ gov, graph, selectedId }: GraphMapProps) {
+export function GraphMap({ gov, graph, selectedId, mode = 'orgs' }: GraphMapProps) {
 	const width = 920
 	const height = 720
 	const [hoverId, setHoverId] = useState<string | null>(null)
-	const placed = useMemo(() => layoutGraph(graph, width, height), [graph])
+	const placed = useMemo(
+		() => layoutGraph(graph, width, height, { mode }),
+		[graph, mode],
+	)
 	const activeId = hoverId ?? selectedId
 	const connected = new Set(
 		activeId ? graph.nodes[activeId]?.connectedNodes ?? [] : [],
@@ -70,8 +74,16 @@ export function GraphMap({ gov, graph, selectedId }: GraphMapProps) {
 					const fill = isHub
 						? '#f4e7c3'
 						: SECTOR_COLOR[item.node.sector ?? 'independent']
+					const parent = item.node.parentId
+						? graph.nodes[item.node.parentId]
+						: undefined
+					const href =
+						item.id.startsWith('holder:') && parent
+							? nodePath(gov, parent)
+							: nodePath(gov, item.node)
+					const isHolder = item.id.startsWith('holder:')
 					return (
-						<a key={item.id} href={nodePath(gov, item.node)}>
+						<a key={item.id} href={href}>
 							<g
 								onMouseEnter={() => setHoverId(item.id)}
 								onMouseLeave={() => setHoverId(null)}
@@ -81,7 +93,7 @@ export function GraphMap({ gov, graph, selectedId }: GraphMapProps) {
 								<circle
 									cx={item.x}
 									cy={item.y}
-									r={isHub ? 18 : isSel ? 9 : 6}
+									r={isHub ? 18 : isHolder ? 8 : isSel ? 9 : 6}
 									fill={fill}
 									stroke={isSel ? '#fff' : 'rgba(0,0,0,0.35)'}
 									strokeWidth={isSel ? 2 : 0.6}

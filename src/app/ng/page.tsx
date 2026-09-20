@@ -4,12 +4,13 @@ import { summarizeOverview } from '@/lib/graph/overview'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 
 interface PageProps {
-	searchParams: Promise<{ layer?: string }>
+	searchParams: Promise<{ layer?: string; view?: string }>
 }
 
 export default async function NigeriaGraphPage({ searchParams }: PageProps) {
-	const { layer: layerParam } = await searchParams
+	const { layer: layerParam, view: viewParam } = await searchParams
 	const layer = parseLayer(layerParam)
+	const view = viewParam === 'people' ? 'people' : 'orgs'
 	const data = await loadNigeriaGraph()
 	const graph = filterGraph(data.graph, layer)
 	return (
@@ -19,6 +20,7 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 			graph={graph}
 			searchIndex={data.graph}
 			layer={layer}
+			view={view}
 			overview={summarizeOverview(graph)}
 			changes={data.changes}
 			news={data.news}

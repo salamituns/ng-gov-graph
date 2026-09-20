@@ -33,7 +33,7 @@ npm run nass:refresh
 npm run db:seed -- --live-nass
 ```
 
-Missing INEC seats stay vacant. The NASS API does not list every district.
+NASS occupancy is overlaid first. Wikipedia 10th Assembly lists fill remaining vacant Senate seats. House seats the NASS API never named stay vacant rather than guessed.
 
 ## Postgres
 

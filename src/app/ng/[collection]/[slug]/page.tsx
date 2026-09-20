@@ -146,7 +146,12 @@ export default async function EntityPage({ params }: PageProps) {
 				</section>
 			</article>
 			<div className="p-4 lg:p-5">
-				<GraphMap gov={gov} graph={graph} selectedId={node.id} />
+				<GraphMap
+					gov={gov}
+					graph={graph}
+					selectedId={node.id}
+					mode={roster ? 'chamber' : 'orgs'}
+				/>
 			</div>
 		</div>
 	)

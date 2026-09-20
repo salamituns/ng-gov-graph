@@ -4,6 +4,8 @@ import { getDb } from '@/db'
 import { civicFeed, graphSnapshots } from '@/db/schema'
 import { compileNigeriaGraph } from '@/lib/graph/nigeria'
 import { overlayNassOccupancy } from '@/lib/graph/nass-live'
+import { overlayPortraits } from '@/lib/graph/portraits'
+import { overlayWikiOccupancy } from '@/lib/graph/wiki-fill'
 import {
 	CHANGES_FEED_ID,
 	NEWS_FEED_ID,
@@ -53,13 +55,52 @@ async function upsertFeed(id: string, kind: string, payload: unknown) {
 		})
 }
 
-export async function persistNigeriaGraph(options?: { liveNass?: boolean }) {
+export function persistNigeriaGraph(options?: {
+	liveNass?: boolean
+	wikiFill?: boolean
+	portraits?: boolean
+	monitor?: boolean
+}) {
 	let graph = compileNigeriaGraph()
-	if (options?.liveNass) {
-		graph = await overlayNassOccupancy(graph)
+	const work = async () => {
+		if (options?.liveNass) {
+			graph = await overlayNassOccupancy(graph)
+		}
+		if (options?.wikiFill) {
+			graph = await overlayWikiOccupancy(graph)
+		}
+		if (options?.portraits) {
+			graph = await overlayPortraits(graph)
+		}
+		await upsertSnapshot(graph)
+		let news = nigeriaNews
+		let changes = nigeriaChanges
+		if (options?.monitor) {
+			const { defaultCivicGenerate, extractCivicUpdates } = await import(
+				'@/lib/ai/monitor'
+			)
+			const source = await fetch('https://fmino.gov.ng/feed/', {
+				headers: { 'user-agent': 'Govgraph/0.1' },
+				cache: 'no-store',
+			})
+				.then((res) => (res.ok ? res.text() : ''))
+				.catch(() => '')
+			if (source) {
+				const extracted = await extractCivicUpdates(
+					source,
+					defaultCivicGenerate,
+				)
+				if (extracted.news.length > 0) {
+					news = extracted.news
+				}
+				if (extracted.changes.length > 0) {
+					changes = extracted.changes
+				}
+			}
+		}
+		await upsertFeed(NEWS_FEED_ID, 'news', news)
+		await upsertFeed(CHANGES_FEED_ID, 'changes', changes)
+		return graph
 	}
-	await upsertSnapshot(graph)
-	await upsertFeed(NEWS_FEED_ID, 'news', nigeriaNews)
-	await upsertFeed(CHANGES_FEED_ID, 'changes', nigeriaChanges)
-	return graph
+	return work()
 }

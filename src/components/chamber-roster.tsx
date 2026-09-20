@@ -25,7 +25,7 @@ export function ChamberRosterList({
 				{roster.kind === 'senate' ? 'Senators' : 'Representatives'}
 			</h2>
 			<p className="mb-3 text-sm text-muted-foreground">
-				{roster.seats.length} seats · {vacant} vacant on the NASS roll
+				{roster.seats.length} seats · {vacant} vacant on sourced rolls
 			</p>
 			<ul className="max-h-[70vh] overflow-y-auto rounded-lg border bg-card">
 				{groups.map((group) => (

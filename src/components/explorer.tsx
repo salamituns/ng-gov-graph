@@ -16,6 +16,7 @@ interface ExplorerProps {
 	graph: CompiledGraph
 	searchIndex: CompiledGraph
 	layer: LayerFilter
+	view?: 'orgs' | 'people'
 	overview: OverviewCounts
 	changes: PersonnelChange[]
 	news: NewsItem[]
@@ -34,6 +35,7 @@ export function Explorer({
 	graph,
 	searchIndex,
 	layer,
+	view = 'orgs',
 	overview,
 	changes,
 	news,
@@ -60,7 +62,7 @@ export function Explorer({
 							? 'Serving the compiled graph from Neon Postgres.'
 							: 'Serving a catalog compile. Neon snapshot unavailable.'}
 					</p>
-					<nav className="mt-3 flex gap-1">
+					<nav className="mt-3 flex flex-wrap gap-1">
 						{LAYER_LINKS.map((item) => (
 							<Link
 								key={item.id}
@@ -74,6 +76,32 @@ export function Explorer({
 								{item.label}
 							</Link>
 						))}
+					</nav>
+					<nav className="mt-2 flex gap-1">
+						<Link
+							href={layer === 'federal' ? '/ng' : `/ng?layer=${layer === 'state' ? 'states' : layer}`}
+							className={`rounded-md px-2.5 py-1 text-xs ${
+								view === 'orgs'
+									? 'bg-secondary text-foreground'
+									: 'text-muted-foreground hover:bg-secondary'
+							}`}
+						>
+							Institutions
+						</Link>
+						<Link
+							href={
+								layer === 'federal'
+									? '/ng?view=people'
+									: `/ng?layer=${layer === 'state' ? 'states' : layer}&view=people`
+							}
+							className={`rounded-md px-2.5 py-1 text-xs ${
+								view === 'people'
+									? 'bg-secondary text-foreground'
+									: 'text-muted-foreground hover:bg-secondary'
+							}`}
+						>
+							People
+						</Link>
 					</nav>
 				</header>
 
@@ -190,7 +218,7 @@ export function Explorer({
 				</section>
 			</aside>
 			<section className="order-1 p-4 lg:order-2 lg:p-5">
-				<GraphMap gov={gov} graph={graph} />
+				<GraphMap gov={gov} graph={graph} mode={view} />
 			</section>
 		</div>
 	)
