@@ -1,5 +1,7 @@
 import { persistNigeriaGraph } from '@/lib/graph/persist'
 
+export const maxDuration = 300
+
 export async function GET(request: Request) {
 	const secret = process.env.CRON_SECRET
 	const auth = request.headers.get('authorization')
