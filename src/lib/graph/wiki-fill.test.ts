@@ -4,6 +4,7 @@ import { compileNigeriaGraph } from './nigeria'
 import {
 	applyVacantOccupancy,
 	parseDelegationTenthAssembly,
+	parseHouseMembersList,
 	parseSenateTemplate,
 } from './wiki-fill'
 
@@ -119,6 +120,36 @@ describe('wiki occupancy fill', () => {
 		assert.equal(
 			graph.nodes['ng-rep-abia-unlisted-1'].people[0]?.name,
 			'Wiki Representative',
+		)
+	})
+
+	it('parses the Wikipedia 10th House members table onto vacant named seats', () => {
+		const rows = parseHouseMembersList(`
+== Members ==
+{| class="wikitable sortable"
+|-
+| rowspan="1" valign="top" |[[Nigerian National Assembly delegation from Kano|Kano]]
+| align="center" |Dawakin Kudu/Warawa
+|{{sortname|Hassan|Mohammed|Hassan Mohammed}}
+| bgcolor="" |
+|[[New Nigeria People's Party|NNPP]]
+| align="center" |12 June 2023
+|-
+| rowspan="1" valign="top" |[[Nigerian National Assembly delegation from Bauchi|Bauchi]]
+| align="center" |Zaki
+|{{sortname|Muhammed|Dan Abba Shehu|Muhammed Dan Abba Shehu}}
+| bgcolor="" |
+|[[Peoples Democratic Party (Nigeria)|PDP]]
+| align="center" |12 June 2023
+|}
+`)
+		assert.equal(
+			rows.find((row) => row.id.includes('dawakin'))?.name,
+			'Hassan Mohammed',
+		)
+		assert.equal(
+			rows.find((row) => row.id.includes('zaki'))?.name,
+			'Muhammed Dan Abba Shehu',
 		)
 	})
 

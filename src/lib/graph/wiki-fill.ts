@@ -173,6 +173,42 @@ export function parseDelegationTenthAssembly(
 	return rows
 }
 
+export function parseHouseMembersList(wikitext: string): OccupancyRow[] {
+	const rows: OccupancyRow[] = []
+	let stateSlug = ''
+	for (const chunk of wikitext.split(/\n\|-\n/)) {
+		const state = chunk.match(/delegation from ([^\|\]]+)\|/)
+		if (state) {
+			stateSlug = slug(state[1])
+		}
+		if (!stateSlug) {
+			continue
+		}
+		const constituency = chunk.match(
+			/align="center"\s*\|(?:\[\[[^\|\]]+\|)?([^\|\n\]]+)/,
+		)
+		const named =
+			chunk.match(/\{\{sortname\|([^|}]+)\|([^|}]+)\|([^|}]+)\}\}/i) ??
+			chunk.match(/\{\{sortname\|([^|}]+)\|([^|}]+)\}\}/i)
+		if (!constituency || !named) {
+			continue
+		}
+		const name = (named[3] ?? `${named[1]} ${named[2]}`).trim()
+		if (!name || /tbd|vacant/i.test(name)) {
+			continue
+		}
+		const party = chunk.match(
+			/\[\[(?:[^\|\]]+\|)?(PDP|APC|LP|NNPP|APGA|ADC|SDP|YPP|PRP|APM)\]\]/,
+		)
+		rows.push({
+			id: `ng-rep-${stateSlug}-${slug(constituency[1].replace(/federal constituency/i, ''))}`,
+			name,
+			party: party?.[1],
+		})
+	}
+	return rows
+}
+
 function resolveSeatId(graph: CompiledGraph, id: string) {
 	if (graph.nodes[id]) {
 		return id
@@ -214,11 +250,36 @@ function nameTokens(value: string) {
 	return slug(value).split('-').filter((token) => token.length > 2)
 }
 
+const COMMON_NAME_TOKENS = new Set([
+	'mohammed',
+	'muhammad',
+	'abdullahi',
+	'ibrahim',
+	'abubakar',
+	'mustapha',
+	'ahmed',
+	'sani',
+	'usman',
+	'aliyu',
+	'yusuf',
+	'hassan',
+	'suleiman',
+	'garba',
+	'bello',
+	'shehu',
+	'ali',
+])
+
 function namesOverlap(left: string, right: string) {
 	const a = nameTokens(left)
 	const b = new Set(nameTokens(right))
 	const shared = a.filter((token) => b.has(token))
-	return shared.some((token) => token.length >= 5) || shared.length >= 2
+	const distinctive = shared.filter(
+		(token) => token.length >= 7 && !COMMON_NAME_TOKENS.has(token),
+	)
+	return distinctive.length > 0 || (
+		shared.length >= 2 && shared.some((token) => !COMMON_NAME_TOKENS.has(token))
+	)
 }
 
 function alreadyHeldInState(
@@ -306,6 +367,10 @@ export async function overlayWikiOccupancy(
 		'Template:Nigerian_senators_of_the_10th_National_Assembly',
 	)
 	applyVacantOccupancy(graph, parseSenateTemplate(senate))
+	const houseList = await fetchWikitext(
+		'List_of_members_of_the_House_of_Representatives_of_Nigeria,_2023–2027',
+	)
+	applyVacantOccupancy(graph, parseHouseMembersList(houseList))
 	for (const stateSlug of Object.keys(DISTRICTS)) {
 		const page = `Nigerian_National_Assembly_delegation_from_${STATE_PAGE[stateSlug] ?? titleCaseState(stateSlug)}`
 		const text = await fetchWikitext(page)

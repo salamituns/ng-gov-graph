@@ -5,8 +5,28 @@ import type { CompiledGraph } from './types'
 
 const ORDERPAPER_MEMBERS_URL =
 	'https://orderpaper.ng/voter/10th-national-assembly-members'
-const ORDERPAPER_KEBBI_SOUTH_URL =
-	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Musa-Garba-Maidoki-608'
+const ORDERPAPER_HOUSE_URLS = [
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Gwacham-Maureen-Chinwe-1379',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Midala-Usman-Balami-1626',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Aluko-Ahmed-Yinka-2916',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Amadi-Blessing-Chigeru-3755',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Ibrahim-Mohammed-4032',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Idris-Salman-2841',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Rabiu-Garba-Kamba-2752',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Jallo-Hussaini-Mohammed-2370',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Aliyu-Mustapha-Abdullahi-2378',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Muhammad-Aminu-Ibrahim-4030',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Hassan-Bala-Abubakar--4055',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Mohammed-Garba-Ibrahim-2554',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Shehu-Muhammad-Bello-2533',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Yusuf-Rabiu-2638',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Koki-Sagir-Ibrahim-2604',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Mu%27azo--Abdullahi-Gwarzo-2560',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Hassan-Mohammed-Danjuma-4027',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Mustapha-Tijjani-Ghali-2471',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Muhammed-Dan-Abba-Shehu-1483',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Musa-Garba-Maidoki-608',
+]
 
 const PARTY: Record<string, string> = {
 	'peoples democratic party': 'PDP',
@@ -22,6 +42,7 @@ const PARTY: Record<string, string> = {
 	'peoples redemption party': 'PRP',
 	'allied peoples movement': 'APM',
 	accord: 'Accord',
+	'all progressive congress': 'APC',
 }
 
 function htmlToMarkdown(source: string) {
@@ -141,6 +162,25 @@ export function parseOrderpaperMembers(source: string): OccupancyRow[] {
 		}
 		pushRow(rows, seen, { id, name, party: partyCode(match[3]) })
 	}
+	for (const match of text.matchAll(
+		/###\s+Hon\.?\s+([^\n[]+)\n[\s\S]*?\*\*Constituency:\s*\*\*\s*([^\n]+)\n[\s\S]*?\*\*Party:\s*\*\*\s*([^\n]+)/gi,
+	)) {
+		const name = match[1].replace(/\s+/g, ' ').trim()
+		const place = match[2].replace(/\s+/g, ' ').trim()
+		const comma = place.lastIndexOf(',')
+		if (comma < 0 || !name) {
+			continue
+		}
+		const state = stateKey(place.slice(comma + 1).trim())
+		if (!state) {
+			continue
+		}
+		pushRow(rows, seen, {
+			id: `ng-rep-${state}-${slug(place.slice(0, comma).replace(/federal constituency|constituency/gi, ''))}`,
+			name,
+			party: partyCode(match[3]),
+		})
+	}
 	return rows
 }
 
@@ -151,7 +191,7 @@ export async function overlayOrderpaperOccupancy(
 		'user-agent': 'Govgraph/0.1 (https://ng-gov-graph.vercel.app)',
 	}
 	const pages = await Promise.all(
-		[ORDERPAPER_MEMBERS_URL, ORDERPAPER_KEBBI_SOUTH_URL].map((url) =>
+		[ORDERPAPER_MEMBERS_URL, ...ORDERPAPER_HOUSE_URLS].map((url) =>
 			fetch(url, { headers, cache: 'no-store' })
 				.then((res) => (res.ok ? res.text() : ''))
 				.catch(() => ''),

@@ -34,6 +34,12 @@ const ORDERPAPER_PROFILE = `
 <p><strong>Party:</strong> Peoples Democratic Party</p>
 `
 
+const ORDERPAPER_HOUSE_PROFILE = `
+<h3>Hon Gwacham Maureen Chinwe</h3>
+<p><strong>Constituency:</strong> Oyi/Ayamelum Constituency, Anambra</p>
+<p><strong>Party:</strong> All Progressive Grand Alliance</p>
+`
+
 describe('orderpaper occupancy fill', () => {
 	it('parses Senate districts including Kebbi South', () => {
 		const rows = parseOrderpaperMembers(ORDERPAPER)
@@ -54,6 +60,24 @@ describe('orderpaper occupancy fill', () => {
 				party: 'PDP',
 			},
 		])
+	})
+
+	it('parses an OrderPaper House profile onto a vacant unlisted seat', () => {
+		const rows = parseOrderpaperMembers(ORDERPAPER_HOUSE_PROFILE)
+		assert.deepEqual(rows, [
+			{
+				id: 'ng-rep-anambra-oyi-ayamelum',
+				name: 'Gwacham Maureen Chinwe',
+				party: 'APGA',
+			},
+		])
+		const graph = compileNigeriaGraph()
+		applyVacantOccupancy(graph, rows)
+		const filled = Object.values(graph.nodes).find(
+			(node) => node.people[0]?.name === 'Gwacham Maureen Chinwe',
+		)
+		assert.equal(filled?.people[0]?.name, 'Gwacham Maureen Chinwe')
+		assert.match(filled?.name ?? '', /oyi|ayamelum/i)
 	})
 
 	it('fills vacant Kebbi South from OrderPaper without inventing other seats', () => {
