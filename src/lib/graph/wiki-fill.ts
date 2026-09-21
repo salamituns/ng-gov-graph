@@ -272,13 +272,28 @@ const COMMON_NAME_TOKENS = new Set([
 
 function namesOverlap(left: string, right: string) {
 	const a = nameTokens(left)
-	const b = new Set(nameTokens(right))
-	const shared = a.filter((token) => b.has(token))
+	const b = nameTokens(right)
+	const bSet = new Set(b)
+	const shared = a.filter((token) => bSet.has(token))
 	const distinctive = shared.filter(
-		(token) => token.length >= 7 && !COMMON_NAME_TOKENS.has(token),
+		(token) => token.length >= 8 && !COMMON_NAME_TOKENS.has(token),
 	)
-	return distinctive.length > 0 || (
-		shared.length >= 2 && shared.some((token) => !COMMON_NAME_TOKENS.has(token))
+	if (distinctive.length > 0) {
+		return true
+	}
+	if (
+		shared.length >= 2 &&
+		shared.some((token) => !COMMON_NAME_TOKENS.has(token))
+	) {
+		return true
+	}
+	const shorter = a.length <= b.length ? a : b
+	const longerTokens = a.length <= b.length ? b : a
+	const longer = new Set(longerTokens)
+	return (
+		shorter.length >= 2 &&
+		shorter.every((token) => longer.has(token)) &&
+		longerTokens.filter((token) => !shorter.includes(token)).length <= 1
 	)
 }
 
@@ -305,12 +320,48 @@ function alreadyHeldInState(
 	)
 }
 
+function relabelHeldSeat(graph: CompiledGraph, rowId: string, name: string) {
+	const state = Object.keys(DISTRICTS)
+		.sort((a, b) => b.length - a.length)
+		.find((item) => rowId.startsWith(`ng-rep-${item}-`))
+	if (!state) {
+		return
+	}
+	const prefix = `ng-rep-${state}-`
+	const label = rowId.slice(prefix.length).replace(/-/g, ' ')
+	const incoming = label.split(' ').filter((token) => token.length > 3)
+	if (incoming.length === 0) {
+		return
+	}
+	const node = Object.values(graph.nodes).find(
+		(item) =>
+			item.id.startsWith(`${prefix}unlisted-`) &&
+			item.people[0]?.name &&
+			namesOverlap(item.people[0].name, name),
+	)
+	if (!node) {
+		return
+	}
+	const current = node.name.toLowerCase()
+	if (incoming.every((token) => current.includes(token))) {
+		return
+	}
+	node.name = `Representative for ${label}`
+}
+
 export function applyVacantOccupancy(
 	graph: CompiledGraph,
 	rows: OccupancyRow[],
 ): CompiledGraph {
 	for (const row of rows) {
+		const state = Object.keys(DISTRICTS)
+			.sort((a, b) => b.length - a.length)
+			.find((item) => row.id.startsWith(`ng-rep-${item}-`))
+		if (state && row.id === `ng-rep-${state}-${state}`) {
+			continue
+		}
 		if (alreadyHeldInState(graph, row.id, row.name)) {
+			relabelHeldSeat(graph, row.id, row.name)
 			continue
 		}
 		const seatId = resolveSeatId(graph, row.id)

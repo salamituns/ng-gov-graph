@@ -153,6 +153,100 @@ describe('wiki occupancy fill', () => {
 		)
 	})
 
+	it('does not park a reordered Karaye/Rogo name ahead of Gaya/Ajingi/Albasu', () => {
+		const graph = compileNigeriaGraph()
+		applyVacantOccupancy(graph, [
+			{
+				id: 'ng-rep-kano-kabaye-rogo',
+				name: 'Sani Abdullahi Rogo',
+				party: 'NNPP',
+			},
+			{
+				id: 'ng-rep-kano-gaya-ajingi-albasu',
+				name: 'Mustapha Tijjani Ghali',
+				party: 'NNPP',
+			},
+		])
+		assert.equal(
+			Object.values(graph.nodes).some(
+				(node) => node.people[0]?.name === 'Sani Abdullahi Rogo',
+			),
+			false,
+		)
+		const ghali = Object.values(graph.nodes).find(
+			(node) => node.people[0]?.name === 'Mustapha Tijjani Ghali',
+		)
+		assert.match(ghali?.name ?? '', /gaya|ajingi|albasu/i)
+	})
+
+	it('fills Zango/Baure and Malumfashi instead of a Musawa duplicate or a state-only pad', () => {
+		const graph = compileNigeriaGraph()
+		applyVacantOccupancy(graph, [
+			{
+				id: 'ng-rep-katsina-matazu-musawa',
+				name: 'Ahmed Aliyu Abdullahi',
+				party: 'APC',
+			},
+			{
+				id: 'ng-rep-katsina-katsina',
+				name: 'Aliyu Sani Danlami',
+				party: 'APC',
+			},
+			{
+				id: 'ng-rep-katsina-zango-baure',
+				name: 'Lawal Sani',
+				party: 'APC',
+			},
+			{
+				id: 'ng-rep-katsina-kafur-malumfashi',
+				name: 'Muhammad Aminu Ibrahim',
+				party: 'APC',
+			},
+		])
+		assert.equal(
+			Object.values(graph.nodes).some(
+				(node) => node.people[0]?.name === 'Ahmed Aliyu Abdullahi',
+			),
+			false,
+		)
+		assert.equal(
+			Object.values(graph.nodes).some(
+				(node) => node.people[0]?.name === 'Aliyu Sani Danlami',
+			),
+			false,
+		)
+		const lawal = Object.values(graph.nodes).find(
+			(node) => node.people[0]?.name === 'Lawal Sani',
+		)
+		const aminu = Object.values(graph.nodes).find(
+			(node) => node.people[0]?.name === 'Muhammad Aminu Ibrahim',
+		)
+		assert.match(lawal?.name ?? '', /zango|baure/i)
+		assert.match(aminu?.name ?? '', /malumfashi|kafur/i)
+	})
+
+	it('replaces a garbled unlisted label when the same member has a clearer constituency', () => {
+		const graph = compileNigeriaGraph()
+		applyVacantOccupancy(graph, [
+			{
+				id: 'ng-rep-katsina-kafub-malushi',
+				name: 'Muhammad Aminu Ibrahim',
+				party: 'APC',
+			},
+		])
+		applyVacantOccupancy(graph, [
+			{
+				id: 'ng-rep-katsina-kafur-malumfashi',
+				name: 'Muhammad Aminu Ibrahim',
+				party: 'APC',
+			},
+		])
+		const node = Object.values(graph.nodes).find(
+			(item) => item.people[0]?.name === 'Muhammad Aminu Ibrahim',
+		)
+		assert.match(node?.name ?? '', /kafur malumfashi/i)
+	})
+
 	it('does not park a duplicate of a name already occupying a House seat in that state', () => {
 		const graph = compileNigeriaGraph()
 		graph.nodes['ng-rep-abia-unlisted-1'].people = []

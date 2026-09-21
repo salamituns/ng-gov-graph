@@ -25,6 +25,7 @@ const ORDERPAPER_HOUSE_URLS = [
 	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Hassan-Mohammed-Danjuma-4027',
 	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Mustapha-Tijjani-Ghali-2471',
 	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Muhammed-Dan-Abba-Shehu-1483',
+	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Lawal-Sani-2738',
 	'https://orderpaper.ng/voter/10th-national-assembly-member?id=Musa-Garba-Maidoki-608',
 ]
 
