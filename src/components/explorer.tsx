@@ -292,7 +292,7 @@ export function Explorer({
 					</div>
 				</section>
 			</aside>
-			<section className="order-1 p-4 lg:order-2 lg:p-5">
+			<section className="order-1 flex h-[70vh] flex-col p-4 lg:sticky lg:top-0 lg:order-2 lg:h-screen lg:p-5">
 				<nav
 					className="mb-3 flex flex-wrap gap-1"
 					aria-label="Graph view"
@@ -311,7 +311,18 @@ export function Explorer({
 						</Link>
 					))}
 				</nav>
-				<GraphMap gov={gov} graph={graph} mode={view === 'people' ? 'people' : 'orgs'} />
+				<div className="min-h-0 flex-1">
+					<GraphMap
+						gov={gov}
+						graph={graph}
+						mode={view === 'people' ? 'people' : 'orgs'}
+						weights={
+							view === 'power'
+								? Object.fromEntries(powerMentions.map((item) => [item.id, item.mentions]))
+								: undefined
+						}
+					/>
+				</div>
 			</section>
 		</div>
 	)

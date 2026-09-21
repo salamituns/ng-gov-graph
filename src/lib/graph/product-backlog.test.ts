@@ -6,6 +6,19 @@ import { applyPortraitUrls, mapPortraitUrls, portraitTargets } from './portraits
 import { civicMonitorEnabled, extractCivicUpdates } from '../ai/monitor'
 
 describe('people layout', () => {
+	it('keeps a parastatal inside its parent sector and closer to the hub', () => {
+		const graph = compileNigeriaGraph()
+		const placed = layoutGraph(graph, 800, 800)
+		const parent = placed.find((item) => item.id === 'ng-ministry-of-finance')
+		const child = placed.find((item) => item.id === 'ng-firs')
+		assert.ok(parent)
+		assert.ok(child)
+		const parentDist = Math.hypot(parent.x - 400, parent.y - 400)
+		const childDist = Math.hypot(child.x - 400, child.y - 400)
+		assert.equal(childDist < parentDist, true)
+		assert.equal(Math.sign(parent.x - 400) === Math.sign(child.x - 400) || Math.abs(child.x - parent.x) < 80, true)
+	})
+
 	it('places occupied officeholders as holder nodes in people mode', () => {
 		const graph = compileNigeriaGraph()
 		const orgs = layoutGraph(graph, 800, 800, { mode: 'orgs' })
