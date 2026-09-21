@@ -34,6 +34,27 @@ const LAYER_LINKS: Array<{ id: LayerFilter; href: string; label: string }> = [
 	{ id: 'all', href: '/ng?layer=all', label: 'All' },
 ]
 
+const VIEW_LINKS: Array<{ id: 'orgs' | 'people' | 'power'; label: string }> = [
+	{ id: 'orgs', label: 'Institutions' },
+	{ id: 'people', label: 'People' },
+	{ id: 'power', label: 'Power' },
+]
+
+function viewHref(layer: LayerFilter, nextView: 'orgs' | 'people' | 'power') {
+	const params = new URLSearchParams()
+	if (layer === 'state') {
+		params.set('layer', 'states')
+	}
+	if (layer === 'all') {
+		params.set('layer', 'all')
+	}
+	if (nextView !== 'orgs') {
+		params.set('view', nextView)
+	}
+	const query = params.toString()
+	return query ? `/ng?${query}` : '/ng'
+}
+
 export function Explorer({
 	gov,
 	title,
@@ -86,45 +107,20 @@ export function Explorer({
 							</Link>
 						))}
 					</nav>
-					<nav className="mt-2 flex gap-1">
-						<Link
-							href={layer === 'federal' ? '/ng' : `/ng?layer=${layer === 'state' ? 'states' : layer}`}
-							className={`rounded-md px-2.5 py-1 text-xs ${
-								view === 'orgs'
-									? 'bg-secondary text-foreground'
-									: 'text-muted-foreground hover:bg-secondary'
-							}`}
-						>
-							Institutions
-						</Link>
-						<Link
-							href={
-								layer === 'federal'
-									? '/ng?view=people'
-									: `/ng?layer=${layer === 'state' ? 'states' : layer}&view=people`
-							}
-							className={`rounded-md px-2.5 py-1 text-xs ${
-								view === 'people'
-									? 'bg-secondary text-foreground'
-									: 'text-muted-foreground hover:bg-secondary'
-							}`}
-						>
-							People
-						</Link>
-						<Link
-							href={
-								layer === 'federal'
-									? '/ng?view=power'
-									: `/ng?layer=${layer === 'state' ? 'states' : layer}&view=power`
-							}
-							className={`rounded-md px-2.5 py-1 text-xs ${
-								view === 'power'
-									? 'bg-secondary text-foreground'
-									: 'text-muted-foreground hover:bg-secondary'
-							}`}
-						>
-							Power
-						</Link>
+					<nav className="mt-3 flex flex-wrap gap-1" aria-label="Graph view">
+						{VIEW_LINKS.map((item) => (
+							<Link
+								key={item.id}
+								href={viewHref(layer, item.id)}
+								className={`rounded-md px-3 py-2 text-sm ${
+									view === item.id
+										? 'bg-secondary text-foreground'
+										: 'text-muted-foreground hover:bg-secondary'
+								}`}
+							>
+								{item.label}
+							</Link>
+						))}
 					</nav>
 				</header>
 
@@ -297,6 +293,24 @@ export function Explorer({
 				</section>
 			</aside>
 			<section className="order-1 p-4 lg:order-2 lg:p-5">
+				<nav
+					className="mb-3 flex flex-wrap gap-1"
+					aria-label="Graph view"
+				>
+					{VIEW_LINKS.map((item) => (
+						<Link
+							key={item.id}
+							href={viewHref(layer, item.id)}
+							className={`rounded-md px-3 py-2 text-sm ${
+								view === item.id
+									? 'bg-secondary text-foreground'
+									: 'bg-card text-muted-foreground hover:bg-secondary'
+							}`}
+						>
+							{item.label}
+						</Link>
+					))}
+				</nav>
 				<GraphMap gov={gov} graph={graph} mode={view === 'people' ? 'people' : 'orgs'} />
 			</section>
 		</div>
