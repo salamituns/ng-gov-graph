@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { parseChangesFeed, parseNewsFeed, resolveStoredFeed } from './feed'
+import { parseChangesFeed, parseNewsFeed, parseRssNews, resolveStoredFeed } from './feed'
 
 describe('parseNewsFeed', () => {
 	it('accepts a news array and rejects junk', () => {
@@ -47,6 +47,26 @@ describe('parseNewsFeed', () => {
 		])
 		assert.equal(fallback.source, 'catalog')
 		assert.equal(fallback.items[0]?.id, 'catalog')
+	})
+
+	it('turns an RSS item into dated news tagged to a known entity', () => {
+		const items = parseRssNews(
+			`<?xml version="1.0"?>
+			<rss><channel>
+			<item>
+			<title>President receives the Minister of Finance</title>
+			<link>https://statehouse.gov.ng/finance-visit/</link>
+			<pubDate>Tue, 01 Sep 2026 09:00:00 GMT</pubDate>
+			<description>A meeting with the Ministry of Finance.</description>
+			</item>
+			</channel></rss>`,
+			[{ id: 'ng-ministry-of-finance', label: 'Ministry of Finance' }],
+		)
+		assert.equal(items.length, 1)
+		assert.equal(items[0]?.url, 'https://statehouse.gov.ng/finance-visit/')
+		assert.equal(items[0]?.publishedAt, '2026-09-01')
+		assert.deepEqual(items[0]?.entityIds, ['ng-ministry-of-finance'])
+		assert.equal(items[0]?.id.startsWith('news-cabinet'), false)
 	})
 })
 

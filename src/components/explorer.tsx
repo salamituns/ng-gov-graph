@@ -9,6 +9,7 @@ import { searchGraph } from '@/lib/graph/search'
 import type { CompiledGraph, GraphNode, OverviewCounts, PersonnelChange } from '@/lib/graph/types'
 import type { LayerFilter } from '@/lib/graph/filter'
 import type { NewsItem } from '@/data/nigeria/news'
+import type { PowerMention, PowerWindow } from '@/lib/graph/power'
 
 interface ExplorerProps {
 	gov: string
@@ -16,13 +17,15 @@ interface ExplorerProps {
 	graph: CompiledGraph
 	searchIndex: CompiledGraph
 	layer: LayerFilter
-	view?: 'orgs' | 'people'
+	view?: 'orgs' | 'people' | 'power'
 	overview: OverviewCounts
 	changes: PersonnelChange[]
 	news: NewsItem[]
 	newsSource?: 'neon' | 'catalog'
 	changesSource?: 'neon' | 'catalog'
 	source: 'neon' | 'catalog'
+	powerDays?: PowerWindow
+	powerMentions?: PowerMention[]
 }
 
 const LAYER_LINKS: Array<{ id: LayerFilter; href: string; label: string }> = [
@@ -44,6 +47,8 @@ export function Explorer({
 	newsSource = 'catalog',
 	changesSource = 'catalog',
 	source,
+	powerDays = 30,
+	powerMentions = [],
 }: ExplorerProps) {
 	const [query, setQuery] = useState('')
 	const hits = useMemo(
@@ -106,6 +111,20 @@ export function Explorer({
 						>
 							People
 						</Link>
+						<Link
+							href={
+								layer === 'federal'
+									? '/ng?view=power'
+									: `/ng?layer=${layer === 'state' ? 'states' : layer}&view=power`
+							}
+							className={`rounded-md px-2.5 py-1 text-xs ${
+								view === 'power'
+									? 'bg-secondary text-foreground'
+									: 'text-muted-foreground hover:bg-secondary'
+							}`}
+						>
+							Power
+						</Link>
 					</nav>
 				</header>
 
@@ -143,6 +162,57 @@ export function Explorer({
 						</ul>
 					) : null}
 				</div>
+
+				{view === 'power' ? (
+					<section>
+						<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
+							Power map
+						</h2>
+						<p className="mb-3 text-sm text-muted-foreground">
+							Entities named in the Postgres news feed over the last {powerDays} days.
+						</p>
+						<nav className="mb-3 flex gap-1">
+							{([7, 30, 90] as const).map((days) => (
+								<Link
+									key={days}
+									href={`/ng?view=power&days=${days}`}
+									className={`rounded-md px-2.5 py-1 text-xs ${
+										powerDays === days
+											? 'bg-secondary text-foreground'
+											: 'text-muted-foreground hover:bg-secondary'
+									}`}
+								>
+									{days}d
+								</Link>
+							))}
+						</nav>
+						{powerMentions.length === 0 ? (
+							<p className="text-sm text-muted-foreground">
+								No dated mentions in this window.
+							</p>
+						) : (
+							<ol className="space-y-2">
+								{powerMentions.map((mention) => {
+									const node = searchIndex.nodes[mention.id]
+									return (
+										<li key={mention.id} className="rounded-lg border bg-card p-3 text-sm">
+											{node ? (
+												<Link href={nodePath(gov, node)} className="hover:underline">
+													{node.name}
+												</Link>
+											) : (
+												mention.id
+											)}
+											<p className="text-xs text-muted-foreground">
+												{mention.mentions} {mention.mentions === 1 ? 'mention' : 'mentions'}
+											</p>
+										</li>
+									)
+								})}
+							</ol>
+						)}
+					</section>
+				) : null}
 
 				<section>
 					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
@@ -227,7 +297,7 @@ export function Explorer({
 				</section>
 			</aside>
 			<section className="order-1 p-4 lg:order-2 lg:p-5">
-				<GraphMap gov={gov} graph={graph} mode={view} />
+				<GraphMap gov={gov} graph={graph} mode={view === 'people' ? 'people' : 'orgs'} />
 			</section>
 		</div>
 	)

@@ -3,6 +3,8 @@ export interface NewsItem {
 	summary: string
 	url: string
 	publication: string
+	publishedAt?: string
+	entityIds?: string[]
 }
 
 export const nigeriaNews: NewsItem[] = [

@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { nigeriaCatalog } from '@/data/nigeria/catalog'
 import { nigeriaChanges } from '@/data/nigeria/changes'
 import { nigeriaNews } from '@/data/nigeria/news'
+import { nigeriaAgenciesCatalog } from '@/data/nigeria/agencies'
 import { nigeriaNassCatalog } from '@/data/nigeria/nass'
 import { nigeriaStatesCatalog } from '@/data/nigeria/states'
 import { buildGraph } from '@/lib/graph/build-graph'
@@ -31,8 +32,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function compileNigeriaGraph(): CompiledGraph {
 	return buildGraph(
 		mergeCatalogs(
-			mergeCatalogs(nigeriaCatalog, nigeriaStatesCatalog),
-			nigeriaNassCatalog,
+			mergeCatalogs(
+				mergeCatalogs(nigeriaCatalog, nigeriaStatesCatalog),
+				nigeriaNassCatalog,
+			),
+			nigeriaAgenciesCatalog,
 		),
 	)
 }

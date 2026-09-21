@@ -86,13 +86,27 @@ export function persistNigeriaGraph(options?: {
 					extractCivicUpdates,
 					fetchCivicSource,
 				} = await import('@/lib/ai/monitor')
+				const { parseRssNews } = await import('@/lib/graph/feed')
 				const source = await fetchCivicSource()
 				if (source) {
 					const extracted = await extractCivicUpdates(
 						source,
 						defaultCivicGenerate,
 					)
-					if (extracted.news.length > 0) {
+					const rss = parseRssNews(
+						source,
+						Object.values(graph.nodes)
+							.filter((node) => node.type !== 'dept_head')
+							.flatMap((node) =>
+								[node.name, ...node.aliases].map((label) => ({
+									id: node.id,
+									label,
+								})),
+							),
+					)
+					if (rss.length > 0) {
+						news = rss
+					} else if (extracted.news.length > 0) {
 						news = extracted.news
 					}
 					if (extracted.changes.length > 0) {

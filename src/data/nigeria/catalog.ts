@@ -74,7 +74,10 @@ const ministries: EntitySpec[] = [
 			appointedYear: 2024,
 		}),
 		extraSeats: [
-			seat('ng-minister-of-state-humanitarian-affairs', 'Honourable Minister of State', null),
+			seat('ng-minister-of-state-humanitarian-affairs', 'Honourable Minister of State', {
+				name: 'Yusuf T. Sununu',
+				appointedYear: 2023,
+			}),
 		],
 	}),
 	ministry({
@@ -117,7 +120,10 @@ const ministries: EntitySpec[] = [
 			appointedYear: 2024,
 		}),
 		extraSeats: [
-			seat('ng-minister-of-state-labour', 'Honourable Minister of State', null),
+			seat('ng-minister-of-state-labour', 'Honourable Minister of State', {
+				name: 'Nkiruka Onyejeocha',
+				appointedYear: 2023,
+			}),
 		],
 	}),
 	ministry({
@@ -368,8 +374,11 @@ const ministries: EntitySpec[] = [
 	ministry({
 		id: 'ng-ministry-of-transportation',
 		name: 'Federal Ministry of Transportation',
-		description: 'Rail, road transport policy, and related infrastructure. The substantive ministerial seat is vacant on the official cabinet list.',
-		head: seat('ng-minister-of-transportation', 'Honourable Minister', null),
+		description: 'Rail, road transport policy, and related infrastructure.',
+		head: seat('ng-minister-of-transportation', 'Honourable Minister', {
+			name: "Sa'idu Alkali",
+			appointedYear: 2023,
+		}),
 	}),
 	ministry({
 		id: 'ng-ministry-of-science',
