@@ -210,11 +210,48 @@ function resolveSeatId(graph: CompiledGraph, id: string) {
 	return null
 }
 
+function nameTokens(value: string) {
+	return slug(value).split('-').filter((token) => token.length > 2)
+}
+
+function namesOverlap(left: string, right: string) {
+	const a = nameTokens(left)
+	const b = new Set(nameTokens(right))
+	const shared = a.filter((token) => b.has(token))
+	return shared.some((token) => token.length >= 5) || shared.length >= 2
+}
+
+function alreadyHeldInState(
+	graph: CompiledGraph,
+	rowId: string,
+	name: string,
+) {
+	if (!rowId.startsWith('ng-rep-')) {
+		return false
+	}
+	const state = Object.keys(DISTRICTS)
+		.sort((a, b) => b.length - a.length)
+		.find((item) => rowId.startsWith(`ng-rep-${item}-`))
+	if (!state) {
+		return false
+	}
+	const prefix = `ng-rep-${state}-`
+	return Object.values(graph.nodes).some(
+		(node) =>
+			node.id.startsWith(prefix) &&
+			node.people[0]?.name &&
+			namesOverlap(node.people[0].name, name),
+	)
+}
+
 export function applyVacantOccupancy(
 	graph: CompiledGraph,
 	rows: OccupancyRow[],
 ): CompiledGraph {
 	for (const row of rows) {
+		if (alreadyHeldInState(graph, row.id, row.name)) {
+			continue
+		}
 		const seatId = resolveSeatId(graph, row.id)
 		if (seatId === null) {
 			continue

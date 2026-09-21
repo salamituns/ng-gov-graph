@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import { layoutGraph } from './layout'
 import { compileNigeriaGraph } from './nigeria'
 import { applyPortraitUrls } from './portraits'
-import { extractCivicUpdates } from '../ai/monitor'
+import { civicMonitorEnabled, extractCivicUpdates } from '../ai/monitor'
 
 describe('people layout', () => {
 	it('places occupied officeholders as holder nodes in people mode', () => {
@@ -74,5 +74,28 @@ describe('civic monitor', () => {
 		)
 		assert.equal(result.news[0]?.id, 'news-minister')
 		assert.equal(result.changes[0]?.personName, 'Example Minister')
+	})
+
+	it('is enabled on Vercel OIDC without a stored gateway key', () => {
+		assert.equal(civicMonitorEnabled({}), false)
+		assert.equal(civicMonitorEnabled({ VERCEL: '1' }), true)
+		assert.equal(civicMonitorEnabled({ VERCEL_OIDC_TOKEN: 'token' }), true)
+		assert.equal(civicMonitorEnabled({ AI_GATEWAY_API_KEY: 'key' }), true)
+	})
+
+	it('skips a hung feed and uses the next official RSS source', async () => {
+		const { fetchCivicSource } = await import('../ai/monitor')
+		const seen: string[] = []
+		const source = await fetchCivicSource(async (url) => {
+			seen.push(String(url))
+			if (seen.length === 1) {
+				throw new Error('timeout')
+			}
+			return new Response('<rss><item><title>Cabinet</title></item></rss>', {
+				status: 200,
+			})
+		})
+		assert.equal(seen.length, 2)
+		assert.match(source, /Cabinet/)
 	})
 })

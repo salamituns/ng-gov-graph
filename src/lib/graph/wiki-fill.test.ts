@@ -121,4 +121,26 @@ describe('wiki occupancy fill', () => {
 			'Wiki Representative',
 		)
 	})
+
+	it('does not park a duplicate of a name already occupying a House seat in that state', () => {
+		const graph = compileNigeriaGraph()
+		graph.nodes['ng-rep-abia-unlisted-1'].people = []
+		graph.nodes['ng-rep-abia-unlisted-2'].people = []
+		const named = Object.keys(graph.nodes).find(
+			(id) => id.startsWith('ng-rep-abia-') && !id.includes('unlisted'),
+		)
+		assert.ok(named)
+		graph.nodes[named].people = [
+			{ name: 'Alex Ikwechegh', appointedYear: 2023, party: 'PDP' },
+		]
+		applyVacantOccupancy(graph, [
+			{
+				id: 'ng-rep-abia-aba-north-aba-south-alt',
+				name: 'Ikwechegh Alexander Mascot',
+				party: 'APGA',
+			},
+		])
+		assert.equal(graph.nodes['ng-rep-abia-unlisted-1'].people.length, 0)
+		assert.equal(graph.nodes['ng-rep-abia-unlisted-2'].people.length, 0)
+	})
 })

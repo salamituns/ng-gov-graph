@@ -5,6 +5,8 @@ import { civicFeed, graphSnapshots } from '@/db/schema'
 import { compileNigeriaGraph } from '@/lib/graph/nigeria'
 import { overlayNassOccupancy } from '@/lib/graph/nass-live'
 import { overlayPortraits } from '@/lib/graph/portraits'
+import { overlayNaltfOccupancy } from '@/lib/graph/naltf-fill'
+import { overlayOrderpaperOccupancy } from '@/lib/graph/orderpaper-fill'
 import { overlayWikiOccupancy } from '@/lib/graph/wiki-fill'
 import {
 	CHANGES_FEED_ID,
@@ -68,6 +70,8 @@ export function persistNigeriaGraph(options?: {
 		}
 		if (options?.wikiFill) {
 			graph = await overlayWikiOccupancy(graph)
+			graph = await overlayNaltfOccupancy(graph)
+			graph = await overlayOrderpaperOccupancy(graph)
 		}
 		if (options?.portraits) {
 			graph = await overlayPortraits(graph)
@@ -76,26 +80,28 @@ export function persistNigeriaGraph(options?: {
 		let news = nigeriaNews
 		let changes = nigeriaChanges
 		if (options?.monitor) {
-			const { defaultCivicGenerate, extractCivicUpdates } = await import(
-				'@/lib/ai/monitor'
-			)
-			const source = await fetch('https://fmino.gov.ng/feed/', {
-				headers: { 'user-agent': 'Govgraph/0.1' },
-				cache: 'no-store',
-			})
-				.then((res) => (res.ok ? res.text() : ''))
-				.catch(() => '')
-			if (source) {
-				const extracted = await extractCivicUpdates(
-					source,
+			try {
+				const {
 					defaultCivicGenerate,
-				)
-				if (extracted.news.length > 0) {
-					news = extracted.news
+					extractCivicUpdates,
+					fetchCivicSource,
+				} = await import('@/lib/ai/monitor')
+				const source = await fetchCivicSource()
+				if (source) {
+					const extracted = await extractCivicUpdates(
+						source,
+						defaultCivicGenerate,
+					)
+					if (extracted.news.length > 0) {
+						news = extracted.news
+					}
+					if (extracted.changes.length > 0) {
+						changes = extracted.changes
+					}
 				}
-				if (extracted.changes.length > 0) {
-					changes = extracted.changes
-				}
+			} catch {
+				news = nigeriaNews
+				changes = nigeriaChanges
 			}
 		}
 		await upsertFeed(NEWS_FEED_ID, 'news', news)
