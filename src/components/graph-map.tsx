@@ -66,6 +66,29 @@ export function GraphMap({ gov, graph, selectedId, mode = 'orgs' }: GraphMapProp
 							/>
 						)
 					})}
+				{mode === 'people'
+					? placed
+							.filter((item) => item.id.startsWith('holder:'))
+							.map((item) => {
+								const parent = placed.find(
+									(placedNode) => placedNode.id === item.id.slice('holder:'.length),
+								)
+								if (!parent) {
+									return null
+								}
+								return (
+									<line
+										key={`seat-${item.id}`}
+										x1={parent.x}
+										y1={parent.y}
+										x2={item.x}
+										y2={item.y}
+										stroke="rgba(244,231,195,0.28)"
+										strokeWidth={1}
+									/>
+								)
+							})
+					: null}
 				{placed.map((item) => {
 					const isHub = item.node.type === 'constituency'
 					const isSel = item.id === selectedId
@@ -82,6 +105,9 @@ export function GraphMap({ gov, graph, selectedId, mode = 'orgs' }: GraphMapProp
 							? nodePath(gov, parent)
 							: nodePath(gov, item.node)
 					const isHolder = item.id.startsWith('holder:')
+					const portrait = isHolder ? item.node.people[0]?.imageUrl : undefined
+					const radius = isHub ? 18 : portrait ? 14 : isHolder ? 8 : isSel ? 9 : 6
+					const clipId = `clip-${item.id.replace(/[^a-zA-Z0-9_-]/g, '')}`
 					return (
 						<a key={item.id} href={href}>
 							<g
@@ -90,18 +116,34 @@ export function GraphMap({ gov, graph, selectedId, mode = 'orgs' }: GraphMapProp
 								opacity={isLit ? 1 : 0.22}
 								className="cursor-pointer"
 							>
-								<circle
-									cx={item.x}
-									cy={item.y}
-									r={isHub ? 18 : isHolder ? 8 : isSel ? 9 : 6}
-									fill={fill}
-									stroke={isSel ? '#fff' : 'rgba(0,0,0,0.35)'}
-									strokeWidth={isSel ? 2 : 0.6}
-								/>
-								{(isHub || isSel || hoverId === item.id) && (
+								{portrait ? (
+									<>
+										<clipPath id={clipId}>
+											<circle cx={item.x} cy={item.y} r={radius} />
+										</clipPath>
+										<image
+											href={portrait}
+											x={item.x - radius}
+											y={item.y - radius}
+											width={radius * 2}
+											height={radius * 2}
+											clipPath={`url(#${clipId})`}
+										/>
+									</>
+								) : (
+									<circle
+										cx={item.x}
+										cy={item.y}
+										r={radius}
+										fill={fill}
+										stroke={isSel ? '#fff' : 'rgba(0,0,0,0.35)'}
+										strokeWidth={isSel ? 2 : 0.6}
+									/>
+								)}
+								{(isHub || isSel || hoverId === item.id || isHolder) && (
 									<text
 										x={item.x}
-										y={item.y + (isHub ? 32 : 16)}
+										y={item.y + (isHub ? 32 : radius + 12)}
 										textAnchor="middle"
 										fill="#f4e7c3"
 										fontSize={isHub ? 13 : 10}

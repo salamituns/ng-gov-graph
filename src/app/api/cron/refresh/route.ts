@@ -11,6 +11,7 @@ export async function GET(request: Request) {
 	const graph = await persistNigeriaGraph({
 		liveNass: true,
 		wikiFill: true,
+		portraits: true,
 		monitor: true,
 	})
 	return Response.json({

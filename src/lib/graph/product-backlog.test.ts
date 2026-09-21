@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { layoutGraph } from './layout'
 import { compileNigeriaGraph } from './nigeria'
-import { applyPortraitUrls } from './portraits'
+import { applyPortraitUrls, mapPortraitUrls, portraitTargets } from './portraits'
 import { civicMonitorEnabled, extractCivicUpdates } from '../ai/monitor'
 
 describe('people layout', () => {
@@ -22,6 +22,11 @@ describe('people layout', () => {
 			people.some((item) => item.id.startsWith('holder:ng-senator-')),
 			false,
 		)
+		const holder = people.find((item) => item.id === 'holder:ng-president')
+		assert.equal(
+			holder?.node.people[0]?.imageUrl,
+			graph.nodes['ng-president'].people[0]?.imageUrl,
+		)
 	})
 })
 
@@ -40,6 +45,37 @@ describe('portraits', () => {
 			graph.nodes['ng-president-of-the-senate'].people[0]?.imageUrl,
 			undefined,
 		)
+	})
+
+	it('asks Wikipedia only for org-head names that still lack a portrait', () => {
+		const graph = compileNigeriaGraph()
+		graph.nodes['ng-president'].people[0].imageUrl = 'https://example.com/tinubu.jpg'
+		const president = graph.nodes['ng-president'].people[0]?.name ?? ''
+		const names = portraitTargets(graph)
+		assert.equal(names.includes(president), false)
+		assert.equal(
+			names.some((name) => name.includes('Senator') || name.length === 0),
+			false,
+		)
+		assert.ok(names.includes(graph.nodes['ng-president-of-the-senate'].people[0].name))
+	})
+
+	it('fetches portraits with a concurrency cap', async () => {
+		let active = 0
+		let peak = 0
+		const urls = await mapPortraitUrls(
+			['Ada', 'Bola', 'Chidi'],
+			async (name) => {
+				active += 1
+				peak = Math.max(peak, active)
+				await new Promise((resolve) => setTimeout(resolve, 20))
+				active -= 1
+				return `https://example.com/${name}.jpg`
+			},
+			{ concurrency: 2 },
+		)
+		assert.equal(peak <= 2, true)
+		assert.equal(urls.Ada, 'https://example.com/Ada.jpg')
 	})
 })
 

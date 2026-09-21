@@ -24,6 +24,8 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 			overview={summarizeOverview(graph)}
 			changes={data.changes}
 			news={data.news}
+			newsSource={data.newsSource}
+			changesSource={data.changesSource}
 			source={data.source}
 		/>
 	)

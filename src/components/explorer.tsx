@@ -20,6 +20,8 @@ interface ExplorerProps {
 	overview: OverviewCounts
 	changes: PersonnelChange[]
 	news: NewsItem[]
+	newsSource?: 'neon' | 'catalog'
+	changesSource?: 'neon' | 'catalog'
 	source: 'neon' | 'catalog'
 }
 
@@ -39,6 +41,8 @@ export function Explorer({
 	overview,
 	changes,
 	news,
+	newsSource = 'catalog',
+	changesSource = 'catalog',
 	source,
 }: ExplorerProps) {
 	const [query, setQuery] = useState('')
@@ -144,6 +148,11 @@ export function Explorer({
 					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
 						Latest news
 					</h2>
+					<p className="mb-3 text-sm text-muted-foreground">
+						{newsSource === 'neon'
+							? 'Civic feed in Postgres. The nightly monitor replaces this list when it extracts sourced items.'
+							: 'Catalog copy. The nightly monitor writes the Postgres feed when a source RSS item is extracted.'}
+					</p>
 					<ul className="space-y-3">
 						{news.map((item) => (
 							<li key={item.id} className="rounded-lg border bg-card p-3">
@@ -166,9 +175,9 @@ export function Explorer({
 						Latest changes
 					</h2>
 					<p className="mb-3 text-sm text-muted-foreground">
-						Appointments and departures from the civic feed in Postgres.
-						A nightly cron recompiles occupancy from nass.gov.ng when
-						DATABASE_URL is set.
+						{changesSource === 'neon'
+							? 'Personnel changes stored in Postgres. Nightly refresh updates occupancy, portraits, and this feed.'
+							: 'Catalog changes. Postgres replaces this list after the monitor extracts a personnel row.'}
 					</p>
 					<div className="mb-4 grid grid-cols-2 gap-2">
 						<Stat label="Seats vacant" value={overview.vacantSeats} />

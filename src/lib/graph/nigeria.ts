@@ -5,7 +5,7 @@ import { nigeriaNews } from '@/data/nigeria/news'
 import { nigeriaNassCatalog } from '@/data/nigeria/nass'
 import { nigeriaStatesCatalog } from '@/data/nigeria/states'
 import { buildGraph } from '@/lib/graph/build-graph'
-import { parseChangesFeed, parseNewsFeed } from '@/lib/graph/feed'
+import { parseChangesFeed, parseNewsFeed, resolveStoredFeed } from '@/lib/graph/feed'
 import { summarizeOverview } from '@/lib/graph/overview'
 import {
 	CHANGES_FEED_ID,
@@ -66,13 +66,21 @@ export const loadNigeriaGraph = cache(async () => {
 		fetchCivicFeed(NEWS_FEED_ID),
 		fetchCivicFeed(CHANGES_FEED_ID),
 	])
+	const news = resolveStoredFeed(newsPayload, nigeriaNews, parseNewsFeed)
+	const changes = resolveStoredFeed(
+		changesPayload,
+		nigeriaChanges,
+		parseChangesFeed,
+	)
 	return {
 		gov: 'ng' as const,
 		name: 'Federal Republic of Nigeria',
 		graph: resolved.graph,
 		overview: summarizeOverview(resolved.graph),
-		changes: parseChangesFeed(changesPayload) ?? nigeriaChanges,
-		news: parseNewsFeed(newsPayload) ?? nigeriaNews,
+		changes: changes.items,
+		news: news.items,
+		newsSource: news.source,
+		changesSource: changes.source,
 		source: resolved.source,
 	}
 })

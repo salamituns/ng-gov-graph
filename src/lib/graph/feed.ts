@@ -77,3 +77,16 @@ export function parseChangesFeed(value: unknown): PersonnelChange[] | null {
 	}
 	return items
 }
+
+export function resolveStoredFeed<T>(
+	payload: unknown,
+	fallback: T[],
+	parse: (value: unknown) => T[] | null = (value) =>
+		Array.isArray(value) ? (value as T[]) : null,
+): { items: T[]; source: 'neon' | 'catalog' } {
+	const parsed = parse(payload)
+	if (!parsed || parsed.length === 0) {
+		return { items: fallback, source: 'catalog' }
+	}
+	return { items: parsed, source: 'neon' }
+}
