@@ -3,7 +3,7 @@ import { filterGraph, parseLayer } from '@/lib/graph/filter'
 import { summarizeOverview } from '@/lib/graph/overview'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { changesInWindow } from '@/lib/graph/feed'
-import { peopleInNews, powerMap, powerSlice, type PowerWindow } from '@/lib/graph/power'
+import { peopleInNews, powerMap, type PowerWindow } from '@/lib/graph/power'
 
 interface PageProps {
 	searchParams: Promise<{ layer?: string; view?: string; days?: string }>
@@ -24,7 +24,7 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 	const data = await loadNigeriaGraph()
 	const filtered = filterGraph(data.graph, layer)
 	const mentions = powerMap(data.news, days, new Date())
-	const graph = view === 'power' ? powerSlice(filtered, mentions) : filtered
+	const graph = filtered
 	const now = new Date()
 	const latestChange = [...data.changes].sort((a, b) => b.date.localeCompare(a.date))[0]
 	return (
@@ -48,6 +48,7 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 			powerMentions={mentions}
 			newsPeople={peopleInNews(data.graph, mentions)}
 			latestChange={latestChange}
+			asOf={now.toISOString().slice(0, 10)}
 		/>
 	)
 }

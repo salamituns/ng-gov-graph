@@ -92,14 +92,17 @@ export function layoutGraph(
 		const group = parents.filter((node) => (node.sector ?? 'independent') === sector)
 		const arc = SECTOR_ARC[sector]
 		group.forEach((node, index) => {
-			const slot = group.length === 0 ? 1 : group.length
-			const start = arc.start + ((arc.end - arc.start) * index) / slot
-			const end = arc.start + ((arc.end - arc.start) * (index + 1)) / slot
+			const tier = index % 3
+			const slot = Math.ceil(group.length / 3)
+			const column = Math.floor(index / 3)
+			const start = arc.start + ((arc.end - arc.start) * column) / slot
+			const end = arc.start + ((arc.end - arc.start) * (column + 1)) / slot
 			const angle = (start + end) / 2
+			const radius = outer - tier * 39
 			const parentPoint = {
 				id: node.id,
-				x: cx + Math.cos(angle) * outer,
-				y: cy + Math.sin(angle) * outer,
+				x: cx + Math.cos(angle) * radius,
+				y: cy + Math.sin(angle) * radius,
 				node,
 			}
 			placed.push(parentPoint)
@@ -110,8 +113,8 @@ export function layoutGraph(
 				const childAngle = angle - spread / 2 + spread * t
 				placed.push({
 					id: child.id,
-					x: cx + Math.cos(childAngle) * inner,
-					y: cy + Math.sin(childAngle) * inner,
+					x: cx + Math.cos(childAngle) * Math.min(inner, radius - 27),
+					y: cy + Math.sin(childAngle) * Math.min(inner, radius - 27),
 					node: child,
 				})
 			})
