@@ -145,12 +145,12 @@
 .layer-menu nav a:hover,.layer-menu nav a[aria-current] { background:#504a43; }
 .panel-section { margin-top:12px; padding:24px 24px 26px; }
 .panel-section h2 { font-size:16px; font-weight:600; letter-spacing:-.025em; }
-.news-list { margin-top:14px; max-height:133px; overflow:hidden; }
+.news-list { margin-top:14px; max-height:168px; overflow:hidden; }
 .news-list.expanded { max-height:none; }
-.news-item { position:relative; margin-bottom:8px; color:#e4ded7; font-size:15px; line-height:1.45; }
+.news-item { position:relative; margin-bottom:12px; color:#e4ded7; font-size:14px; line-height:1.45; }
 .news-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#8582af; margin-right:7px; }
-.news-item a { font-size:12px; color:#b7a6a1; padding-left:3px; }
 .news-item a:hover { color:#e8c8b5; }
+.news-item small { display:block; margin:3px 0 0 15px; color:#a69d94; font-size:11px; }
 .text-action { color:#a9a39b; font-size:14px; line-height:1.3; text-align:left; }
 .text-action:hover { color:#eee8df; }
 .news-people { display:flex; align-items:center; gap:9px; border-top:1px solid #39352f; margin-top:17px; padding-top:15px; font-size:13px; }
@@ -215,13 +215,21 @@
 .map-canvas { position:absolute; inset:0; display:grid; place-items:center; padding:45px 10px 43px; }
 .map-canvas>div { width:100%; height:100%; min-height:0; border:0; border-radius:0; background:transparent; }
 .map-canvas svg { max-width:100%; max-height:100%; }
-.map-footer { position:absolute; bottom:17px; left:16px; right:16px; display:flex; justify-content:space-between; align-items:end; gap:10px; }
-.map-pill { display:flex; gap:7px; align-items:center; padding:9px 12px; font-size:13px; }
-.legend-wrap { position:relative; }
-.legend-menu { position:absolute; bottom:43px; left:0; display:grid; gap:8px; padding:13px; min-width:140px; border-radius:8px; background:#302b26; border:1px solid #514940; font-size:12px; }
-.legend-menu span { display:flex; gap:8px; align-items:center; }
-.legend-menu i { width:9px; height:9px; border-radius:50%; }
-.legend-menu .legislative { background:#b39b62; }.legend-menu .executive { background:#8e83b7; }.legend-menu .judicial { background:#b59d5f; }.legend-menu .independent { background:#998cb5; }
+.map-footer { position:absolute; bottom:17px; right:16px; display:flex; align-items:end; gap:10px; }
+.graph-legend { position:absolute; z-index:3; left:16px; bottom:0; color:#e9e5de; font-size:12px; }
+.graph-legend summary { list-style:none; width:max-content; cursor:pointer; padding:9px 12px; border-radius:10px; background:#292622; }
+.graph-legend summary::-webkit-details-marker { display:none; }
+.graph-legend summary::after { content:'⌄'; margin-left:8px; }
+.graph-legend[open] summary::after { content:'⌃'; }
+.graph-legend-content { position:absolute; bottom:42px; left:0; width:235px; max-height:min(520px,70vh); overflow:auto; display:grid; gap:3px; padding:12px; border:1px solid #514940; border-radius:10px; background:#302b26; box-shadow:0 15px 35px #0008; }
+.graph-legend-content p { margin:8px 4px 4px; color:#a89e93; font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; }
+.graph-legend-content p:first-child { margin-top:0; }
+.graph-legend-content label { display:flex; align-items:center; gap:9px; padding:5px 4px; cursor:pointer; }
+.graph-legend-content label:hover { background:#403831; }
+.graph-legend-content input { accent-color:#bca795; }
+.graph-legend-content svg { width:16px; height:16px; fill:#998db644; stroke:#b9add7; stroke-width:1.5; }
+.legend-edge { width:16px; border-top:1px solid #d9c9b8; }
+.legend-edge.oversees { border-top-style:dotted; }.legend-edge:not(.elects):not(.oversees) { border-top-style:dashed; }
 .map-footnote { color:#817a72; font-size:11px; }
 .graph-search { position:fixed; inset:16px 16px auto auto; margin:0; width:min(760px,calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:auto; border:0; border-radius:11px; padding:0; color:#e9e5de; background:#28241f; box-shadow:0 20px 70px #0008; }
 .graph-search::backdrop { background:#14121088; backdrop-filter:blur(5px); }

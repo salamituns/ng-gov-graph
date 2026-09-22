@@ -91,7 +91,6 @@ export function Explorer({
 }: ExplorerProps) {
 	const [moreNews, setMoreNews] = useState(false)
 	const [moreChanges, setMoreChanges] = useState(false)
-	const [legendOpen, setLegendOpen] = useState(false)
 	const shownNews = moreNews ? news : news.slice(0, 3)
 	const shownChanges = moreChanges
 		? [...changes, ...earlierChanges]
@@ -138,22 +137,20 @@ export function Explorer({
 					<h1 className="sr-only">{title}</h1>
 					<h2>Latest News</h2>
 					{news.length ? (
-						<div className={`news-list ${moreNews ? 'expanded' : ''}`}>
+						<ul className={`news-list ${moreNews ? 'expanded' : ''}`}>
 							{shownNews.map((item) => (
-								<p key={item.id} className="news-item">
-									<span className="news-dot" />
-									{cleanSummary(item.summary)}
+								<li key={item.id} className="news-item">
 									<a
 										href={item.url}
 										target="_blank"
 										rel="noreferrer"
-										aria-label={`Read source: ${item.publication}`}
 									>
-										↗
+										<span className="news-dot" />{cleanSummary(item.summary)} <span aria-hidden="true">↗</span>
 									</a>
-								</p>
+									<small>{item.publication}{item.publishedAt ? ` · ${displayDate(item.publishedAt.slice(0, 10))}` : ''}</small>
+								</li>
 							))}
-						</div>
+						</ul>
 					) : (
 						<p className="muted-copy">No sourced news is available yet.</p>
 					)}
@@ -408,35 +405,6 @@ export function Explorer({
 					/>
 				</div>
 				<div className="map-footer">
-					<div className="legend-wrap">
-						<button
-							className="map-pill"
-							onClick={() => setLegendOpen(!legendOpen)}
-							aria-expanded={legendOpen}
-						>
-							Legend <ChevronDown size={16} />
-						</button>
-						{legendOpen && (
-							<div className="legend-menu">
-								<span>
-									<i className="legislative" />
-									Legislative
-								</span>
-								<span>
-									<i className="executive" />
-									Executive
-								</span>
-								<span>
-									<i className="judicial" />
-									Judicial
-								</span>
-								<span>
-									<i className="independent" />
-									Independent
-								</span>
-							</div>
-						)}
-					</div>
 					<span className="map-footnote">
 						Select a node to explore its sources and relationships
 					</span>
