@@ -16,7 +16,10 @@ describe('parastatals', () => {
 			true,
 		)
 		assert.ok(graph.nodes['ng-firs']?.officialUrl?.includes('firs.gov.ng'))
-		assert.equal(graph.nodes['ng-ndlea']?.parentId, 'ng-ministry-of-justice')
+		assert.equal(graph.nodes['ng-fcc-chair'].people[0]?.name, 'Ayo Hulayat Omidiran')
+		assert.equal(graph.nodes['ng-osgf']?.officialUrl, 'https://www.osgf.gov.ng/')
+		assert.equal(graph.nodes['ng-nigerian-army']?.parentId, 'ng-armed-forces')
+		assert.equal(graph.nodes['ng-frsc']?.parentId, 'ng-osgf')
 		assert.equal(graph.nodes['ng-cac']?.parentId, 'ng-ministry-of-industry')
 		assert.equal(graph.nodes['ng-nuprc']?.parentId, 'ng-ministry-of-petroleum')
 		assert.equal(

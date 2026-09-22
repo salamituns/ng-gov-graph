@@ -740,7 +740,10 @@ const core: EntitySpec[] = [
 		description: 'Promotes equitable distribution of federal public-service positions among the states.',
 		legalSourceUrl: `${CONSTITUTION}#s153`,
 		aliases: ['FCC'],
-		head: seat('ng-fcc-chair', 'Chairman of the Federal Character Commission', null),
+		head: seat('ng-fcc-chair', 'Chairman of the Federal Character Commission', {
+			name: 'Ayo Hulayat Omidiran',
+			appointedYear: 2025,
+		}),
 	},
 	{
 		id: 'ng-national-population-commission',

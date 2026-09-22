@@ -37,6 +37,9 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 			view={view}
 			overview={summarizeOverview(filtered)}
 			changes={changesInWindow(data.changes, days, now)}
+			earlierChanges={data.changes.filter(
+				(change) => !changesInWindow(data.changes, days, now).some((item) => item.id === change.id),
+			)}
 			news={data.news}
 			newsSource={data.newsSource}
 			changesSource={data.changesSource}

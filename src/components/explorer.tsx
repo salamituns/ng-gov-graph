@@ -33,6 +33,7 @@ interface ExplorerProps {
 		mentions: number
 	}>
 	latestChange?: { date: string; personName: string; positionName: string }
+	earlierChanges?: PersonnelChange[]
 }
 
 const LAYER_LINKS: Array<{ id: LayerFilter; href: string; label: string }> = [
@@ -79,6 +80,7 @@ export function Explorer({
 	powerMentions = [],
 	newsPeople = [],
 	latestChange,
+	earlierChanges = [],
 }: ExplorerProps) {
 	const [query, setQuery] = useState('')
 	const hits = useMemo(
@@ -272,7 +274,11 @@ export function Explorer({
 					<ul className="space-y-3">
 						{news.map((item) => (
 							<li key={item.id} className="rounded-lg border bg-card p-3">
-								<p className="text-sm leading-relaxed">
+								<p className="text-xs text-muted-foreground">
+									{item.publishedAt ? `${item.publishedAt} · ` : ''}
+									{item.publication}
+								</p>
+								<p className="mt-1 text-sm leading-relaxed">
 									{item.summary.replace(/<[^>]+>/g, '')}
 								</p>
 								{item.entityIds && item.entityIds.length > 0 ? (
@@ -368,6 +374,33 @@ export function Explorer({
 							</li>
 						))}
 					</ol>
+					{earlierChanges.length > 0 ? (
+						<div className="mt-4">
+							<h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+								Earlier
+							</h3>
+							<ol className="space-y-2">
+								{earlierChanges.map((change) => (
+									<li key={change.id} className="rounded-lg border bg-card p-3 text-sm">
+										<p className="text-xs text-muted-foreground">
+											{change.date} · {change.departure ? 'Departure' : 'Appointed'}
+										</p>
+										<p>
+											{change.personName} — {change.positionName}
+										</p>
+										{change.sourceUrl ? (
+											<a
+												href={change.sourceUrl}
+												className="text-xs text-primary underline-offset-2 hover:underline"
+											>
+												Source
+											</a>
+										) : null}
+									</li>
+								))}
+							</ol>
+						</div>
+					) : null}
 				</section>
 
 				<section>

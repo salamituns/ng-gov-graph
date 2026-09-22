@@ -79,4 +79,18 @@ export const nigeriaChanges: PersonnelChange[] = [
 		predecessorName: 'Olukayode Ariwoola',
 		sourceUrl: 'https://supremecourt.gov.ng/',
 	},
+	{
+		kind: 'personnel',
+		id: 'tenure-omidiran-fcc',
+		date: '2025-08-11',
+		personName: 'Ayo Hulayat Omidiran',
+		positionId: 'ng-fcc-chair',
+		positionName: 'Chairman of the Federal Character Commission',
+		groupId: 'ng-federal-character-commission',
+		entryMode: 'appointed',
+		departure: false,
+		predecessorName: 'Muheeba Dankaka',
+		sourceUrl:
+			'https://statehouse.gov.ng/president-tinubu-appoints-new-fcc-chairman-names-secretary-and-other-commissioners/',
+	},
 ]
