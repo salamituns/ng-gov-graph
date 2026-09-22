@@ -1,12 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { glyphPath } from '@/lib/graph/glyph'
 import { layoutGraph, sectorBands } from '@/lib/graph/layout'
 import { nodePath } from '@/lib/graph/paths'
 import type {
 	CompiledGraph,
 	GraphEdge,
 	GraphNode,
+	NodeType,
 	Sector,
 } from '@/lib/graph/types'
 
@@ -17,12 +19,28 @@ const SECTOR_COLOR: Record<Sector, string> = {
 	independent: '#998db6',
 }
 
-const SPOKE: Array<GraphEdge['type']> = [
-	'appoints',
-	'confirms',
-	'oversees',
-	'elects',
-]
+const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
+	elected: 'Elected offices',
+	department: 'Departments & agencies',
+	commission: 'Commissions',
+	advisory: 'Advisory bodies',
+	court: 'Courts',
+	corporation: 'Corporations',
+	state: 'States',
+	dept_head: 'Officeholders',
+}
+
+const EDGE_LABEL: Record<GraphEdge['type'], string> = {
+	appoints: 'Appoints',
+	confirms: 'Confirms',
+	elects: 'Elects',
+	oversees: 'Oversees',
+	dept_head: 'Heads',
+	advises: 'Advises',
+	ex_officio: 'Ex officio',
+	office: 'Offices',
+	administers: 'Administers',
+}
 
 interface GraphMapProps {
 	gov: string
@@ -42,6 +60,8 @@ export function GraphMap({
 	const width = 920
 	const height = 720
 	const [hoverId, setHoverId] = useState<string | null>(null)
+	const [hiddenEntities, setHiddenEntities] = useState<Set<NodeType>>(new Set())
+	const [hiddenEdges, setHiddenEdges] = useState<Set<GraphEdge['type']>>(new Set())
 	const placed = useMemo(
 		() => layoutGraph(graph, width, height, { mode }),
 		[graph, mode],
@@ -51,6 +71,17 @@ export function GraphMap({
 		[placed],
 	)
 	const bands = useMemo(() => sectorBands(width, height), [])
+	const entityTypes = [...new Set(placed.map((item) => item.node.type))].filter(
+		(type) => type !== 'constituency',
+	)
+	const visibleEdges = Object.values(graph.edges).filter(
+		(edge) => at.has(edge.fromId) && at.has(edge.toId),
+	)
+	const edgeTypes = [...new Set(visibleEdges.map((edge) => edge.type))]
+	const visible = (id: string) => {
+		const item = at.get(id)
+		return item && !hiddenEntities.has(item.node.type)
+	}
 	const activeId = hoverId ?? selectedId
 	const connected = new Set(
 		activeId
@@ -83,12 +114,12 @@ export function GraphMap({
 						</text>
 					</g>
 				))}
-				{Object.values(graph.edges)
+				{visibleEdges
 					.filter(
 						(edge) =>
-							SPOKE.includes(edge.type) &&
-							at.has(edge.fromId) &&
-							at.has(edge.toId),
+							!hiddenEdges.has(edge.type) &&
+							visible(edge.fromId) &&
+							visible(edge.toId),
 					)
 					.map((edge) => {
 						const from = at.get(edge.fromId)
@@ -115,12 +146,13 @@ export function GraphMap({
 										: 'rgba(223,209,191,0.04)'
 								}
 								strokeWidth={lit && activeId ? 1.2 : 0.5}
+								strokeDasharray={edge.type === 'elects' ? undefined : edge.type === 'oversees' ? '2 3' : '4 3'}
 							/>
 						)
 					})}
 				{mode === 'people'
 					? placed
-							.filter((item) => item.id.startsWith('holder:'))
+							.filter((item) => item.id.startsWith('holder:') && visible(item.id) && visible(item.id.slice('holder:'.length)))
 							.map((item) => {
 								const parent = at.get(item.id.slice('holder:'.length))
 								if (!parent) {
@@ -139,7 +171,7 @@ export function GraphMap({
 								)
 							})
 					: null}
-				{placed.map((item) => {
+				{placed.filter((item) => !hiddenEntities.has(item.node.type)).map((item) => {
 					const isHub = item.node.type === 'constituency'
 					const isSel = item.id === selectedId
 					const isHolder = item.id.startsWith('holder:')
@@ -184,7 +216,7 @@ export function GraphMap({
 									other.node.type !== 'constituency',
 							).length <= 8)
 					return (
-						<a key={item.id} href={href}>
+						<a key={item.id} href={href} aria-label={item.node.name}>
 							<g
 								onMouseEnter={() => setHoverId(item.id)}
 								onMouseLeave={() => setHoverId(null)}
@@ -253,19 +285,14 @@ export function GraphMap({
 												strokeWidth={1.5}
 											/>
 										)}
-										<rect
-											x={item.x - radius}
-											y={item.y - radius}
-											width={radius * 2}
-											height={radius * 2}
-											rx={radius * 0.4}
+										<path
+											d={glyphPath(item.node.type, item.x, item.y, radius)}
 											fill={fill}
 											fillOpacity={
 												weights ? 0.35 + Math.min(0.65, weight / 5) : 0.28
 											}
 											stroke={fill}
 											strokeWidth={isSel || hoverId === item.id ? 1.8 : 0.8}
-											transform={`rotate(15 ${item.x} ${item.y})`}
 										/>
 									</>
 								)}
@@ -285,6 +312,58 @@ export function GraphMap({
 					)
 				})}
 			</svg>
+			<details className="graph-legend">
+				<summary>Legend</summary>
+				<div className="graph-legend-content">
+					<p>Entities</p>
+					{entityTypes.map((type) => (
+						<label key={type}>
+							<input
+								type="checkbox"
+								aria-label={ENTITY_LABEL[type] ?? type}
+								checked={!hiddenEntities.has(type)}
+								onChange={() => {
+									setHoverId(null)
+									setHiddenEntities((current) => {
+										const next = new Set(current)
+										if (next.has(type)) next.delete(type)
+										else next.add(type)
+										return next
+									})
+								}}
+							/>
+							<svg viewBox="0 0 24 24" aria-hidden="true">
+								<path d={glyphPath(type, 12, 12, 9)} />
+							</svg>
+							{ENTITY_LABEL[type] ?? type}
+						</label>
+					))}
+					{edgeTypes.length > 0 && (
+						<>
+							<p>Relationships</p>
+							{edgeTypes.map((type) => (
+								<label key={type}>
+									<input
+										type="checkbox"
+										aria-label={EDGE_LABEL[type]}
+										checked={!hiddenEdges.has(type)}
+										onChange={() => {
+											setHiddenEdges((current) => {
+												const next = new Set(current)
+												if (next.has(type)) next.delete(type)
+												else next.add(type)
+												return next
+											})
+										}}
+									/>
+									<span className={`legend-edge ${type}`} aria-hidden="true" />
+									{EDGE_LABEL[type]}
+								</label>
+							))}
+						</>
+					)}
+				</div>
+			</details>
 			{hover ? (
 				<div
 					className="pointer-events-none absolute z-10 max-w-56 rounded-md border border-white/10 bg-[#302a25]/95 px-3 py-2 text-xs text-[#eee4d9] shadow-lg"
