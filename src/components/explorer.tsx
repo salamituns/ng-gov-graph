@@ -1,12 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import Image from 'next/image'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import { GraphMap } from '@/components/graph-map'
-import { Input } from '@/components/ui/input'
+import { GraphSearch } from '@/components/graph-search'
 import { nodePath } from '@/lib/graph/paths'
-import { searchGraph } from '@/lib/graph/search'
-import type { CompiledGraph, GraphNode, OverviewCounts, PersonnelChange } from '@/lib/graph/types'
+import type {
+	CompiledGraph,
+	GraphNode,
+	OverviewCounts,
+	PersonnelChange,
+} from '@/lib/graph/types'
 import type { LayerFilter } from '@/lib/graph/filter'
 import type { NewsItem } from '@/data/nigeria/news'
 import type { PowerMention, PowerWindow } from '@/lib/graph/power'
@@ -34,35 +40,38 @@ interface ExplorerProps {
 	}>
 	latestChange?: { date: string; personName: string; positionName: string }
 	earlierChanges?: PersonnelChange[]
+	asOf: string
 }
-
-const LAYER_LINKS: Array<{ id: LayerFilter; href: string; label: string }> = [
+const layers: Array<{ id: LayerFilter; href: string; label: string }> = [
 	{ id: 'federal', href: '/ng', label: 'Federal' },
 	{ id: 'state', href: '/ng?layer=states', label: 'States' },
 	{ id: 'all', href: '/ng?layer=all', label: 'All' },
 ]
-
-const VIEW_LINKS: Array<{ id: 'orgs' | 'people' | 'power'; label: string }> = [
-	{ id: 'orgs', label: 'Institutions' },
-	{ id: 'people', label: 'People' },
-	{ id: 'power', label: 'Power' },
-]
-
-function viewHref(layer: LayerFilter, nextView: 'orgs' | 'people' | 'power') {
+function hrefFor(
+	layer: LayerFilter,
+	view: 'orgs' | 'people' | 'power',
+	days?: number,
+) {
 	const params = new URLSearchParams()
-	if (layer === 'state') {
-		params.set('layer', 'states')
-	}
-	if (layer === 'all') {
-		params.set('layer', 'all')
-	}
-	if (nextView !== 'orgs') {
-		params.set('view', nextView)
-	}
-	const query = params.toString()
-	return query ? `/ng?${query}` : '/ng'
+	if (layer !== 'federal')
+		params.set('layer', layer === 'state' ? 'states' : 'all')
+	if (view !== 'orgs') params.set('view', view)
+	if (days) params.set('days', String(days))
+	return `/ng${params.size ? `?${params}` : ''}`
 }
-
+function displayDate(date: string) {
+	return new Date(`${date}T12:00:00Z`).toLocaleDateString('en', {
+		month: 'short',
+		day: 'numeric',
+	})
+}
+function cleanSummary(summary: string) {
+	return summary
+		.replace(/<[^>]+>/g, '')
+		.replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+		.replace(/&quot;/g, '"')
+		.replace(/&amp;/g, '&')
+}
 export function Explorer({
 	gov,
 	title,
@@ -73,435 +82,422 @@ export function Explorer({
 	overview,
 	changes,
 	news,
-	newsSource = 'catalog',
-	changesSource = 'catalog',
-	source,
 	powerDays = 30,
 	powerMentions = [],
 	newsPeople = [],
 	latestChange,
 	earlierChanges = [],
+	asOf,
 }: ExplorerProps) {
-	const [query, setQuery] = useState('')
-	const hits = useMemo(
-		() => searchGraph(searchIndex, query).slice(0, 12),
-		[searchIndex, query],
-	)
-
+	const [moreNews, setMoreNews] = useState(false)
+	const [moreChanges, setMoreChanges] = useState(false)
+	const [legendOpen, setLegendOpen] = useState(false)
+	const shownNews = moreNews ? news : news.slice(0, 3)
+	const shownChanges = moreChanges
+		? [...changes, ...earlierChanges]
+		: changes.length
+			? changes.slice(0, 4)
+			: earlierChanges.slice(0, 4)
+	const counts = Array.from({ length: 7 }, () => 0)
+	for (const change of changes) {
+		const age = Math.floor(
+			(new Date(`${asOf}T12:00:00Z`).getTime() -
+				new Date(`${change.date}T12:00:00Z`).getTime()) /
+				86400000,
+		)
+		counts[Math.min(6, Math.max(0, 6 - Math.floor((age * 7) / powerDays)))]++
+	}
 	return (
-		<div className="grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(360px,40%)_1fr]">
-			<aside className="order-2 space-y-8 p-5 lg:order-1 lg:p-6">
-				<header className="rounded-xl border bg-card px-4 py-3">
-					<p className="text-xs tracking-[0.2em] text-primary uppercase">Govgraph</p>
-					<h1
-						className="font-[family-name:var(--font-heading)] text-2xl text-accent"
-					>
-						{title}
-					</h1>
-					<p className="mt-1 text-xs text-muted-foreground">
-						{source === 'neon'
-							? 'Serving the compiled graph from Neon Postgres.'
-							: 'Serving a catalog compile. Neon snapshot unavailable.'}
-					</p>
-					<nav className="mt-3 flex flex-wrap gap-1">
-						{LAYER_LINKS.map((item) => (
-							<Link
-								key={item.id}
-								href={item.href}
-								className={`rounded-md px-2.5 py-1 text-xs ${
-									layer === item.id
-										? 'bg-primary text-primary-foreground'
-										: 'text-muted-foreground hover:bg-secondary'
-								}`}
-							>
-								{item.label}
-							</Link>
-						))}
-					</nav>
-					<nav className="mt-3 flex flex-wrap gap-1" aria-label="Graph view">
-						{VIEW_LINKS.map((item) => (
-							<Link
-								key={item.id}
-								href={viewHref(layer, item.id)}
-								className={`rounded-md px-3 py-2 text-sm ${
-									view === item.id
-										? 'bg-secondary text-foreground'
-										: 'text-muted-foreground hover:bg-secondary'
-								}`}
-							>
-								{item.label}
-							</Link>
-						))}
-					</nav>
-				</header>
-
-				<div>
-					<label className="mb-2 block text-xs uppercase tracking-wider text-muted-foreground">
-						Search
-					</label>
-					<Input
-						value={query}
-						onChange={(event) => setQuery(event.target.value)}
-						placeholder="Try INEC, Lagos, Sanwo-Olu…"
-					/>
-					{query.trim() ? (
-						<ul className="mt-2 overflow-hidden rounded-lg border bg-card">
-							{hits.length === 0 ? (
-								<li className="px-3 py-2 text-sm text-muted-foreground">
-									No results. Try an agency alias (EFCC, NASS, FCT).
-								</li>
-							) : (
-								hits.map((node) => (
-									<li key={node.id} className="border-b last:border-0">
-										<Link
-											href={nodePath(gov, node)}
-											className="block px-3 py-2 text-sm hover:bg-secondary"
-										>
-											<p>{node.name}</p>
-											<p className="text-xs text-muted-foreground">
-												{node.type.replace('_', ' ')}
-												{node.people[0] ? ` · ${node.people[0].name}` : ''}
-											</p>
-										</Link>
-									</li>
-								))
-							)}
-						</ul>
-					) : null}
-				</div>
-
-				{view === 'power' ? (
-					<section>
-						<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
-							Power map
-						</h2>
-						<p className="mb-3 text-sm text-muted-foreground">
-							Entities named in the Postgres news feed over the last {powerDays} days.
-						</p>
-						<nav className="mb-3 flex gap-1">
-							{([7, 30, 90] as const).map((days) => (
+		<main className="explorer">
+			<aside className="explorer-panel">
+				<header className="brand-bar">
+					<div className="brand-name">
+						<span className="brand-mark">✳</span>
+						<strong>Govgraph</strong>
+						<span className="brand-slash">/</span>
+						<span>Nigeria</span>
+					</div>
+					<details className="layer-menu">
+						<summary aria-label="Choose graph layer">
+							<ChevronDown size={15} />
+						</summary>
+						<nav aria-label="Government layer">
+							{layers.map((item) => (
 								<Link
-									key={days}
-									href={`/ng?view=power&days=${days}`}
-									className={`rounded-md px-2.5 py-1 text-xs ${
-										powerDays === days
-											? 'bg-secondary text-foreground'
-											: 'text-muted-foreground hover:bg-secondary'
-									}`}
+									key={item.id}
+									href={item.href}
+									aria-current={layer === item.id ? 'page' : undefined}
 								>
-									{days}d
+									{item.label}
 								</Link>
 							))}
 						</nav>
-						{powerMentions.length === 0 ? (
-							<p className="text-sm text-muted-foreground">
-								No dated mentions in this window.
-							</p>
-						) : (
-							<ol className="space-y-2">
-								{powerMentions.map((mention) => {
+					</details>
+				</header>
+				<section className="panel-section news-section">
+					<h1 className="sr-only">{title}</h1>
+					<h2>Latest News</h2>
+					{news.length ? (
+						<div className={`news-list ${moreNews ? 'expanded' : ''}`}>
+							{shownNews.map((item) => (
+								<p key={item.id} className="news-item">
+									<span className="news-dot" />
+									{cleanSummary(item.summary)}
+									<a
+										href={item.url}
+										target="_blank"
+										rel="noreferrer"
+										aria-label={`Read source: ${item.publication}`}
+									>
+										↗
+									</a>
+								</p>
+							))}
+						</div>
+					) : (
+						<p className="muted-copy">No sourced news is available yet.</p>
+					)}
+					{news.length > 3 && (
+						<button
+							className="text-action"
+							onClick={() => setMoreNews(!moreNews)}
+						>
+							{moreNews ? 'Show less' : 'Read more'}
+						</button>
+					)}
+					{newsPeople.length > 0 && (
+						<Link
+							className="news-people"
+							href={hrefFor(layer, 'power', powerDays)}
+						>
+							<span className="avatar-stack">
+								{newsPeople.slice(0, 5).map((person) =>
+									person.imageUrl ? (
+										<Image
+											key={person.id}
+											src={person.imageUrl}
+											alt={person.name}
+											width={23}
+											height={23}
+											unoptimized
+										/>
+									) : (
+										<span key={person.id} title={person.name}>
+											{person.name.charAt(0)}
+										</span>
+									),
+								)}
+							</span>
+							<span>Who’s in the news</span>
+							<small>
+								Power map <ChevronRight size={14} />
+							</small>
+						</Link>
+					)}
+				</section>
+				{view === 'power' && (
+					<section className="panel-section power-section">
+						<div className="section-heading">
+							<h2>Power map</h2>
+							<span className="power-window">Past {powerDays} days</span>
+						</div>
+						<p className="muted-copy">
+							Entities named in the sourced news feed.
+						</p>
+						{powerMentions.length ? (
+							<ol className="power-list">
+								{powerMentions.slice(0, 12).map((mention) => {
 									const node = searchIndex.nodes[mention.id]
-									return (
-										<li key={mention.id} className="rounded-lg border bg-card p-3 text-sm">
-											{node ? (
-												<Link href={nodePath(gov, node)} className="hover:underline">
-													{node.name}
-												</Link>
-											) : (
-												mention.id
-											)}
-											<p className="text-xs text-muted-foreground">
-												{mention.mentions} {mention.mentions === 1 ? 'mention' : 'mentions'}
-											</p>
+									return node ? (
+										<li key={mention.id}>
+											<Link href={nodePath(gov, node)}>{node.name}</Link>
+											<span>{mention.mentions}</span>
 										</li>
-									)
+									) : null
 								})}
 							</ol>
+						) : (
+							<p className="muted-copy">No dated mentions in this window.</p>
 						)}
 					</section>
-				) : null}
-
-				<section>
-					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
-						Latest news
-					</h2>
-					{newsPeople.length > 0 ? (
-						<div className="mb-3">
-							<p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-								Who is in the news
-							</p>
-							<ul className="flex gap-3 overflow-x-auto pb-1">
-								{newsPeople.map((person) => {
-									const named = searchIndex.nodes[person.id]
-									const body = (
-										<>
-											{person.imageUrl ? (
-												<img
-													src={person.imageUrl}
-													alt=""
-													className="size-12 rounded-full object-cover"
-												/>
-											) : (
-												<span className="flex size-12 items-center justify-center rounded-full bg-secondary text-xs">
-													{person.name.slice(0, 1)}
-												</span>
-											)}
-											<span className="mt-1 block max-w-16 text-center text-[11px] leading-tight">
-												{person.name.split(' ').slice(-1)}
-											</span>
-										</>
-									)
-									return (
-										<li key={person.id}>
-											{named ? (
-												<Link href={nodePath(gov, named)} className="block">
-													{body}
-												</Link>
-											) : (
-												body
-											)}
-										</li>
-									)
-								})}
-							</ul>
-						</div>
-					) : null}
-					<p className="mb-3 text-sm text-muted-foreground">
-						{newsSource === 'neon'
-							? 'Civic feed in Postgres. The nightly monitor replaces this list when it extracts sourced items.'
-							: 'Catalog copy. The nightly monitor writes the Postgres feed when a source RSS item is extracted.'}
-					</p>
-					<ul className="space-y-3">
-						{news.map((item) => (
-							<li key={item.id} className="rounded-lg border bg-card p-3">
-								<p className="text-xs text-muted-foreground">
-									{item.publishedAt ? `${item.publishedAt} · ` : ''}
-									{item.publication}
-								</p>
-								<p className="mt-1 text-sm leading-relaxed">
-									{item.summary.replace(/<[^>]+>/g, '')}
-								</p>
-								{item.entityIds && item.entityIds.length > 0 ? (
-									<p className="mt-2 flex flex-wrap gap-2">
-										{item.entityIds.map((id) => {
-											const named = searchIndex.nodes[id]
-											if (!named) {
-												return null
-											}
-											return (
-												<Link
-													key={id}
-													href={nodePath(gov, named)}
-													className="text-xs text-primary underline-offset-2 hover:underline"
-												>
-													{named.name}
-												</Link>
-											)
-										})}
-									</p>
-								) : null}
-								<a
-									href={item.url}
-									className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
-								>
-									{item.publication}
-								</a>
-							</li>
-						))}
-					</ul>
-				</section>
-
-				<section>
-					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
-						Latest changes
-					</h2>
-					<p className="mb-3 text-sm text-muted-foreground">
-						Appointments and departures in the last {powerDays} days.
-						{changesSource === 'neon'
-							? ' Stored in Postgres.'
-							: ' Catalog copy until the monitor writes a personnel row.'}
-					</p>
-					<nav className="mb-3 flex gap-1" aria-label="Change window">
-						{([7, 30, 90] as const).map((days) => {
-							const base = viewHref(layer, view)
-							const href = base.includes('?')
-								? `${base}&days=${days}`
-								: `/ng?days=${days}`
-							return (
+				)}
+				<section className="panel-section changes-section">
+					<div className="section-heading">
+						<h2>Latest Changes</h2>
+						<nav className="segmented" aria-label="Change window">
+							{([7, 30, 90] as const).map((days) => (
 								<Link
 									key={days}
-									href={href}
-									className={`rounded-md px-2.5 py-1 text-xs ${
-										powerDays === days
-											? 'bg-secondary text-foreground'
-											: 'text-muted-foreground hover:bg-secondary'
-									}`}
+									href={hrefFor(layer, view, days)}
+									aria-current={powerDays === days ? 'page' : undefined}
 								>
-									{days}d
+									{days}D
 								</Link>
-							)
-						})}
-					</nav>
-					<div className="mb-4 grid grid-cols-2 gap-2">
-						<Stat label="Seats vacant" value={overview.vacantSeats} />
-						<Stat label="Acting officials" value={overview.actingOfficials} />
+							))}
+						</nav>
 					</div>
-					{latestChange ? (
-						<p className="mb-3 text-sm text-muted-foreground">
-							Last change {latestChange.date}. {latestChange.personName},{' '}
-							{latestChange.positionName}.
-						</p>
-					) : null}
-					<ol className="space-y-2">
-						{changes.length === 0 ? (
-							<li className="text-sm text-muted-foreground">
-								No personnel changes in this window.
-							</li>
-						) : null}
-						{changes.map((change) => (
-							<li key={change.id} className="rounded-lg border bg-card p-3 text-sm">
-								<p className="text-xs text-muted-foreground">
-									{change.date} · {change.departure ? 'Departure' : 'Appointed'}
-								</p>
-								<p>
-									{change.personName} — {change.positionName}
-								</p>
-								{change.predecessorName ? (
-									<p className="text-xs text-muted-foreground">
-										Predecessor: {change.predecessorName}
-									</p>
-								) : null}
-							</li>
-						))}
-					</ol>
-					{earlierChanges.length > 0 ? (
-						<div className="mt-4">
-							<h3 className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
-								Earlier
-							</h3>
-							<ol className="space-y-2">
-								{earlierChanges.map((change) => (
-									<li key={change.id} className="rounded-lg border bg-card p-3 text-sm">
-										<p className="text-xs text-muted-foreground">
-											{change.date} · {change.departure ? 'Departure' : 'Appointed'}
-										</p>
-										<p>
-											{change.personName} — {change.positionName}
-										</p>
-										{change.sourceUrl ? (
-											<a
-												href={change.sourceUrl}
-												className="text-xs text-primary underline-offset-2 hover:underline"
-											>
-												Source
-											</a>
-										) : null}
-									</li>
-								))}
-							</ol>
-						</div>
-					) : null}
-				</section>
-
-				<section>
-					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
-						Overview
-					</h2>
-					<p className="mb-3 text-sm text-muted-foreground">
-						{overview.organizationCount} organizations, {overview.subAgencyCount} of
-						them sub-agencies.
+					<p className="section-intro">
+						Track appointments, departures, and changes in the government graph
+						from official sources.
 					</p>
-					<div className="grid grid-cols-2 gap-4 text-sm">
-						<div>
-							<p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
-								By type
-							</p>
-							<CountList items={overview.byType} />
-						</div>
-						<div>
-							<p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
-								By branch
-							</p>
-							<CountList items={overview.byBranch} />
-						</div>
+					<div className="stats">
+						<Stat
+							label="Seats vacant"
+							value={overview.vacantSeats}
+							note="no current officeholder"
+						/>
+						<Stat
+							label="Acting officials"
+							value={overview.actingOfficials}
+							note="serving unconfirmed"
+						/>
+						<Stat
+							label="Last change"
+							value={latestChange ? displayDate(latestChange.date) : '—'}
+							note={latestChange?.personName ?? 'none recorded'}
+						/>
 					</div>
-				</section>
-			</aside>
-			<section className="order-1 flex h-[70vh] flex-col p-4 lg:sticky lg:top-0 lg:order-2 lg:h-screen lg:p-5">
-				<nav
-					className="mb-3 flex flex-wrap gap-1"
-					aria-label="Graph view"
-				>
-					{VIEW_LINKS.map((item) => (
-						<Link
-							key={item.id}
-							href={viewHref(layer, item.id)}
-							className={`rounded-md px-3 py-2 text-sm ${
-								view === item.id
-									? 'bg-secondary text-foreground'
-									: 'bg-card text-muted-foreground hover:bg-secondary'
-							}`}
+					<div className="timeline-heading">
+						<span>Timeline</span>
+						<span>
+							{changes.length} {changes.length === 1 ? 'change' : 'changes'} in
+							window
+						</span>
+					</div>
+					<div
+						className="timeline"
+						aria-label={`${changes.length} changes over ${powerDays} days`}
+					>
+						{counts.map((count, i) => (
+							<span
+								className={count ? 'timeline-point active' : 'timeline-point'}
+								key={i}
+							>
+								{count || ''}
+							</span>
+						))}
+					</div>
+					<div className="timeline-scale">
+						<span>{powerDays}d ago</span>
+						<span>today</span>
+					</div>
+					<div className="change-group-label">
+						<span>{changes.length ? 'In this window' : 'Earlier'}</span>
+						<span>{changes.length || earlierChanges.length}</span>
+					</div>
+					{shownChanges.length ? (
+						<ol className="change-list">
+							{shownChanges.map((change) => (
+								<li key={change.id} className="change-card">
+									<div className="change-meta">
+										<span
+											className={change.departure ? 'departure' : 'appointed'}
+										>
+											{change.departure ? 'Departure' : 'Appointed'}
+										</span>
+										<span>
+											{displayDate(change.date)}{' '}
+											{change.sourceUrl && (
+												<a
+													href={change.sourceUrl}
+													target="_blank"
+													rel="noreferrer"
+													aria-label={`Source for ${change.personName}`}
+												>
+													↗
+												</a>
+											)}
+										</span>
+									</div>
+									<h3>{change.positionName}</h3>
+									<div className="change-people">
+										<span>
+											Out{' '}
+											<strong>
+												{change.predecessorName ??
+													(change.departure
+														? change.personName
+														: 'Not on record')}
+											</strong>
+										</span>
+										<span>
+											In{' '}
+											<strong>
+												{change.departure
+													? 'See appointments'
+													: change.personName}
+											</strong>
+										</span>
+									</div>
+								</li>
+							))}
+						</ol>
+					) : (
+						<p className="muted-copy">
+							No personnel changes recorded in this window.
+						</p>
+					)}
+					{earlierChanges.length + changes.length > 4 && (
+						<button
+							className="text-action more-changes"
+							onClick={() => setMoreChanges(!moreChanges)}
 						>
-							{item.label}
+							{moreChanges
+								? 'Show fewer changes'
+								: `Show all ${changes.length + earlierChanges.length} changes`}{' '}
+							<ChevronRight size={14} />
+						</button>
+					)}
+				</section>
+				<section className="panel-section overview-section">
+					<h2>Overview</h2>
+					<p className="muted-copy">
+						Top level counts for the Nigerian government.
+					</p>
+					<div className="overview-columns">
+						<CountList title="By type" items={overview.byType} />
+						<CountList title="By branch" items={overview.byBranch} />
+					</div>
+					<p className="overview-total">
+						<strong>{overview.organizationCount}</strong> organizations in
+						total, <strong>{overview.subAgencyCount}</strong> of them
+						sub-agencies.
+					</p>
+				</section>
+				<footer className="panel-footer">
+					Govgraph maps institutions, offices, people, and their relationships.{' '}
+					<span>Sources are linked throughout the graph.</span>
+				</footer>
+			</aside>
+			<section className="map-panel" aria-label="Nigeria government graph">
+				<div className="map-toolbar">
+					<GraphSearch gov={gov} graph={searchIndex} />
+					<nav className="map-views" aria-label="Graph view">
+						<Link
+							href={hrefFor(layer, 'orgs')}
+							aria-current={view === 'orgs' ? 'page' : undefined}
+						>
+							Graph
 						</Link>
-					))}
-				</nav>
-				<div className="min-h-0 flex-1">
+						<Link
+							href={hrefFor(layer, 'people')}
+							aria-current={view === 'people' ? 'page' : undefined}
+						>
+							People
+						</Link>
+						<Link
+							href={hrefFor(layer, 'power', powerDays)}
+							aria-current={view === 'power' ? 'page' : undefined}
+						>
+							Power map
+						</Link>
+					</nav>
+				</div>
+				<div className="map-canvas">
 					<GraphMap
 						gov={gov}
 						graph={graph}
 						mode={view === 'people' ? 'people' : 'orgs'}
 						weights={
 							view === 'power'
-								? Object.fromEntries(powerMentions.map((item) => [item.id, item.mentions]))
+								? Object.fromEntries(
+										powerMentions.map((item) => [item.id, item.mentions]),
+									)
 								: undefined
 						}
 					/>
 				</div>
+				<div className="map-footer">
+					<div className="legend-wrap">
+						<button
+							className="map-pill"
+							onClick={() => setLegendOpen(!legendOpen)}
+							aria-expanded={legendOpen}
+						>
+							Legend <ChevronDown size={16} />
+						</button>
+						{legendOpen && (
+							<div className="legend-menu">
+								<span>
+									<i className="legislative" />
+									Legislative
+								</span>
+								<span>
+									<i className="executive" />
+									Executive
+								</span>
+								<span>
+									<i className="judicial" />
+									Judicial
+								</span>
+								<span>
+									<i className="independent" />
+									Independent
+								</span>
+							</div>
+						)}
+					</div>
+					<span className="map-footnote">
+						Select a node to explore its sources and relationships
+					</span>
+				</div>
 			</section>
-		</div>
+		</main>
 	)
 }
-
-function Stat({ label, value }: { label: string; value: number }) {
-	return (
-		<div className="rounded-lg border bg-card p-3">
-			<p className="text-2xl font-[family-name:var(--font-heading)] text-accent">
-				{value}
-			</p>
-			<p className="text-xs text-muted-foreground">{label}</p>
-		</div>
-	)
-}
-
-function CountList({ items }: { items: Record<string, number> }) {
-	return (
-		<ul className="space-y-1">
-			{Object.entries(items).map(([key, value]) => (
-				<li key={key} className="flex justify-between gap-3">
-					<span className="capitalize">{key.replace('_', ' ')}</span>
-					<span className="text-muted-foreground">{value}</span>
-				</li>
-			))}
-		</ul>
-	)
-}
-
-export function NodeList({
-	gov,
-	nodes,
+function Stat({
+	label,
+	value,
+	note,
 }: {
-	gov: string
-	nodes: GraphNode[]
+	label: string
+	value: number | string
+	note: string
 }) {
-	if (nodes.length === 0) {
-		return <p className="text-sm text-muted-foreground">No connected entities on record.</p>
-	}
+	return (
+		<div className="stat">
+			<span>{label}</span>
+			<strong>{value}</strong>
+			<small>{note}</small>
+		</div>
+	)
+}
+function CountList({
+	title,
+	items,
+}: {
+	title: string
+	items: Record<string, number>
+}) {
+	return (
+		<div>
+			<h3>{title}</h3>
+			<ul>
+				{Object.entries(items).map(([key, value]) => (
+					<li key={key}>
+						<span>{key.replaceAll('_', ' ')}</span>
+						<strong>{value}</strong>
+					</li>
+				))}
+			</ul>
+		</div>
+	)
+}
+export function NodeList({ gov, nodes }: { gov: string; nodes: GraphNode[] }) {
+	if (!nodes.length)
+		return (
+			<p className="text-sm text-muted-foreground">
+				No connected entities on record.
+			</p>
+		)
 	return (
 		<ul className="divide-y rounded-lg border bg-card">
 			{nodes.map((node) => (
 				<li key={node.id}>
-					<Link href={nodePath(gov, node)} className="block px-3 py-2 hover:bg-secondary">
+					<Link
+						href={nodePath(gov, node)}
+						className="block px-3 py-2 hover:bg-secondary"
+					>
 						<p className="text-sm">{node.name}</p>
 						<p className="text-xs text-muted-foreground">
 							{node.people[0]?.name ?? node.type.replace('_', ' ')}
