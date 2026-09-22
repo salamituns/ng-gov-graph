@@ -110,6 +110,18 @@ function rssField(block: string, tag: string) {
 	return match ? rssText(match[1]) : ''
 }
 
+function entityLabelMatches(label: string) {
+	const trimmed = label.trim()
+	if (/^[A-Z]{2,8}$/.test(trimmed)) {
+		return true
+	}
+	const words = trimmed.split(/\s+/).filter(Boolean)
+	if (words.length <= 1) {
+		return trimmed.length >= 12
+	}
+	return trimmed.length >= 8
+}
+
 function rssDate(value: string) {
 	const parsed = new Date(value)
 	if (Number.isNaN(parsed.getTime())) {
@@ -126,7 +138,7 @@ export function parseRssNews(
 	const publication = rssField(channel.split(/<item[\s>]/i)[0] ?? '', 'title') || 'Official feed'
 	const labels = entities
 		.map((entity) => ({ id: entity.id, label: entity.label.trim() }))
-		.filter((entity) => entity.label.length >= 8)
+		.filter((entity) => entityLabelMatches(entity.label))
 		.sort((a, b) => b.label.length - a.label.length)
 	const items: NewsItem[] = []
 	const seen = new Set<string>()
@@ -157,4 +169,22 @@ export function parseRssNews(
 		})
 	}
 	return items
+}
+
+export function newsForEntity(news: NewsItem[], ids: string[]): NewsItem[] {
+	const wanted = new Set(ids)
+	return news.filter((item) => item.entityIds?.some((id) => wanted.has(id)))
+}
+
+export function changesInWindow<T extends { date: string }>(
+	changes: T[],
+	days: number,
+	now: Date,
+): T[] {
+	const cutoff = new Date(now)
+	cutoff.setUTCDate(cutoff.getUTCDate() - days)
+	return changes.filter((change) => {
+		const dated = new Date(`${change.date}T00:00:00Z`)
+		return !Number.isNaN(dated.getTime()) && dated >= cutoff && dated <= now
+	})
 }

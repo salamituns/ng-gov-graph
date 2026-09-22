@@ -98,7 +98,11 @@ export function persistNigeriaGraph(options?: {
 						Object.values(graph.nodes)
 							.filter((node) => node.type !== 'dept_head')
 							.flatMap((node) =>
-								[node.name, ...node.aliases].map((label) => ({
+								[
+									node.name,
+									...node.aliases,
+									...node.people.map((person) => person.name),
+								].map((label) => ({
 									id: node.id,
 									label,
 								})),

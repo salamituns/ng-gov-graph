@@ -16,6 +16,9 @@ describe('parastatals', () => {
 			true,
 		)
 		assert.ok(graph.nodes['ng-firs']?.officialUrl?.includes('firs.gov.ng'))
+		assert.equal(graph.nodes['ng-ndlea']?.parentId, 'ng-ministry-of-justice')
+		assert.equal(graph.nodes['ng-cac']?.parentId, 'ng-ministry-of-industry')
+		assert.equal(graph.nodes['ng-nuprc']?.parentId, 'ng-ministry-of-petroleum')
 		assert.equal(
 			graph.nodes['ng-minister-of-transportation'].people[0]?.name,
 			"Sa'idu Alkali",

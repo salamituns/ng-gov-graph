@@ -2,6 +2,7 @@ import { Explorer } from '@/components/explorer'
 import { filterGraph, parseLayer } from '@/lib/graph/filter'
 import { summarizeOverview } from '@/lib/graph/overview'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
+import { changesInWindow } from '@/lib/graph/feed'
 import { powerMap, powerSlice, type PowerWindow } from '@/lib/graph/power'
 
 interface PageProps {
@@ -24,6 +25,7 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 	const filtered = filterGraph(data.graph, layer)
 	const mentions = powerMap(data.news, days, new Date())
 	const graph = view === 'power' ? powerSlice(filtered, mentions) : filtered
+	const now = new Date()
 	return (
 		<Explorer
 			gov={data.gov}
@@ -33,7 +35,7 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 			layer={layer}
 			view={view}
 			overview={summarizeOverview(filtered)}
-			changes={data.changes}
+			changes={changesInWindow(data.changes, days, now)}
 			news={data.news}
 			newsSource={data.newsSource}
 			changesSource={data.changesSource}

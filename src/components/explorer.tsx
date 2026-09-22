@@ -225,6 +225,25 @@ export function Explorer({
 								<p className="text-sm leading-relaxed">
 									{item.summary.replace(/<[^>]+>/g, '')}
 								</p>
+								{item.entityIds && item.entityIds.length > 0 ? (
+									<p className="mt-2 flex flex-wrap gap-2">
+										{item.entityIds.map((id) => {
+											const named = searchIndex.nodes[id]
+											if (!named) {
+												return null
+											}
+											return (
+												<Link
+													key={id}
+													href={nodePath(gov, named)}
+													className="text-xs text-primary underline-offset-2 hover:underline"
+												>
+													{named.name}
+												</Link>
+											)
+										})}
+									</p>
+								) : null}
 								<a
 									href={item.url}
 									className="mt-1 inline-block text-xs text-primary underline-offset-2 hover:underline"
@@ -241,15 +260,42 @@ export function Explorer({
 						Latest changes
 					</h2>
 					<p className="mb-3 text-sm text-muted-foreground">
+						Appointments and departures in the last {powerDays} days.
 						{changesSource === 'neon'
-							? 'Personnel changes stored in Postgres. Nightly refresh updates occupancy, portraits, and this feed.'
-							: 'Catalog changes. Postgres replaces this list after the monitor extracts a personnel row.'}
+							? ' Stored in Postgres.'
+							: ' Catalog copy until the monitor writes a personnel row.'}
 					</p>
+					<nav className="mb-3 flex gap-1" aria-label="Change window">
+						{([7, 30, 90] as const).map((days) => {
+							const base = viewHref(layer, view)
+							const href = base.includes('?')
+								? `${base}&days=${days}`
+								: `/ng?days=${days}`
+							return (
+								<Link
+									key={days}
+									href={href}
+									className={`rounded-md px-2.5 py-1 text-xs ${
+										powerDays === days
+											? 'bg-secondary text-foreground'
+											: 'text-muted-foreground hover:bg-secondary'
+									}`}
+								>
+									{days}d
+								</Link>
+							)
+						})}
+					</nav>
 					<div className="mb-4 grid grid-cols-2 gap-2">
 						<Stat label="Seats vacant" value={overview.vacantSeats} />
 						<Stat label="Acting officials" value={overview.actingOfficials} />
 					</div>
 					<ol className="space-y-2">
+						{changes.length === 0 ? (
+							<li className="text-sm text-muted-foreground">
+								No personnel changes in this window.
+							</li>
+						) : null}
 						{changes.map((change) => (
 							<li key={change.id} className="rounded-lg border bg-card p-3 text-sm">
 								<p className="text-xs text-muted-foreground">

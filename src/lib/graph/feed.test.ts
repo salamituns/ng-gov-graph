@@ -68,6 +68,23 @@ describe('parseNewsFeed', () => {
 		assert.deepEqual(items[0]?.entityIds, ['ng-ministry-of-finance'])
 		assert.equal(items[0]?.id.startsWith('news-cabinet'), false)
 	})
+
+	it('does not tag a headline just because it says President', () => {
+		const items = parseRssNews(
+			`<rss><channel><item>
+			<title>PRESIDENT TINUBU EXTENDS A VACATION</title>
+			<link>https://statehouse.gov.ng/vacation/</link>
+			<pubDate>Tue, 01 Sep 2026 09:00:00 GMT</pubDate>
+			<description>The Ministry of Finance was not involved. FIRS collected taxes.</description>
+			</item></channel></rss>`,
+			[
+				{ id: 'ng-president', label: 'President' },
+				{ id: 'ng-ministry-of-finance', label: 'Ministry of Finance' },
+				{ id: 'ng-firs', label: 'FIRS' },
+			],
+		)
+		assert.deepEqual(items[0]?.entityIds, ['ng-ministry-of-finance', 'ng-firs'])
+	})
 })
 
 describe('parseChangesFeed', () => {

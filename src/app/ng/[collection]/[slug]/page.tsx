@@ -7,6 +7,8 @@ import { GraphMap } from '@/components/graph-map'
 import { Badge } from '@/components/ui/badge'
 import { nodePath } from '@/lib/graph/paths'
 import { getNode, loadNigeriaGraph } from '@/lib/graph/nigeria'
+import { newsForEntity } from '@/lib/graph/feed'
+import { neighborhood } from '@/lib/graph/neighborhood'
 import { chamberRoster } from '@/lib/graph/roster'
 import type { NodeType } from '@/lib/graph/types'
 
@@ -50,7 +52,7 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function EntityPage({ params }: PageProps) {
 	const { collection, slug } = await params
 	const allowed = COLLECTIONS[collection]
-	const { gov, graph } = await loadNigeriaGraph()
+	const { gov, graph, news } = await loadNigeriaGraph()
 	const node = getNode(graph, slug)
 	if (!allowed || !node || !allowed.includes(node.type)) {
 		notFound()
@@ -68,6 +70,13 @@ export default async function EntityPage({ params }: PageProps) {
 		: connected
 	const holder = node.people[0]
 	const parent = node.parentId ? graph.nodes[node.parentId] : undefined
+	const stories = newsForEntity(news, [
+		node.id,
+		...Object.values(graph.nodes)
+			.filter((item) => item.parentId === node.id)
+			.map((item) => item.id),
+	])
+	const localGraph = neighborhood(graph, node.id)
 
 	return (
 		<div className="grid min-h-screen grid-cols-1 lg:grid-cols-[minmax(360px,40%)_1fr]">
@@ -137,6 +146,30 @@ export default async function EntityPage({ params }: PageProps) {
 						Seat vacant — no current officeholder on record.
 					</div>
 				)}
+				<section>
+					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
+						News
+					</h2>
+					{stories.length === 0 ? (
+						<p className="text-sm text-muted-foreground">
+							No headlines in the civic feed name this office yet.
+						</p>
+					) : (
+						<ul className="space-y-3">
+							{stories.map((item) => (
+								<li key={item.id} className="rounded-lg border bg-card p-3 text-sm">
+									<a href={item.url} className="hover:underline">
+										{item.summary}
+									</a>
+									<p className="mt-1 text-xs text-muted-foreground">
+										{item.publishedAt ? `${item.publishedAt} · ` : ''}
+										{item.publication}
+									</p>
+								</li>
+							))}
+						</ul>
+					)}
+				</section>
 				{roster ? <ChamberRosterList gov={gov} roster={roster} /> : null}
 				<section>
 					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
@@ -148,7 +181,7 @@ export default async function EntityPage({ params }: PageProps) {
 			<div className="p-4 lg:p-5">
 				<GraphMap
 					gov={gov}
-					graph={graph}
+					graph={localGraph}
 					selectedId={node.id}
 					mode={roster ? 'chamber' : 'orgs'}
 				/>

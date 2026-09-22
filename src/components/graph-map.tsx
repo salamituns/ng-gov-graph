@@ -150,7 +150,18 @@ export function GraphMap({
 									? 4.5
 									: 7.5
 					const clipId = `clip-${item.id.replace(/[^a-zA-Z0-9_-]/g, '')}`
-					const showLabel = isHub || (!item.node.parentId && !isHolder) || isSel || hoverId === item.id
+					const showLabel =
+						isHub ||
+						isSel ||
+						hoverId === item.id ||
+						(!isHolder &&
+							!item.node.parentId &&
+							placed.filter(
+								(other) =>
+									other.node.sector === item.node.sector &&
+									!other.node.parentId &&
+									other.node.type !== 'constituency',
+							).length <= 8)
 					return (
 						<a key={item.id} href={href}>
 							<g
