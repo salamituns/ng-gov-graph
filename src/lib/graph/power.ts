@@ -33,6 +33,33 @@ export function powerMap(
 		.sort((a, b) => b.mentions - a.mentions || a.id.localeCompare(b.id))
 }
 
+export function peopleInNews(
+	graph: CompiledGraph,
+	mentions: PowerMention[],
+) {
+	const seen = new Set<string>()
+	const people: Array<{
+		id: string
+		name: string
+		imageUrl?: string
+		mentions: number
+	}> = []
+	for (const mention of mentions) {
+		const person = graph.nodes[mention.id]?.people[0]
+		if (!person || seen.has(person.name)) {
+			continue
+		}
+		seen.add(person.name)
+		people.push({
+			id: mention.id,
+			name: person.name,
+			imageUrl: person.imageUrl,
+			mentions: mention.mentions,
+		})
+	}
+	return people
+}
+
 export function powerSlice(graph: CompiledGraph, mentions: PowerMention[]): CompiledGraph {
 	const ids = new Set([graph.constituency, ...mentions.map((item) => item.id)])
 	const nodes = Object.fromEntries(

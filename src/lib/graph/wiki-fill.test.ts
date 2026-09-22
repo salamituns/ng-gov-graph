@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { compileNigeriaGraph } from './nigeria'
 import {
+	adoptConstituencyIds,
 	applyVacantOccupancy,
 	parseDelegationTenthAssembly,
 	parseHouseMembersList,
@@ -245,6 +246,28 @@ describe('wiki occupancy fill', () => {
 			(item) => item.people[0]?.name === 'Muhammad Aminu Ibrahim',
 		)
 		assert.match(node?.name ?? '', /kafur malumfashi/i)
+	})
+
+	it('gives an occupied unlisted House seat the constituency id from its label', () => {
+		const graph = compileNigeriaGraph()
+		const pad = graph.nodes['ng-rep-katsina-unlisted-1']
+		assert.ok(pad)
+		pad.people = [{ name: 'Lawal Sani', appointedYear: 2023, party: 'APC' }]
+		pad.name = 'Representative for zango baure'
+		adoptConstituencyIds(graph)
+		assert.equal(
+			graph.nodes['ng-rep-katsina-zango-baure']?.people[0]?.name,
+			'Lawal Sani',
+		)
+		assert.equal(graph.nodes['ng-rep-katsina-unlisted-1'], undefined)
+		assert.equal(
+			Object.values(graph.edges).some(
+				(edge) =>
+					edge.fromId === 'ng-rep-katsina-zango-baure' ||
+					edge.toId === 'ng-rep-katsina-zango-baure',
+			),
+			true,
+		)
 	})
 
 	it('does not park a duplicate of a name already occupying a House seat in that state', () => {

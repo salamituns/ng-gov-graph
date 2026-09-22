@@ -392,6 +392,122 @@ export function applyVacantOccupancy(
 	return graph
 }
 
+export function adoptConstituencyIds(graph: CompiledGraph): CompiledGraph {
+	const pending: Array<{ from: string; to: string; ontoExisting: boolean }> = []
+	for (const node of Object.values(graph.nodes)) {
+		if (!node.id.includes('-unlisted-') || node.people.length === 0) {
+			continue
+		}
+		const state = Object.keys(DISTRICTS)
+			.sort((a, b) => b.length - a.length)
+			.find((item) => node.id.startsWith(`ng-rep-${item}-`))
+		const label = node.name.match(/Representative for (.+)$/i)?.[1]
+		if (!state || !label) {
+			continue
+		}
+		const nextId = `ng-rep-${state}-${slug(label)}`
+		if (nextId === node.id || nextId.includes('unlisted')) {
+			continue
+		}
+		const existing = graph.nodes[nextId]
+		if (existing?.people.length) {
+			continue
+		}
+		pending.push({
+			from: node.id,
+			to: nextId,
+			ontoExisting: Boolean(existing),
+		})
+	}
+	for (const move of pending) {
+		const source = graph.nodes[move.from]
+		if (!source) {
+			continue
+		}
+		if (move.ontoExisting) {
+			const target = graph.nodes[move.to]
+			if (!target) {
+				continue
+			}
+			target.people = source.people
+			target.name = source.name
+			removeNode(graph, move.from)
+			continue
+		}
+		renameNode(graph, move.from, move.to)
+	}
+	return graph
+}
+
+function renameNode(graph: CompiledGraph, from: string, to: string) {
+	const node = graph.nodes[from]
+	if (!node) {
+		return
+	}
+	delete graph.nodes[from]
+	node.id = to
+	graph.nodes[to] = node
+	for (const edge of Object.values(graph.edges)) {
+		if (edge.fromId === from) {
+			edge.fromId = to
+		}
+		if (edge.toId === from) {
+			edge.toId = to
+		}
+	}
+	for (const other of Object.values(graph.nodes)) {
+		other.connectedNodes = other.connectedNodes.map((id) => (id === from ? to : id))
+		if (other.parentId === from) {
+			other.parentId = to
+		}
+		if (other.head === from) {
+			other.head = to
+		}
+	}
+	reindex(graph, from, to)
+}
+
+function removeNode(graph: CompiledGraph, id: string) {
+	delete graph.nodes[id]
+	for (const [edgeId, edge] of Object.entries(graph.edges)) {
+		if (edge.fromId === id || edge.toId === id) {
+			delete graph.edges[edgeId]
+		}
+	}
+	for (const other of Object.values(graph.nodes)) {
+		other.edges = other.edges.filter((edgeId) => graph.edges[edgeId])
+		other.connectedNodes = other.connectedNodes.filter((otherId) => otherId !== id)
+		if (other.parentId === id) {
+			other.parentId = undefined
+		}
+	}
+	reindex(graph, id, null)
+}
+
+function reindex(graph: CompiledGraph, from: string, to: string | null) {
+	const lists = [
+		graph.elected,
+		graph.departments,
+		graph.commissions,
+		graph.advisories,
+		graph.courts,
+		graph.corporations,
+		graph.deptHeads,
+		graph.satellites,
+	]
+	for (const list of lists) {
+		const index = list.indexOf(from)
+		if (index < 0) {
+			continue
+		}
+		if (to) {
+			list[index] = to
+		} else {
+			list.splice(index, 1)
+		}
+	}
+}
+
 async function fetchWikitext(page: string) {
 	const url = new URL('https://en.wikipedia.org/w/api.php')
 	url.searchParams.set('action', 'parse')

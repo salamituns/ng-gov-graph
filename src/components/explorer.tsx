@@ -26,6 +26,13 @@ interface ExplorerProps {
 	source: 'neon' | 'catalog'
 	powerDays?: PowerWindow
 	powerMentions?: PowerMention[]
+	newsPeople?: Array<{
+		id: string
+		name: string
+		imageUrl?: string
+		mentions: number
+	}>
+	latestChange?: { date: string; personName: string; positionName: string }
 }
 
 const LAYER_LINKS: Array<{ id: LayerFilter; href: string; label: string }> = [
@@ -70,6 +77,8 @@ export function Explorer({
 	source,
 	powerDays = 30,
 	powerMentions = [],
+	newsPeople = [],
+	latestChange,
 }: ExplorerProps) {
 	const [query, setQuery] = useState('')
 	const hits = useMemo(
@@ -214,6 +223,47 @@ export function Explorer({
 					<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
 						Latest news
 					</h2>
+					{newsPeople.length > 0 ? (
+						<div className="mb-3">
+							<p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
+								Who is in the news
+							</p>
+							<ul className="flex gap-3 overflow-x-auto pb-1">
+								{newsPeople.map((person) => {
+									const named = searchIndex.nodes[person.id]
+									const body = (
+										<>
+											{person.imageUrl ? (
+												<img
+													src={person.imageUrl}
+													alt=""
+													className="size-12 rounded-full object-cover"
+												/>
+											) : (
+												<span className="flex size-12 items-center justify-center rounded-full bg-secondary text-xs">
+													{person.name.slice(0, 1)}
+												</span>
+											)}
+											<span className="mt-1 block max-w-16 text-center text-[11px] leading-tight">
+												{person.name.split(' ').slice(-1)}
+											</span>
+										</>
+									)
+									return (
+										<li key={person.id}>
+											{named ? (
+												<Link href={nodePath(gov, named)} className="block">
+													{body}
+												</Link>
+											) : (
+												body
+											)}
+										</li>
+									)
+								})}
+							</ul>
+						</div>
+					) : null}
 					<p className="mb-3 text-sm text-muted-foreground">
 						{newsSource === 'neon'
 							? 'Civic feed in Postgres. The nightly monitor replaces this list when it extracts sourced items.'
@@ -290,6 +340,12 @@ export function Explorer({
 						<Stat label="Seats vacant" value={overview.vacantSeats} />
 						<Stat label="Acting officials" value={overview.actingOfficials} />
 					</div>
+					{latestChange ? (
+						<p className="mb-3 text-sm text-muted-foreground">
+							Last change {latestChange.date}. {latestChange.personName},{' '}
+							{latestChange.positionName}.
+						</p>
+					) : null}
 					<ol className="space-y-2">
 						{changes.length === 0 ? (
 							<li className="text-sm text-muted-foreground">

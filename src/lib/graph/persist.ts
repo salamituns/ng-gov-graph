@@ -7,7 +7,7 @@ import { overlayNassOccupancy } from '@/lib/graph/nass-live'
 import { overlayPortraits } from '@/lib/graph/portraits'
 import { overlayNaltfOccupancy } from '@/lib/graph/naltf-fill'
 import { overlayOrderpaperOccupancy } from '@/lib/graph/orderpaper-fill'
-import { overlayWikiOccupancy } from '@/lib/graph/wiki-fill'
+import { overlayWikiOccupancy, adoptConstituencyIds } from '@/lib/graph/wiki-fill'
 import {
 	CHANGES_FEED_ID,
 	NEWS_FEED_ID,
@@ -72,6 +72,7 @@ export function persistNigeriaGraph(options?: {
 			graph = await overlayWikiOccupancy(graph)
 			graph = await overlayNaltfOccupancy(graph)
 			graph = await overlayOrderpaperOccupancy(graph)
+			graph = adoptConstituencyIds(graph)
 		}
 		if (options?.portraits) {
 			graph = await overlayPortraits(graph)
