@@ -20,42 +20,35 @@ export function ChamberRosterList({
 		}
 	}
 	return (
-		<section>
-			<h2 className="mb-2 font-[family-name:var(--font-heading)] text-lg text-accent">
-				{roster.kind === 'senate' ? 'Senators' : 'Representatives'}
-			</h2>
-			<p className="mb-3 text-sm text-muted-foreground">
-				{roster.seats.length} seats · {vacant} vacant on sourced rolls
-			</p>
-			<ul className="max-h-[70vh] overflow-y-auto rounded-lg border bg-card">
+		<section className="detail-roster">
+			<div className="detail-roster-heading"><h2>{roster.kind === 'senate' ? 'Senators' : 'Representatives'}</h2><span>{roster.seats.length} seats · {vacant} without sourced officeholder</span></div>
+			<ul className="detail-roster-groups">
 				{groups.map((group) => (
 					<li key={group.state}>
-						<p className="sticky top-0 bg-secondary px-3 py-1 text-xs uppercase tracking-wider text-muted-foreground">
-							{group.state}
-						</p>
-						<ul>
+						<h3>{group.state}</h3>
+						<ul className="detail-roster-grid">
 							{group.seats.map((seat) => (
 								<li key={seat.id}>
 									<Link
 										href={`/${gov}/dept-heads/${seat.id}`}
-										className="flex items-center gap-3 px-3 py-2 hover:bg-secondary"
+										className="detail-roster-card"
 									>
 										{seat.person?.imageUrl ? (
 											<Image
 												src={seat.person.imageUrl}
 												alt=""
-												width={32}
-												height={32}
-												className="size-8 rounded-full object-cover"
+												width={36}
+												height={36}
+												className="size-9 rounded-full object-cover"
 												unoptimized
 											/>
 										) : (
-											<span className="size-8 rounded-full bg-muted" />
+											<span className="detail-roster-empty" />
 										)}
 										<span className="min-w-0">
-											<p className="truncate text-sm">{seat.name}</p>
-											<p className="truncate text-xs text-muted-foreground">
-												{seat.person?.name ?? 'Vacant'}
+											<p>{seat.person?.name ?? 'Vacant'}</p>
+											<p>
+												{seat.name}
 												{seat.person?.party ? ` · ${seat.person.party}` : ''}
 											</p>
 										</span>

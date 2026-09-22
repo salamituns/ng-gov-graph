@@ -4,7 +4,9 @@ import { notFound } from 'next/navigation'
 import { ChamberRosterList } from '@/components/chamber-roster'
 import { NodeList } from '@/components/explorer'
 import { GraphMap } from '@/components/graph-map'
+import { GraphSearch } from '@/components/graph-search'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { nodePath } from '@/lib/graph/paths'
 import { getNode, loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { newsForEntity } from '@/lib/graph/feed'
@@ -136,35 +138,22 @@ export default async function EntityPage({ params }: PageProps) {
 						Seat vacant — no current officeholder on record.
 					</div>
 				)}
-				<section className="detail-section">
-					<h2>News</h2>
-					{stories.length === 0 ? (
-						<p className="text-sm text-muted-foreground">
-							No headlines in the civic feed name this office yet.
-						</p>
-					) : (
-						<ul className="detail-stories">
-							{stories.map((item) => (
-								<li key={item.id}>
-									<a href={item.url} className="hover:underline">
-											{item.summary.replace(/<[^>]+>/g, '')}
-									</a>
-									<p className="mt-1 text-xs text-muted-foreground">
-										{item.publishedAt ? `${item.publishedAt} · ` : ''}
-										{item.publication}
-									</p>
-								</li>
-							))}
-						</ul>
-					)}
-				</section>
+				<Tabs defaultValue="news" className="detail-tabs">
+					<TabsList aria-label="Entity information">
+						<TabsTrigger value="news">News</TabsTrigger>
+						<TabsTrigger value="connections">Who’s connected?{related.length ? ` (${related.length})` : ''}</TabsTrigger>
+					</TabsList>
+					<TabsContent value="news" className="detail-tab-content">
+						{stories.length === 0 ? <p className="muted-copy">No sourced headlines name this entity yet.</p> : <ul className="detail-stories">{stories.map(item => <li key={item.id}><a href={item.url} target="_blank" rel="noreferrer">{item.summary.replace(/<[^>]+>/g, '')}</a><p>{item.publishedAt ? `${item.publishedAt} · ` : ''}{item.publication}</p></li>)}</ul>}
+					</TabsContent>
+					<TabsContent value="connections" className="detail-tab-content detail-connections">
+						<NodeList gov={gov} nodes={related} />
+					</TabsContent>
+				</Tabs>
 				{roster ? <ChamberRosterList gov={gov} roster={roster} /> : null}
-				<section className="detail-section detail-connections">
-					<h2>Who is connected?</h2>
-					<NodeList gov={gov} nodes={related} />
-				</section>
 			</article>
 			<div className="detail-map">
+				<div className="detail-map-toolbar"><GraphSearch gov={gov} graph={graph} /></div>
 				<GraphMap
 					gov={gov}
 					graph={graph}

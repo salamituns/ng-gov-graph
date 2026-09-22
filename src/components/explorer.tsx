@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ChevronDown, ChevronRight, Search, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import { GraphMap } from '@/components/graph-map'
+import { GraphSearch } from '@/components/graph-search'
 import { nodePath } from '@/lib/graph/paths'
-import { searchGraph } from '@/lib/graph/search'
 import type {
 	CompiledGraph,
 	GraphNode,
@@ -89,15 +89,9 @@ export function Explorer({
 	earlierChanges = [],
 	asOf,
 }: ExplorerProps) {
-	const [query, setQuery] = useState('')
-	const [searchOpen, setSearchOpen] = useState(false)
 	const [moreNews, setMoreNews] = useState(false)
 	const [moreChanges, setMoreChanges] = useState(false)
 	const [legendOpen, setLegendOpen] = useState(false)
-	const hits = useMemo(
-		() => searchGraph(searchIndex, query).slice(0, 12),
-		[searchIndex, query],
-	)
 	const shownNews = moreNews ? news : news.slice(0, 3)
 	const shownChanges = moreChanges
 		? [...changes, ...earlierChanges]
@@ -140,50 +134,6 @@ export function Explorer({
 						</nav>
 					</details>
 				</header>
-				{searchOpen && (
-					<div className="search-panel">
-						<div className="search-field">
-							<Search size={17} />
-							<input
-								autoFocus
-								aria-label="Search government graph"
-								value={query}
-								onChange={(event) => setQuery(event.target.value)}
-								placeholder="Search people, offices, agencies…"
-							/>
-							<button
-								aria-label="Close search"
-								onClick={() => {
-									setSearchOpen(false)
-									setQuery('')
-								}}
-							>
-								<X size={16} />
-							</button>
-						</div>
-						{query.trim() && (
-							<ul className="search-results">
-								{hits.length ? (
-									hits.map((node) => (
-										<li key={node.id}>
-											<Link href={nodePath(gov, node)}>
-												<strong>{node.name}</strong>
-												<small>
-													{node.type.replace('_', ' ')}
-													{node.people[0] ? ` · ${node.people[0].name}` : ''}
-												</small>
-											</Link>
-										</li>
-									))
-								) : (
-									<li className="empty">
-										No results. Try an agency or person.
-									</li>
-								)}
-							</ul>
-						)}
-					</div>
-				)}
 				<section className="panel-section news-section">
 					<h1 className="sr-only">{title}</h1>
 					<h2>Latest News</h2>
@@ -421,13 +371,7 @@ export function Explorer({
 			</aside>
 			<section className="map-panel" aria-label="Nigeria government graph">
 				<div className="map-toolbar">
-					<button
-						className="icon-button search-toggle"
-						aria-label="Search graph"
-						onClick={() => setSearchOpen(true)}
-					>
-						<Search size={20} />
-					</button>
+					<GraphSearch gov={gov} graph={searchIndex} />
 					<nav className="map-views" aria-label="Graph view">
 						<Link
 							href={hrefFor(layer, 'orgs')}
