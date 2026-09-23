@@ -5,6 +5,7 @@ export interface PlacedNode {
 	x: number
 	y: number
 	node: GraphNode
+	arc?: { start: number; end: number }
 }
 
 const SECTOR_ARC: Record<Sector, { start: number; end: number }> = {
@@ -100,6 +101,7 @@ export function layoutGraph(
 			x: cx + Math.cos(angle) * radius,
 			y: cy + Math.sin(angle) * radius,
 			node,
+			arc: { start, end },
 		})
 		const children = childrenOf.get(node.id) ?? []
 		const total = children.reduce((sum, child) => sum + weight(child), 0)
@@ -194,6 +196,19 @@ export function layoutGraph(
 		item.y = round(item.y)
 	}
 	return placed
+}
+
+export function organizationBands(placed: PlacedNode[], width: number, height: number) {
+	const cx = width / 2
+	const cy = height / 2
+	return placed.flatMap((item) => {
+		if (item.node.sector !== 'executive' || !item.arc || item.node.type === 'elected') return []
+		const children = placed.filter((child) => child.node.parentId === item.id && child.node.type !== 'dept_head')
+		if (children.length < 3) return []
+		const inner = Math.hypot(item.x - cx, item.y - cy) + 15
+		const outer = Math.min(Math.min(width, height) * 0.49, Math.max(...children.map((child) => Math.hypot(child.x - cx, child.y - cy))) + 15)
+		return [{ id: item.id, d: wedge(cx, cy, inner, outer, item.arc.start, item.arc.end) }]
+	})
 }
 
 function round(value: number) {
