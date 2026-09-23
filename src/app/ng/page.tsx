@@ -28,7 +28,7 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 	const days = powerWindow(daysParam)
 	const data = await loadNigeriaGraph()
 	const filtered = filterGraph(data.graph, layer)
-	const mentions = powerMap(data.news, days, new Date())
+	const mentions = powerMap(data.news, days, new Date()).filter((item) => filtered.nodes[item.id])
 	const graph = filtered
 	const now = new Date()
 	const latestChange = [...data.changes].sort((a, b) => b.date.localeCompare(a.date))[0]
@@ -51,7 +51,7 @@ export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 			source={data.source}
 			powerDays={days}
 			powerMentions={mentions}
-			newsPeople={peopleInNews(data.graph, mentions)}
+			newsPeople={peopleInNews(filtered, mentions)}
 			latestChange={latestChange}
 			asOf={now.toISOString().slice(0, 10)}
 		/>

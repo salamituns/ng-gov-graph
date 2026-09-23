@@ -237,14 +237,14 @@ export function Explorer({
 					</p>
 					<div className="stats">
 						<Stat
-							label="Seats vacant"
+							label="Recorded vacancies"
 							value={overview.vacantSeats}
-							note="no current officeholder"
+							note="in this graph"
 						/>
 						<Stat
-							label="Acting officials"
+							label="Marked acting"
 							value={overview.actingOfficials}
-							note="serving unconfirmed"
+							note="in this graph"
 						/>
 						<Stat
 							label="Last change"
