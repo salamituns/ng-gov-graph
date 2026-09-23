@@ -29,11 +29,12 @@ export function sectorBands(width: number, height: number): SectorBand[] {
 	return (Object.keys(SECTOR_ARC) as Sector[]).map((sector) => {
 		const arc = SECTOR_ARC[sector]
 		const mid = (arc.start + arc.end) / 2
+		const labelRadius = outer * (sector === 'judicial' || sector === 'executive' ? 1.07 : 0.9)
 		return {
 			sector,
 			d: wedge(cx, cy, inner, outer, arc.start, arc.end),
-			labelX: round(cx + Math.cos(mid) * outer * 0.9),
-			labelY: round(cy + Math.sin(mid) * outer * 0.9),
+			labelX: round(cx + Math.cos(mid) * labelRadius),
+			labelY: round(cy + Math.sin(mid) * labelRadius),
 		}
 	})
 }
