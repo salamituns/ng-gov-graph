@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import { ChamberRosterList } from '@/components/chamber-roster'
 import { NodeList } from '@/components/explorer'
 import { GraphMap } from '@/components/graph-map'
@@ -28,18 +28,7 @@ interface PageProps {
 	params: Promise<{ collection: string; slug: string }>
 }
 
-export async function generateStaticParams() {
-	const { graph } = await loadNigeriaGraph()
-	return Object.values(graph.nodes).flatMap((node) => {
-		const collection = Object.entries(COLLECTIONS).find(([, types]) =>
-			types.includes(node.type),
-		)?.[0]
-		if (!collection) {
-			return []
-		}
-		return [{ collection, slug: node.id }]
-	})
-}
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: PageProps) {
 	const { slug } = await params
@@ -52,6 +41,9 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function EntityPage({ params }: PageProps) {
 	const { collection, slug } = await params
+	if (collection === 'departments' && slug === 'ng-osgf') {
+		permanentRedirect('/ng/departments/ng-office-of-sgf')
+	}
 	const allowed = COLLECTIONS[collection]
 	const { gov, graph, news } = await loadNigeriaGraph()
 	const node = getNode(graph, slug)

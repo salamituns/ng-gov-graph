@@ -487,6 +487,8 @@ const core: EntitySpec[] = [
 		sector: 'executive',
 		description: 'Cabinet secretariat and coordination of federal government business.',
 		legalSourceUrl: `${CONSTITUTION}#s171`,
+		officialUrl: 'https://www.osgf.gov.ng/',
+		parentId: 'ng-president',
 		aliases: ['SGF', 'OSGF'],
 		head: seat('ng-secretary-to-the-government', 'Secretary to the Government of the Federation', {
 			name: 'George Akume',

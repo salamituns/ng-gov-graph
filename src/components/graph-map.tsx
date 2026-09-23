@@ -70,7 +70,10 @@ export function GraphMap({
 		() => new Map(placed.map((item) => [item.id, item])),
 		[placed],
 	)
-	const bands = useMemo(() => sectorBands(width, height), [])
+	const bands = useMemo(
+		() => sectorBands(width, height).filter((band) => placed.some((item) => item.node.sector === band.sector)),
+		[placed],
+	)
 	const entityTypes = [...new Set(placed.map((item) => item.node.type))].filter(
 		(type) => type !== 'constituency',
 	)
@@ -96,7 +99,7 @@ export function GraphMap({
 				viewBox={`0 0 ${width} ${height}`}
 				className="h-full w-full"
 				role="img"
-				aria-label="Nigeria federal government graph"
+				aria-label="Nigeria government graph"
 			>
 				<rect width={width} height={height} fill="#1c1a17" />
 				{bands.map((band) => (
@@ -173,6 +176,7 @@ export function GraphMap({
 					: null}
 				{placed.filter((item) => !hiddenEntities.has(item.node.type)).map((item) => {
 					const isHub = item.node.type === 'constituency'
+					const isExecutiveOffice = item.node.type === 'elected' && item.node.sector === 'executive'
 					const isSel = item.id === selectedId
 					const isHolder = item.id.startsWith('holder:')
 					const orgId = item.id.replace(/^holder:/, '')
@@ -199,6 +203,8 @@ export function GraphMap({
 							? 16
 							: weights
 								? 5 + Math.min(14, Math.sqrt(weight) * 5)
+								: isExecutiveOffice
+									? 11
 								: item.node.parentId
 									? 4.5
 									: 7.5
@@ -207,6 +213,7 @@ export function GraphMap({
 						isHub ||
 						isSel ||
 						hoverId === item.id ||
+						isExecutiveOffice ||
 						(!isHolder &&
 							!item.node.parentId &&
 							placed.filter(
@@ -299,10 +306,10 @@ export function GraphMap({
 								{showLabel && !isHub ? (
 									<text
 										x={item.x}
-										y={item.y + radius + 12}
+										y={mode === 'people' && isExecutiveOffice ? item.y - radius - 10 : item.y + radius + 12}
 										textAnchor="middle"
 										fill="#d5c9bb"
-										fontSize={isHub ? 13 : 9}
+										fontSize={isExecutiveOffice ? 11 : 9}
 									>
 										{shortLabel(item.node)}
 									</text>
@@ -387,6 +394,9 @@ export function GraphMap({
 }
 
 function shortLabel(node: GraphNode) {
+	if (node.type === 'elected' && node.sector === 'executive') {
+		return node.name.replace(' of the Federal Republic of Nigeria', '')
+	}
 	const label =
 		node.aliases[0] && node.aliases[0].length <= 18
 			? node.aliases[0]

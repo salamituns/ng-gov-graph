@@ -189,7 +189,7 @@ const AGENCIES: Array<{
 		name: 'Federal Road Safety Corps',
 		description: 'Enforces road safety on federal highways.',
 		officialUrl: 'https://frsc.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['FRSC'],
 	},
 	{
@@ -241,19 +241,11 @@ const AGENCIES: Array<{
 		aliases: ['NDLEA'],
 	},
 	{
-		id: 'ng-osgf',
-		name: 'Office of the Secretary to the Government of the Federation',
-		description: 'Coordinates federal ministries and supervises agencies placed under the SGF.',
-		officialUrl: 'https://www.osgf.gov.ng/',
-		parentId: 'ng-president',
-		aliases: ['OSGF', 'SGF'],
-	},
-	{
 		id: 'ng-naseni',
 		name: 'National Agency for Science and Engineering Infrastructure',
 		description: 'Develops science and engineering infrastructure.',
 		officialUrl: 'https://naseni.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['NASENI'],
 	},
 	{
@@ -261,7 +253,7 @@ const AGENCIES: Array<{
 		name: 'National Boundary Commission',
 		description: 'Determines and manages Nigeria’s internal and international boundaries.',
 		officialUrl: 'https://boundarycommission.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['NBC'],
 	},
 	{
@@ -269,7 +261,7 @@ const AGENCIES: Array<{
 		name: 'National Hydroelectric Power Producing Areas Development Commission',
 		description: 'Develops communities that host hydroelectric dams.',
 		officialUrl: 'https://www.hyppadec.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['HYPPADEC'],
 	},
 	{
@@ -277,7 +269,7 @@ const AGENCIES: Array<{
 		name: 'Bureau of Public Service Reforms',
 		description: 'Leads reform of the federal public service.',
 		officialUrl: 'https://bpsr.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['BPSR'],
 	},
 	{
@@ -285,7 +277,7 @@ const AGENCIES: Array<{
 		name: 'Nigeria Atomic Energy Commission',
 		description: 'Coordinates peaceful uses of atomic energy.',
 		officialUrl: 'http://www.naec.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['NAEC'],
 	},
 	{
@@ -293,7 +285,7 @@ const AGENCIES: Array<{
 		name: 'Nigerian Christian Pilgrim Commission',
 		description: 'Organises Christian pilgrimage.',
 		officialUrl: 'https://www.ncpc.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['NCPC'],
 	},
 	{
@@ -301,7 +293,7 @@ const AGENCIES: Array<{
 		name: 'Service Compact with All Nigerians',
 		description: 'Sets service standards for federal offices.',
 		officialUrl: 'https://servicom.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['SERVICOM'],
 	},
 	{
@@ -309,7 +301,7 @@ const AGENCIES: Array<{
 		name: 'Fiscal Responsibility Commission',
 		description: 'Monitors compliance with the Fiscal Responsibility Act.',
 		officialUrl: 'https://fiscalresponsibility.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['FRC'],
 	},
 	{
@@ -317,7 +309,7 @@ const AGENCIES: Array<{
 		name: 'Infrastructure Concession Regulatory Commission',
 		description: 'Regulates public-private partnerships for infrastructure.',
 		officialUrl: 'https://www.icrc.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['ICRC'],
 	},
 	{
@@ -325,7 +317,7 @@ const AGENCIES: Array<{
 		name: 'Nigeria Extractive Industries Transparency Initiative',
 		description: 'Publishes what Nigeria earns from oil, gas, and mining.',
 		officialUrl: 'http://neiti.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['NEITI'],
 	},
 	{
@@ -333,7 +325,7 @@ const AGENCIES: Array<{
 		name: 'Border Communities Development Agency',
 		description: 'Develops communities along Nigeria’s borders.',
 		officialUrl: 'http://bcda.gov.ng/',
-		parentId: 'ng-osgf',
+		parentId: 'ng-office-of-sgf',
 		aliases: ['BCDA'],
 	},
 	{

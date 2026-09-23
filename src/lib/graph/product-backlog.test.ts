@@ -2,21 +2,31 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { layoutGraph } from './layout'
 import { compileNigeriaGraph } from './nigeria'
+import { filterGraph } from './filter'
 import { applyPortraitUrls, mapPortraitUrls, portraitTargets } from './portraits'
 import { civicMonitorEnabled, extractCivicUpdates } from '../ai/monitor'
 
 describe('people layout', () => {
-	it('keeps a parastatal inside its parent sector and closer to the hub', () => {
-		const graph = compileNigeriaGraph()
+	it('places every federal organization and keeps children outside their parents', () => {
+		const graph = filterGraph(compileNigeriaGraph(), 'federal')
 		const placed = layoutGraph(graph, 800, 800)
+		assert.equal(placed.length, Object.values(graph.nodes).filter((node) => node.type !== 'dept_head').length)
 		const parent = placed.find((item) => item.id === 'ng-ministry-of-finance')
 		const child = placed.find((item) => item.id === 'ng-firs')
+		const grandchild = placed.find((item) => item.id === 'ng-frsc')
 		assert.ok(parent)
 		assert.ok(child)
+		assert.ok(grandchild)
 		const parentDist = Math.hypot(parent.x - 400, parent.y - 400)
 		const childDist = Math.hypot(child.x - 400, child.y - 400)
-		assert.equal(childDist < parentDist, true)
-		assert.equal(Math.sign(parent.x - 400) === Math.sign(child.x - 400) || Math.abs(child.x - parent.x) < 80, true)
+		assert.equal(childDist > parentDist, true)
+		const president = placed.find((item) => item.id === 'ng-president')
+		const vicePresident = placed.find((item) => item.id === 'ng-vice-president')
+		assert.ok(president)
+		assert.ok(vicePresident)
+		assert.ok(Math.hypot(president.x - 400, president.y - 400) < parentDist)
+		assert.ok(Math.hypot(vicePresident.x - 400, vicePresident.y - 400) < parentDist)
+		assert.ok(Math.hypot(president.x - vicePresident.x, president.y - vicePresident.y) > 40)
 	})
 
 	it('places occupied officeholders as holder nodes in people mode', () => {
@@ -39,6 +49,11 @@ describe('people layout', () => {
 		assert.equal(
 			holder?.node.people[0]?.imageUrl,
 			graph.nodes['ng-president'].people[0]?.imageUrl,
+		)
+		assert.ok(
+			people.filter((item) => item.id.startsWith('holder:')).every(
+				(item) => Math.hypot(item.x - 400, item.y - 400) <= 800 * 0.47,
+			),
 		)
 	})
 })

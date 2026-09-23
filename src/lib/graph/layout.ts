@@ -8,10 +8,10 @@ export interface PlacedNode {
 }
 
 const SECTOR_ARC: Record<Sector, { start: number; end: number }> = {
-	executive: { start: -Math.PI * 0.08, end: Math.PI * 0.82 },
-	legislative: { start: Math.PI * 0.88, end: Math.PI * 1.12 },
-	judicial: { start: Math.PI * 1.16, end: Math.PI * 1.38 },
-	independent: { start: Math.PI * 1.44, end: Math.PI * 1.9 },
+	executive: { start: -0.84, end: 1.86 },
+	independent: { start: 1.94, end: 2.64 },
+	judicial: { start: 2.72, end: 3.74 },
+	legislative: { start: 3.82, end: 5.36 },
 }
 
 export interface SectorBand {
@@ -24,7 +24,7 @@ export interface SectorBand {
 export function sectorBands(width: number, height: number): SectorBand[] {
 	const cx = width / 2
 	const cy = height / 2
-	const outer = Math.min(width, height) * 0.47
+	const outer = Math.min(width, height) * 0.49
 	const inner = Math.min(width, height) * 0.16
 	return (Object.keys(SECTOR_ARC) as Sector[]).map((sector) => {
 		const arc = SECTOR_ARC[sector]
@@ -86,39 +86,47 @@ export function layoutGraph(
 		childrenOf.set(node.parentId, list)
 	}
 
-	const outer = Math.min(width, height) * 0.36
-	const inner = Math.min(width, height) * 0.24
+	const scale = Math.min(width, height)
+	const outer = scale * 0.49
+	const weight = (node: GraphNode): number => {
+		const children = childrenOf.get(node.id) ?? []
+		return Math.max(1, children.reduce((sum, child) => sum + weight(child), 0))
+	}
+	const placeBranch = (node: GraphNode, start: number, end: number, radius: number) => {
+		const angle = (start + end) / 2
+		placed.push({
+			id: node.id,
+			x: cx + Math.cos(angle) * radius,
+			y: cy + Math.sin(angle) * radius,
+			node,
+		})
+		const children = childrenOf.get(node.id) ?? []
+		const total = children.reduce((sum, child) => sum + weight(child), 0)
+		let cursor = start
+		for (const child of children) {
+			const next = cursor + ((end - start) * weight(child)) / total
+			placeBranch(child, cursor, next, Math.min(outer, radius + 64))
+			cursor = next
+		}
+	}
+	const placeGroup = (group: GraphNode[], start: number, end: number, leaders = false) => {
+		const total = group.reduce((sum, node) => sum + weight(node), 0)
+		let cursor = start
+		group.forEach((node, index) => {
+			const next = cursor + ((end - start) * weight(node)) / total
+			const radius = leaders ? scale * 0.23 : scale * 0.3 + (index % 3) * 26
+			placeBranch(node, cursor, next, radius)
+			cursor = next
+		})
+	}
 	for (const sector of Object.keys(SECTOR_ARC) as Sector[]) {
 		const group = parents.filter((node) => (node.sector ?? 'independent') === sector)
 		const arc = SECTOR_ARC[sector]
-		group.forEach((node, index) => {
-			const tier = index % 3
-			const slot = Math.ceil(group.length / 3)
-			const column = Math.floor(index / 3)
-			const start = arc.start + ((arc.end - arc.start) * column) / slot
-			const end = arc.start + ((arc.end - arc.start) * (column + 1)) / slot
-			const angle = (start + end) / 2
-			const radius = outer - tier * 39
-			const parentPoint = {
-				id: node.id,
-				x: cx + Math.cos(angle) * radius,
-				y: cy + Math.sin(angle) * radius,
-				node,
-			}
-			placed.push(parentPoint)
-			const children = childrenOf.get(node.id) ?? []
-			children.forEach((child, childIndex) => {
-				const spread = Math.min(end - start, 0.35)
-				const t = children.length === 1 ? 0.5 : childIndex / (children.length - 1)
-				const childAngle = angle - spread / 2 + spread * t
-				placed.push({
-					id: child.id,
-					x: cx + Math.cos(childAngle) * Math.min(inner, radius - 27),
-					y: cy + Math.sin(childAngle) * Math.min(inner, radius - 27),
-					node: child,
-				})
-			})
-		})
+		const leaders = sector === 'executive' ? group.filter((node) => node.type === 'elected') : []
+		const regular = group.filter((node) => !leaders.includes(node))
+		const leaderStart = leaders.length ? arc.end - 0.9 : arc.end
+		if (regular.length) placeGroup(regular, arc.start, leaderStart)
+		if (leaders.length) placeGroup(leaders, leaderStart, arc.end, true)
 	}
 
 	if (options?.mode === 'people') {
@@ -132,10 +140,12 @@ export function layoutGraph(
 				continue
 			}
 			const angle = Math.atan2(item.y - cy, item.x - cx)
+			const distance = Math.hypot(item.x - cx, item.y - cy)
+			const offset = distance + 26 > Math.min(width, height) * 0.47 ? -26 : 26
 			holders.push({
 				id: `holder:${item.id}`,
-				x: item.x + Math.cos(angle) * 26,
-				y: item.y + Math.sin(angle) * 26,
+				x: item.x + Math.cos(angle) * offset,
+				y: item.y + Math.sin(angle) * offset,
 				node: {
 					...item.node,
 					id: `holder:${item.id}`,
