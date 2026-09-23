@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { layoutGraph, organizationBands } from './layout'
+import { layoutGraph, organizationBands, sectorBands } from './layout'
 import { compileNigeriaGraph } from './nigeria'
 import { filterGraph } from './filter'
 import { applyPortraitUrls, mapPortraitUrls, portraitTargets } from './portraits'
@@ -28,9 +28,21 @@ describe('people layout', () => {
 		assert.ok(Math.hypot(vicePresident.x - 400, vicePresident.y - 400) < parentDist)
 		assert.ok(Math.hypot(president.x - vicePresident.x, president.y - vicePresident.y) > 40)
 		const bands = organizationBands(placed, 800, 800)
-		assert.ok(bands.some((band) => band.id === 'ng-office-of-sgf'))
-		assert.ok(bands.some((band) => band.id === 'ng-ministry-of-finance'))
-		assert.equal(bands.some((band) => band.id === 'ng-president'), false)
+		const parents = new Set(
+			placed
+				.filter((item) => item.node.parentId && item.node.type !== 'dept_head')
+				.map((item) => item.node.parentId),
+		)
+		assert.deepEqual(new Set(bands.map((band) => band.id)), parents)
+		assert.ok(bands.every((band) => !band.d.includes('NaN')))
+		const federalOutline = sectorBands(800, 800, placed).find((band) => band.sector === 'executive')
+		const stateOutline = sectorBands(
+			800,
+			800,
+			layoutGraph(filterGraph(compileNigeriaGraph(), 'state'), 800, 800),
+		).find((band) => band.sector === 'executive')
+		assert.ok(federalOutline && federalOutline.d.split('L').length > 10)
+		assert.ok(stateOutline && stateOutline.d.split('L').length === 2)
 	})
 
 	it('places occupied officeholders as holder nodes in people mode', () => {
