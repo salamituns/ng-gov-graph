@@ -8,11 +8,13 @@ describe('parseNewsFeed', () => {
 			{
 				id: 'n1',
 				summary: 'Hello',
+				excerpt: 'A sourced explanation.',
 				url: 'https://example.com',
 				publication: 'Test',
 			},
 		])
 		assert.equal(ok?.[0]?.id, 'n1')
+		assert.equal(ok?.[0]?.excerpt, 'A sourced explanation.')
 		assert.equal(parseNewsFeed({}), null)
 	})
 
@@ -65,6 +67,7 @@ describe('parseNewsFeed', () => {
 		assert.equal(items.length, 1)
 		assert.equal(items[0]?.url, 'https://statehouse.gov.ng/finance-visit/')
 		assert.equal(items[0]?.publishedAt, '2026-09-01')
+		assert.equal(items[0]?.excerpt, 'A meeting with the Ministry of Finance.')
 		assert.deepEqual(items[0]?.entityIds, ['ng-ministry-of-finance'])
 		assert.equal(items[0]?.id.startsWith('news-cabinet'), false)
 	})
