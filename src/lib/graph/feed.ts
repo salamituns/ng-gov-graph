@@ -25,6 +25,7 @@ export function parseNewsFeed(value: unknown): NewsItem[] | null {
 		items.push({
 			id: entry.id,
 			summary: entry.summary,
+			excerpt: typeof entry.excerpt === 'string' ? entry.excerpt : undefined,
 			url: entry.url,
 			publication: entry.publication,
 			publishedAt: typeof entry.publishedAt === 'string' ? entry.publishedAt : undefined,
@@ -162,6 +163,7 @@ export function parseRssNews(
 		items.push({
 			id: `rss-${slug}`,
 			summary: title,
+			excerpt: description || undefined,
 			url,
 			publication,
 			publishedAt: rssDate(rssField(block, 'pubDate')),

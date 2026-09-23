@@ -19,7 +19,12 @@ function powerWindow(value: string | undefined): PowerWindow {
 export default async function NigeriaGraphPage({ searchParams }: PageProps) {
 	const { layer: layerParam, view: viewParam, days: daysParam } = await searchParams
 	const layer = parseLayer(layerParam)
-	const view = viewParam === 'people' ? 'people' : viewParam === 'power' ? 'power' : 'orgs'
+	const view =
+		viewParam === 'people'
+			? 'people'
+			: viewParam === 'news' || viewParam === 'power'
+				? 'news'
+				: 'orgs'
 	const days = powerWindow(daysParam)
 	const data = await loadNigeriaGraph()
 	const filtered = filterGraph(data.graph, layer)

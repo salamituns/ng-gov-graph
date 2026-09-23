@@ -1,6 +1,7 @@
 export interface NewsItem {
 	id: string
 	summary: string
+	excerpt?: string
 	url: string
 	publication: string
 	publishedAt?: string

@@ -23,7 +23,7 @@ interface ExplorerProps {
 	graph: CompiledGraph
 	searchIndex: CompiledGraph
 	layer: LayerFilter
-	view?: 'orgs' | 'people' | 'power'
+	view?: 'orgs' | 'people' | 'news'
 	overview: OverviewCounts
 	changes: PersonnelChange[]
 	news: NewsItem[]
@@ -49,7 +49,7 @@ const layers: Array<{ id: LayerFilter; href: string; label: string }> = [
 ]
 function hrefFor(
 	layer: LayerFilter,
-	view: 'orgs' | 'people' | 'power',
+	view: 'orgs' | 'people' | 'news',
 	days?: number,
 ) {
 	const params = new URLSearchParams()
@@ -145,7 +145,7 @@ export function Explorer({
 										target="_blank"
 										rel="noreferrer"
 									>
-										<span className="news-dot" />{cleanSummary(item.summary)} <span aria-hidden="true">↗</span>
+										<span className="news-dot" />{cleanSummary(item.excerpt || item.summary)} <span aria-hidden="true">↗</span>
 									</a>
 									<small>{item.publication}{item.publishedAt ? ` · ${displayDate(item.publishedAt.slice(0, 10))}` : ''}</small>
 								</li>
@@ -165,7 +165,7 @@ export function Explorer({
 					{newsPeople.length > 0 && (
 						<Link
 							className="news-people"
-							href={hrefFor(layer, 'power', powerDays)}
+							href={hrefFor(layer, 'news', powerDays)}
 						>
 							<span className="avatar-stack">
 								{newsPeople.slice(0, 5).map((person) =>
@@ -187,20 +187,18 @@ export function Explorer({
 							</span>
 							<span>Who’s in the news</span>
 							<small>
-								Power map <ChevronRight size={14} />
+								News mentions <ChevronRight size={14} />
 							</small>
 						</Link>
 					)}
 				</section>
-				{view === 'power' && (
+				{view === 'news' && (
 					<section className="panel-section power-section">
 						<div className="section-heading">
-							<h2>Power map</h2>
+							<h2>News mentions</h2>
 							<span className="power-window">Past {powerDays} days</span>
 						</div>
-						<p className="muted-copy">
-							Entities named in the sourced news feed.
-						</p>
+						<p className="muted-copy">Number of sourced news items that name each institution in this window.</p>
 						{powerMentions.length ? (
 							<ol className="power-list">
 								{powerMentions.slice(0, 12).map((mention) => {
@@ -369,26 +367,6 @@ export function Explorer({
 			<section className="map-panel" aria-label="Nigeria government graph">
 				<div className="map-toolbar">
 					<GraphSearch gov={gov} graph={searchIndex} />
-					<nav className="map-views" aria-label="Graph view">
-						<Link
-							href={hrefFor(layer, 'orgs')}
-							aria-current={view === 'orgs' ? 'page' : undefined}
-						>
-							Graph
-						</Link>
-						<Link
-							href={hrefFor(layer, 'people')}
-							aria-current={view === 'people' ? 'page' : undefined}
-						>
-							People
-						</Link>
-						<Link
-							href={hrefFor(layer, 'power', powerDays)}
-							aria-current={view === 'power' ? 'page' : undefined}
-						>
-							Power map
-						</Link>
-					</nav>
 				</div>
 				<div className="map-canvas">
 					<GraphMap
@@ -396,7 +374,7 @@ export function Explorer({
 						graph={graph}
 						mode={view === 'people' ? 'people' : 'orgs'}
 						weights={
-							view === 'power'
+							view === 'news'
 								? Object.fromEntries(
 										powerMentions.map((item) => [item.id, item.mentions]),
 									)
@@ -405,9 +383,26 @@ export function Explorer({
 					/>
 				</div>
 				<div className="map-footer">
-					<span className="map-footnote">
-						Select a node to explore its sources and relationships
-					</span>
+					<nav className="map-views" aria-label="Graph view">
+						<Link
+							href={hrefFor(layer, 'orgs')}
+							aria-current={view === 'orgs' ? 'page' : undefined}
+						>
+							Institutions
+						</Link>
+						<Link
+							href={hrefFor(layer, 'people')}
+							aria-current={view === 'people' ? 'page' : undefined}
+						>
+							People
+						</Link>
+						<Link
+							href={hrefFor(layer, 'news', powerDays)}
+							aria-current={view === 'news' ? 'page' : undefined}
+						>
+							News mentions
+						</Link>
+					</nav>
 				</div>
 			</section>
 		</main>
