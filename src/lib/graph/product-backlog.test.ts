@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { layoutGraph } from './layout'
+import { layoutGraph, organizationBands } from './layout'
 import { compileNigeriaGraph } from './nigeria'
 import { filterGraph } from './filter'
 import { applyPortraitUrls, mapPortraitUrls, portraitTargets } from './portraits'
@@ -27,6 +27,10 @@ describe('people layout', () => {
 		assert.ok(Math.hypot(president.x - 400, president.y - 400) < parentDist)
 		assert.ok(Math.hypot(vicePresident.x - 400, vicePresident.y - 400) < parentDist)
 		assert.ok(Math.hypot(president.x - vicePresident.x, president.y - vicePresident.y) > 40)
+		const bands = organizationBands(placed, 800, 800)
+		assert.ok(bands.some((band) => band.id === 'ng-office-of-sgf'))
+		assert.ok(bands.some((band) => band.id === 'ng-ministry-of-finance'))
+		assert.equal(bands.some((band) => band.id === 'ng-president'), false)
 	})
 
 	it('places occupied officeholders as holder nodes in people mode', () => {

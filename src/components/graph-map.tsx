@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { glyphPath } from '@/lib/graph/glyph'
-import { layoutGraph, sectorBands } from '@/lib/graph/layout'
+import { layoutGraph, organizationBands, sectorBands } from '@/lib/graph/layout'
 import { nodePath } from '@/lib/graph/paths'
 import type {
 	CompiledGraph,
@@ -17,6 +17,16 @@ const SECTOR_COLOR: Record<Sector, string> = {
 	legislative: '#bd9b81',
 	judicial: '#b8a765',
 	independent: '#998db6',
+}
+
+const EXECUTIVE_LANDMARKS: Record<string, string> = {
+	'ng-office-of-sgf': 'OSGF',
+	'ng-ministry-of-defence': 'Defence',
+	'ng-ministry-of-health': 'Health',
+	'ng-ministry-of-education': 'Education',
+	'ng-ministry-of-interior': 'Interior',
+	'ng-ministry-of-finance': 'Finance',
+	'ng-ministry-of-petroleum': 'Petroleum',
 }
 
 const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
@@ -74,6 +84,7 @@ export function GraphMap({
 		() => sectorBands(width, height).filter((band) => placed.some((item) => item.node.sector === band.sector)),
 		[placed],
 	)
+	const organizations = useMemo(() => organizationBands(placed, width, height), [placed])
 	const entityTypes = [...new Set(placed.map((item) => item.node.type))].filter(
 		(type) => type !== 'constituency',
 	)
@@ -116,6 +127,17 @@ export function GraphMap({
 							{band.sector.toUpperCase()}
 						</text>
 					</g>
+				))}
+				{organizations.filter((band) => visible(band.id)).map((band) => (
+				<path
+					key={band.id}
+					d={band.d}
+					fill={SECTOR_COLOR.executive}
+					fillOpacity={0.14}
+					stroke={SECTOR_COLOR.executive}
+					strokeOpacity={0.34}
+					strokeWidth={0.8}
+				/>
 				))}
 				{visibleEdges
 					.filter(
@@ -214,6 +236,7 @@ export function GraphMap({
 						isSel ||
 						hoverId === item.id ||
 						isExecutiveOffice ||
+						(mode === 'orgs' && Boolean(EXECUTIVE_LANDMARKS[item.id])) ||
 						(!isHolder &&
 							!item.node.parentId &&
 							placed.filter(
@@ -311,7 +334,7 @@ export function GraphMap({
 										fill="#d5c9bb"
 										fontSize={isExecutiveOffice ? 11 : 9}
 									>
-										{shortLabel(item.node)}
+										{(mode === 'orgs' && EXECUTIVE_LANDMARKS[item.id]) || shortLabel(item.node)}
 									</text>
 								) : null}
 							</g>
