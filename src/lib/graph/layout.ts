@@ -22,22 +22,81 @@ export interface SectorBand {
 	labelY: number
 }
 
-export function sectorBands(width: number, height: number): SectorBand[] {
+export function sectorBands(width: number, height: number, placed: PlacedNode[] = []): SectorBand[] {
 	const cx = width / 2
 	const cy = height / 2
 	const outer = Math.min(width, height) * 0.49
 	const inner = Math.min(width, height) * 0.16
+	const placedIds = new Set(placed.map((item) => item.id))
+	const executiveRoots = placed.filter(
+		(item) =>
+			item.arc &&
+			item.node.sector === 'executive' &&
+			(!item.node.parentId || !placedIds.has(item.node.parentId)),
+	)
+	const sculptExecutive =
+		placedIds.has('ng-president') &&
+		!placed.some((item) => item.node.type === 'state') &&
+		executiveRoots.length >= 10
+	const executiveLobes = sculptExecutive
+		? executiveRoots.map((root) => {
+				const descendants = placed.filter(
+					(item) =>
+						item.arc &&
+						item !== root &&
+						item.node.sector === 'executive' &&
+						item.arc.start >= root.arc!.start &&
+						item.arc.end <= root.arc!.end,
+				)
+				return { arc: root.arc!, radius: descendants.length >= 4 ? outer : outer - 20 }
+			})
+		: []
 	return (Object.keys(SECTOR_ARC) as Sector[]).map((sector) => {
 		const arc = SECTOR_ARC[sector]
 		const mid = (arc.start + arc.end) / 2
 		const labelRadius = outer * (sector === 'judicial' || sector === 'executive' ? 1.07 : 0.9)
 		return {
 			sector,
-			d: wedge(cx, cy, inner, outer, arc.start, arc.end),
+			d: sector === 'executive' && sculptExecutive
+				? sculptedWedge(cx, cy, inner, outer - 20, arc.start, arc.end, executiveLobes)
+				: wedge(cx, cy, inner, outer, arc.start, arc.end),
 			labelX: round(cx + Math.cos(mid) * labelRadius),
 			labelY: round(cy + Math.sin(mid) * labelRadius),
 		}
 	})
+}
+
+function sculptedWedge(
+	cx: number,
+	cy: number,
+	inner: number,
+	base: number,
+	start: number,
+	end: number,
+	lobes: { arc: { start: number; end: number }; radius: number }[],
+) {
+	const point = (radius: number, angle: number) =>
+		`${round(cx + Math.cos(angle) * radius)} ${round(cy + Math.sin(angle) * radius)}`
+	const steps = Math.ceil((end - start) / 0.018)
+	const radii = Array.from({ length: steps + 1 }, (_, index) => {
+		const angle = start + ((end - start) * index) / steps
+		const lobe = lobes.find(({ arc }) => angle >= arc.start && angle <= arc.end)
+		const progress = lobe ? (angle - lobe.arc.start) / (lobe.arc.end - lobe.arc.start) : 0
+		return lobe ? base + (lobe.radius - base) * Math.sin(Math.PI * progress) ** 2 : base
+	})
+	const rim = radii.map((_, index) => {
+		let sum = 0
+		let weight = 0
+		for (let offset = -5; offset <= 5; offset++) {
+			const sample = radii[Math.max(0, Math.min(steps, index + offset))]
+			const sampleWeight = 6 - Math.abs(offset)
+			sum += sample * sampleWeight
+			weight += sampleWeight
+		}
+		const angle = start + ((end - start) * index) / steps
+		return `${index ? 'L' : 'M'} ${point(sum / weight, angle)}`
+	}).join(' ')
+	return `${rim} L ${point(inner, end)} A ${inner} ${inner} 0 0 0 ${point(inner, start)} Z`
 }
 
 function wedge(
@@ -202,13 +261,37 @@ export function organizationBands(placed: PlacedNode[], width: number, height: n
 	const cx = width / 2
 	const cy = height / 2
 	return placed.flatMap((item) => {
-		if (item.node.sector !== 'executive' || !item.arc || item.node.type === 'elected') return []
-		const children = placed.filter((child) => child.node.parentId === item.id && child.node.type !== 'dept_head')
-		if (children.length < 3) return []
+		if (!item.arc) return []
+		const children = placed.filter(
+			(child) => child.node.parentId === item.id && child.node.type !== 'dept_head',
+		)
+		if (!children.length) return []
 		const inner = Math.hypot(item.x - cx, item.y - cy) + 15
-		const outer = Math.min(Math.min(width, height) * 0.49, Math.max(...children.map((child) => Math.hypot(child.x - cx, child.y - cy))) + 15)
-		return [{ id: item.id, d: wedge(cx, cy, inner, outer, item.arc.start, item.arc.end) }]
+		const outer = Math.min(
+			Math.min(width, height) * 0.49,
+			Math.max(...children.map((child) => Math.hypot(child.x - cx, child.y - cy))) + 15,
+		)
+		return [{
+			id: item.id,
+			sector: item.node.sector ?? 'independent',
+			children: children.length,
+			d: lobe(cx, cy, inner, outer, item.arc.start, item.arc.end),
+		}]
 	})
+}
+
+function lobe(cx: number, cy: number, inner: number, outer: number, start: number, end: number) {
+	const span = end - start
+	const bulge = Math.min(10, span * outer * 0.22)
+	const steps = Math.max(8, Math.ceil(span / 0.04))
+	const point = (radius: number, angle: number) =>
+		`${round(cx + Math.cos(angle) * radius)} ${round(cy + Math.sin(angle) * radius)}`
+	const rim = Array.from({ length: steps + 1 }, (_, index) => {
+		const progress = index / steps
+		const radius = outer - bulge + bulge * Math.sin(Math.PI * progress) ** 2
+		return `${index ? 'L' : 'M'} ${point(radius, start + span * progress)}`
+	}).join(' ')
+	return `${rim} L ${point(inner, end)} A ${inner} ${inner} 0 ${span > Math.PI ? 1 : 0} 0 ${point(inner, start)} Z`
 }
 
 function round(value: number) {

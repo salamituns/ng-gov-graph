@@ -81,7 +81,7 @@ export function GraphMap({
 		[placed],
 	)
 	const bands = useMemo(
-		() => sectorBands(width, height).filter((band) => placed.some((item) => item.node.sector === band.sector)),
+		() => sectorBands(width, height, placed).filter((band) => placed.some((item) => item.node.sector === band.sector)),
 		[placed],
 	)
 	const organizations = useMemo(() => organizationBands(placed, width, height), [placed])
@@ -97,11 +97,32 @@ export function GraphMap({
 		return item && !hiddenEntities.has(item.node.type)
 	}
 	const activeId = hoverId ?? selectedId
+	const activeOrgId = activeId?.replace(/^holder:/, '')
 	const connected = new Set(
 		activeId
-			? (graph.nodes[activeId.replace(/^holder:/, '')]?.connectedNodes ?? [])
+			? (graph.nodes[activeOrgId ?? '']?.connectedNodes ?? [])
 			: [],
 	)
+	const family = new Set<string>()
+	if (activeOrgId) {
+		for (const node of Object.values(graph.nodes)) {
+			let current: GraphNode | undefined = node
+			const seen = new Set<string>()
+			while (current && !seen.has(current.id)) {
+				if (current.id === activeOrgId) {
+					family.add(node.id)
+					break
+				}
+				seen.add(current.id)
+				current = current.parentId ? graph.nodes[current.parentId] : undefined
+			}
+		}
+		let parentId = graph.nodes[activeOrgId]?.parentId
+		while (parentId && !family.has(parentId)) {
+			family.add(parentId)
+			parentId = graph.nodes[parentId]?.parentId
+		}
+	}
 	const hover = hoverId ? at.get(hoverId) : undefined
 
 	return (
@@ -109,7 +130,7 @@ export function GraphMap({
 			<svg
 				viewBox={`0 0 ${width} ${height}`}
 				className="h-full w-full"
-				role="img"
+				role="group"
 				aria-label="Nigeria government graph"
 			>
 				<rect width={width} height={height} fill="#1c1a17" />
@@ -132,10 +153,10 @@ export function GraphMap({
 				<path
 					key={band.id}
 					d={band.d}
-					fill={SECTOR_COLOR.executive}
-					fillOpacity={0.14}
-					stroke={SECTOR_COLOR.executive}
-					strokeOpacity={0.34}
+					fill={SECTOR_COLOR[band.sector]}
+					fillOpacity={family.has(band.id) ? 0.24 : band.children > 2 ? 0.12 : 0.07}
+					stroke={SECTOR_COLOR[band.sector]}
+					strokeOpacity={family.has(band.id) ? 0.75 : band.children > 2 ? 0.32 : 0.2}
 					strokeWidth={0.8}
 				/>
 				))}
@@ -154,6 +175,7 @@ export function GraphMap({
 						}
 						const lit =
 							!activeId ||
+							(family.has(edge.fromId) && family.has(edge.toId)) ||
 							edge.fromId === activeId ||
 							edge.toId === activeId ||
 							edge.fromId === activeId?.replace(/^holder:/, '') ||
@@ -206,6 +228,7 @@ export function GraphMap({
 						!hoverId ||
 						item.id === activeId ||
 						orgId === activeId ||
+						family.has(orgId) ||
 						connected.has(orgId)
 					const fill = isHub
 						? '#b67c5b'
@@ -246,7 +269,13 @@ export function GraphMap({
 									other.node.type !== 'constituency',
 							).length <= 8)
 					return (
-						<a key={item.id} href={href} aria-label={item.node.name}>
+						<a
+							key={item.id}
+							href={href}
+							aria-label={item.node.name}
+							onFocus={() => setHoverId(item.id)}
+							onBlur={() => setHoverId(null)}
+						>
 							<g
 								onMouseEnter={() => setHoverId(item.id)}
 								onMouseLeave={() => setHoverId(null)}
@@ -404,6 +433,9 @@ export function GraphMap({
 					}}
 				>
 					<p className="font-medium">{hover.node.name}</p>
+					{hover.node.parentId && graph.nodes[hover.node.parentId] ? (
+						<p className="mt-1 text-[11px] text-white/70">Within {graph.nodes[hover.node.parentId].name}</p>
+					) : null}
 					<p className="mt-1 text-[11px] text-white/60">
 						{hover.node.sector ?? hover.node.type.replace('_', ' ')}
 						{weights?.[hover.id.replace(/^holder:/, '')]
