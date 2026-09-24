@@ -3,6 +3,7 @@ import { nigeriaCatalog } from '@/data/nigeria/catalog'
 import { nigeriaChanges } from '@/data/nigeria/changes'
 import { nigeriaNews } from '@/data/nigeria/news'
 import { nigeriaAgenciesCatalog } from '@/data/nigeria/agencies'
+import { nigeriaInstitutionsCatalog } from '@/data/nigeria/institutions'
 import { nigeriaNassCatalog } from '@/data/nigeria/nass'
 import { nigeriaStatesCatalog } from '@/data/nigeria/states'
 import { buildGraph } from '@/lib/graph/build-graph'
@@ -32,12 +33,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function compileNigeriaGraph(): CompiledGraph {
 	return buildGraph(
-		mergeCatalogs(
-			mergeCatalogs(
-				mergeCatalogs(nigeriaCatalog, nigeriaStatesCatalog),
-				nigeriaNassCatalog,
-			),
-			nigeriaAgenciesCatalog,
+		[nigeriaStatesCatalog, nigeriaNassCatalog, nigeriaAgenciesCatalog, nigeriaInstitutionsCatalog].reduce(
+			mergeCatalogs,
+			nigeriaCatalog,
 		),
 	)
 }
@@ -78,6 +76,18 @@ export async function resolveNigeriaGraph(
 	if (parsed) {
 		// Stored snapshots carry live officeholders. Back-fill any catalog body added since the last seed.
 		const catalog = compileNigeriaGraph()
+		// Descriptions, sources and aliases belong to the catalog; the snapshot contributes live officeholders.
+		for (const [id, node] of Object.entries(parsed.nodes)) {
+			const fresh = catalog.nodes[id]
+			if (!fresh) continue
+			parsed.nodes[id] = {
+				...node,
+				description: fresh.description,
+				legalSourceUrl: fresh.legalSourceUrl,
+				officialUrl: fresh.officialUrl,
+				aliases: fresh.aliases,
+			}
+		}
 		// Seats are left alone: persist renames or drops placeholder seats on purpose, so only
 		// organizations come back, with seats only when their organization is new too.
 		const newOrgs = new Set(
@@ -85,8 +95,10 @@ export async function resolveNigeriaGraph(
 				.filter((node) => node.type !== 'dept_head' && !parsed.nodes[node.id])
 				.map((node) => node.id),
 		)
+		// New head seats (holder not yet recorded) are safe to add to existing bodies: persist never renames them.
 		const missing = Object.values(catalog.nodes)
-			.filter((node) => newOrgs.has(node.id) || (node.type === 'dept_head' && node.parentId && newOrgs.has(node.parentId)))
+			.filter((node) => !parsed.nodes[node.id])
+			.filter((node) => newOrgs.has(node.id) || (node.type === 'dept_head' && node.parentId && (newOrgs.has(node.parentId) || node.unrecorded)))
 			.map((node) => node.id)
 		if (!missing.length) return { graph: parsed, source: 'neon' as const }
 
@@ -95,6 +107,10 @@ export async function resolveNigeriaGraph(
 		const added = new Set(missing)
 		for (const id of missing) {
 			nodes[id] = { ...catalog.nodes[id], edges: [], connectedNodes: [] }
+			const parentId = catalog.nodes[id].parentId
+			if (catalog.nodes[id].type === 'dept_head' && parentId && nodes[parentId] && !nodes[parentId].head) {
+				nodes[parentId] = { ...nodes[parentId], head: id }
+			}
 		}
 		for (const edge of Object.values(catalog.edges)) {
 			if (!added.has(edge.fromId) && !added.has(edge.toId)) continue

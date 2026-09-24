@@ -43,3 +43,16 @@ describe('inline tagged news', () => {
 		assert.deepEqual(item.entityIds, ['ng-ministry-of-finance'])
 	})
 })
+
+describe('head seat back-fill', () => {
+	it('adds a new unrecorded head seat to a body the snapshot already has, with its appointment link', async () => {
+		const catalog = compileNigeriaGraph()
+		const snapshot = structuredClone(catalog)
+		delete snapshot.nodes['ng-firs-head']
+		for (const [id, edge] of Object.entries(snapshot.edges)) if (edge.toId === 'ng-firs-head' || edge.fromId === 'ng-firs-head') delete snapshot.edges[id]
+		snapshot.nodes['ng-firs'] = { ...snapshot.nodes['ng-firs'], head: undefined }
+		const { graph } = await resolveNigeriaGraph(async () => snapshot)
+		assert.equal(graph.nodes['ng-firs'].head, 'ng-firs-head')
+		assert.ok(Object.values(graph.edges).some((edge) => edge.type === 'appoints' && edge.toId === 'ng-firs-head'))
+	})
+})

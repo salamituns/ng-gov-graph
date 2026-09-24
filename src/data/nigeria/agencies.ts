@@ -1,3 +1,4 @@
+import { AGENCY_HEADS, headSeat } from '@/data/nigeria/institutions'
 import type { Catalog, EntitySpec } from '@/lib/graph/types'
 
 const EDUCATION_SOURCE = 'https://education.gov.ng/wp-content/uploads/2020/05/FEDERAL-MINISTRY-OF-EDUCATION-HANDBOOK.pdf'
@@ -429,6 +430,7 @@ const entities: EntitySpec[] = AGENCIES.map((agency) => ({
 	officialUrl: agency.officialUrl,
 	aliases: agency.aliases,
 	parentId: agency.parentId,
+	head: AGENCY_HEADS[agency.id] ? headSeat(agency.id, AGENCY_HEADS[agency.id]) : undefined,
 }))
 
 export const nigeriaAgenciesCatalog: Catalog = {

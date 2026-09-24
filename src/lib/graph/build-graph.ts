@@ -1,5 +1,7 @@
 import type {
 	Catalog,
+	EntitySpec,
+	SeatSpec,
 	CompiledGraph,
 	EdgeType,
 	GraphEdge,
@@ -18,6 +20,23 @@ function emptyNode(
 		connectedNodes: [],
 		...partial,
 	}
+}
+
+/** "Director-General of NAFDAC, the head of … Appointed by the President, subject to confirmation by the Senate, under …" */
+function seatDescription(seat: SeatSpec, entity: EntitySpec, nameOf: (id: string) => string | undefined) {
+	const body = entity.name.replace(/^the /i, '')
+	const article = /^(?:the |[A-Z][a-z]+ State$)/.test(entity.name) || /State$/.test(body) ? '' : 'the '
+	// An elected office's seat is the office itself; a chamber's seats are its presiding officers and members.
+	if (entity.type === 'elected' && !seat.appointedBy) {
+		if (entity.name.includes(seat.title)) return entity.description
+		return / (?:of|for) /.test(seat.title) ? `${seat.title}, a seat in ${article}${body}.` : `${seat.title} of ${article}${body}.`
+	}
+	if (!seat.appointedBy) return `${seat.title}, the elected head of ${article}${body}.`
+	const head = `${seat.title}, the head of ${article}${body}.`
+	const by = nameOf(seat.appointedBy)?.replace(/ of the Federal Republic of Nigeria$/, '') ?? 'the President'
+	const confirm = seat.confirmedBy ? `, subject to confirmation by the ${nameOf(seat.confirmedBy)?.replace(/ of Nigeria$/, '') ?? 'Senate'}` : ''
+	const basis = seat.basis ? `, under ${seat.basis}` : ''
+	return `${head} Appointed by the ${by.replace(/^the /i, '')}${confirm}${basis}.`
 }
 
 export function buildGraph(catalog: Catalog): CompiledGraph {
@@ -84,12 +103,14 @@ export function buildGraph(catalog: Catalog): CompiledGraph {
 					type: 'dept_head',
 					id: seat.id,
 					name: seat.title,
-					description: `${seat.title} of ${entity.name}.`,
+					description: seatDescription(seat, entity, (id) => nodes[id]?.name),
 					sector: entity.sector,
 					parentId: entity.id,
 					layer: entity.layer ?? 'federal',
 					people: seat.person ? [seat.person] : [],
 					legalSourceUrl: entity.legalSourceUrl,
+					officialUrl: entity.officialUrl,
+					...(seat.unrecorded && !seat.person ? { unrecorded: true } : {}),
 				}),
 			)
 			addEdge('dept_head', entity.id, seat.id)
@@ -100,6 +121,10 @@ export function buildGraph(catalog: Catalog): CompiledGraph {
 				addEdge('confirms', seat.confirmedBy, seat.id)
 			}
 		}
+	}
+
+	for (const entity of catalog.entities) {
+		if (entity.chairedBy) addEdge('ex_officio', entity.chairedBy, entity.id)
 	}
 
 	for (const relation of catalog.elects) {

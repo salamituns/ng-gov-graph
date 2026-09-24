@@ -1,6 +1,6 @@
 import type { CompiledGraph, EdgeType } from './types'
 
-export type AuthorityType = Extract<EdgeType, 'elects' | 'appoints' | 'confirms' | 'oversees'> | 'contains'
+export type AuthorityType = Extract<EdgeType, 'elects' | 'appoints' | 'confirms' | 'oversees' | 'ex_officio'> | 'contains'
 
 export interface AuthorityLink {
 	fromId: string
@@ -8,7 +8,7 @@ export interface AuthorityLink {
 	type: AuthorityType
 }
 
-const AUTHORITY: ReadonlySet<EdgeType> = new Set(['elects', 'appoints', 'confirms', 'oversees'])
+const AUTHORITY: ReadonlySet<EdgeType> = new Set(['elects', 'appoints', 'confirms', 'oversees', 'ex_officio'])
 
 /** Seats render inside their organization, so a link to a seat is drawn to the organization. */
 export function organizationOf(graph: CompiledGraph, id: string) {

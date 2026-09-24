@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 
 interface PowerMapProps {
@@ -9,7 +10,11 @@ interface PowerMapProps {
 	sources: string[]
 	days: number
 	asOf: string
-	onSelect: (id: string) => void
+	/** The organization or seat in the URL; the matching person is selected. */
+	selectedId?: string
+	onSelect: (person: PowerPerson) => void
+	onSeeOnGraph: (person: PowerPerson) => void
+	onClear: () => void
 }
 
 const ROWS = [1, 3, 5, 5, 6]
@@ -25,7 +30,7 @@ function initials(name: string) {
 }
 
 /** People named most in the news, ranked top to bottom and sized by how often they appear. */
-export function PowerMap({ people, links, articles, sources, days, asOf, onSelect }: PowerMapProps) {
+export function PowerMap({ people, links, articles, sources, days, asOf, selectedId, onSelect, onSeeOnGraph, onClear }: PowerMapProps) {
 	const max = Math.max(1, ...people.map((person) => person.total))
 	const placed: Array<PowerPerson & { x: number; y: number; r: number }> = []
 	let index = 0
@@ -39,17 +44,21 @@ export function PowerMap({ people, links, articles, sources, days, asOf, onSelec
 		})
 	})
 	const at = new Map(placed.map((person) => [person.nodeId, person]))
+	const selected = placed.find((person) => person.nodeId === selectedId || person.seatId === selectedId)
+	const related = new Set(
+		selected ? links.filter((link) => link.fromId === selected.nodeId || link.toId === selected.nodeId).flatMap((link) => [link.fromId, link.toId]) : [],
+	)
 	return (
 		<div className="power-map">
 			<header className="power-heading">
 				<h2>Power map: who is in the news</h2>
 				<p>
 					{people.length
-						? `The ${people.length} ${people.length === 1 ? 'person' : 'people'} named most across ${articles} ${articles === 1 ? 'article' : 'articles'} from ${sources.length} ${sources.length === 1 ? 'source' : 'sources'} in the last ${days} days`
+						? `The ${people.length} ${people.length === 1 ? 'person' : 'people'} named most across ${articles.toLocaleString('en')} ${articles === 1 ? 'article' : 'articles'} from ${sources.length} ${sources.length === 1 ? 'source' : 'sources'} in the last ${days} days`
 						: `No officeholders are named in sourced news from the last ${days} days.`}
 				</p>
 			</header>
-			<svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="power-svg" role="group" aria-label="People named most in the news">
+			<svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="power-svg" role="group" aria-label="People named most in the news" onClick={(event) => event.target === event.currentTarget && onClear()}>
 				<defs>
 					{placed.map((person) => (
 						<clipPath key={person.nodeId} id={`pm-${person.nodeId}`}>
@@ -61,20 +70,33 @@ export function PowerMap({ people, links, articles, sources, days, asOf, onSelec
 					const from = at.get(link.fromId)
 					const to = at.get(link.toId)
 					if (!from || !to) return null
-					return <line key={`${link.fromId}-${link.toId}`} x1={from.x} y1={from.y + from.r} x2={to.x} y2={to.y - to.r} className="power-link" />
+					const active = selected && (link.fromId === selected.nodeId || link.toId === selected.nodeId)
+					return (
+						<g key={`${link.fromId}-${link.toId}`} className={`power-link-group ${active ? 'is-active' : selected ? 'is-dim' : ''}`}>
+							<line x1={from.x} y1={from.y + from.r} x2={to.x} y2={to.y - to.r} className="power-link" />
+							{active ? (
+								<text x={(from.x + to.x) / 2 + 8} y={(from.y + from.r + to.y - to.r) / 2} className="power-link-label">appoints</text>
+							) : null}
+						</g>
+					)
 				})}
 				{placed.map((person) => {
 					const recent = person.latest && daysBetween(person.latest.date, asOf) <= 2
+					const dim = selected && person !== selected && !related.has(person.nodeId)
 					return (
 						<g
 							key={person.nodeId}
-							role="link"
+							role="button"
 							tabIndex={0}
+							aria-pressed={person === selected}
 							aria-label={`${person.name}, ${person.job}, ${person.total} articles`}
-							className={`power-person tone-${toneOf(person.sector)} ${recent ? 'is-recent' : ''}`}
-							onClick={() => onSelect(person.nodeId)}
+							className={`power-person tone-${toneOf(person.sector)} ${recent ? 'is-recent' : ''} ${dim ? 'is-dim' : ''} ${person === selected ? 'is-selected' : ''}`}
+							onClick={() => onSelect(person)}
 							onKeyDown={(event) => {
-								if (event.key === 'Enter') onSelect(person.nodeId)
+								if (event.key === 'Enter' || event.key === ' ') {
+									event.preventDefault()
+									onSelect(person)
+								}
 							}}
 						>
 							<circle cx={person.x} cy={person.y} r={person.r} className="power-ring" />
@@ -97,6 +119,38 @@ export function PowerMap({ people, links, articles, sources, days, asOf, onSelec
 					)
 				})}
 			</svg>
+			{selected ? <PersonCard person={selected} asOf={asOf} days={days} onSeeOnGraph={() => onSeeOnGraph(selected)} onClose={onClear} style={{ left: `${(selected.x / WIDTH) * 100}%`, top: `${((selected.y + selected.r) / HEIGHT) * 100}%` }} /> : null}
+		</div>
+	)
+}
+
+function PersonCard({ person, asOf, days, style, onSeeOnGraph, onClose }: { person: PowerPerson; asOf: string; days: number; style: React.CSSProperties; onSeeOnGraph: () => void; onClose: () => void }) {
+	const peak = Math.max(1, ...person.weeks)
+	const points = person.weeks.map((count, week) => `${(week / 11) * 118 + 1},${27 - (count / peak) * 25}`).join(' ')
+	return (
+		<div className={`person-card tone-${toneOf(person.sector)}`} style={style} role="dialog" aria-label={person.name}>
+			<button type="button" className="person-card-close" aria-label="Close" onClick={onClose}>×</button>
+			<header>
+				{person.imageUrl ? <Image src={person.imageUrl} alt="" width={40} height={40} unoptimized /> : <span className="person-card-initials">{initials(person.name)}</span>}
+				<span>
+					<strong>{person.name}</strong>
+					<small>{person.job}</small>
+				</span>
+			</header>
+			<p className="person-card-stats">
+				{person.total} {person.total === 1 ? 'article' : 'articles'} in {days} days · {person.thisWeek} this week · #{person.rank}
+			</p>
+			<svg viewBox="0 0 120 28" className="person-card-spark" aria-label={`Mentions per week over the last 12 weeks: ${person.weeks.join(', ')}`}>
+				<polyline points={points} />
+			</svg>
+			<p className="person-card-caption">last 12 weeks</p>
+			{person.latest ? (
+				<a href={person.latest.url} target="_blank" rel="noreferrer" className="person-card-latest">
+					<span>{person.latest.headline}</span>
+					<small>{person.latest.source} · {relative(person.latest.date, asOf)}</small>
+				</a>
+			) : null}
+			<button type="button" className="person-card-cta" onClick={onSeeOnGraph}>See on the graph</button>
 		</div>
 	)
 }

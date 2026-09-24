@@ -35,6 +35,17 @@ const CIVIC_FEEDS = [
 	'https://fmino.gov.ng/feed/',
 ]
 
+/** Official feeds carry appointments; independent newsrooms carry who is actually in the news. */
+const NEWS_FEEDS: Array<{ url: string; pages: number }> = [
+	{ url: 'https://statehouse.gov.ng/feed/', pages: 15 },
+	{ url: 'https://fmino.gov.ng/feed/', pages: 2 },
+	{ url: 'https://www.premiumtimesng.com/feed', pages: 3 },
+	{ url: 'https://punchng.com/feed/', pages: 2 },
+	{ url: 'https://www.channelstv.com/feed/', pages: 3 },
+	{ url: 'https://dailytrust.com/feed/', pages: 3 },
+	{ url: 'https://www.vanguardngr.com/feed/', pages: 2 },
+]
+
 export async function fetchCivicSource(
 	fetchImpl: typeof fetch = fetch,
 ): Promise<string> {
@@ -57,6 +68,26 @@ export async function fetchCivicSource(
 		}
 	}
 	return ''
+}
+
+/** Every feed, several pages deep, so a daily run sees more than the latest ten posts. */
+export async function fetchCivicSources(fetchImpl: typeof fetch = fetch): Promise<string[]> {
+	const urls = NEWS_FEEDS.flatMap(({ url, pages }) => Array.from({ length: pages }, (_, page) => (page ? `${url}?paged=${page + 1}` : url)))
+	const texts = await Promise.all(
+		urls.map(async (url) => {
+			try {
+				const res = await fetchImpl(url, {
+					headers: { 'user-agent': 'Govgraph/0.1' },
+					cache: 'no-store',
+					signal: AbortSignal.timeout(8000),
+				})
+				return res.ok ? await res.text() : ''
+			} catch {
+				return ''
+			}
+		}),
+	)
+	return texts.filter((text) => text.includes('<item'))
 }
 
 export async function defaultCivicGenerate(
