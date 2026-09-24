@@ -6,6 +6,7 @@ import { nigeriaAgenciesCatalog } from '@/data/nigeria/agencies'
 import { nigeriaInstitutionsCatalog } from '@/data/nigeria/institutions'
 import { nigeriaNassCatalog } from '@/data/nigeria/nass'
 import { nigeriaStatesCatalog } from '@/data/nigeria/states'
+import { applyVerifiedHeads } from '@/data/nigeria/verified-heads'
 import { buildGraph } from '@/lib/graph/build-graph'
 import { parseChangesFeed, parseNewsFeed, resolveStoredFeed, retagNews } from '@/lib/graph/feed'
 import { mentionLabels } from '@/lib/graph/mentions'
@@ -32,12 +33,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 export function compileNigeriaGraph(): CompiledGraph {
-	return buildGraph(
+	return applyVerifiedHeads(buildGraph(
 		[nigeriaStatesCatalog, nigeriaNassCatalog, nigeriaAgenciesCatalog, nigeriaInstitutionsCatalog].reduce(
 			mergeCatalogs,
 			nigeriaCatalog,
 		),
-	)
+	))
 }
 
 export function parseGraphSnapshot(value: unknown): CompiledGraph | null {
@@ -76,12 +77,13 @@ export async function resolveNigeriaGraph(
 	if (parsed) {
 		// Stored snapshots carry live officeholders. Back-fill any catalog body added since the last seed.
 		const catalog = compileNigeriaGraph()
-		// Descriptions, sources and aliases belong to the catalog; the snapshot contributes live officeholders.
+		// Organization names and metadata belong to the catalog; the snapshot contributes live officeholders.
 		for (const [id, node] of Object.entries(parsed.nodes)) {
 			const fresh = catalog.nodes[id]
 			if (!fresh) continue
 			parsed.nodes[id] = {
 				...node,
+				name: node.type === 'dept_head' ? node.name : fresh.name,
 				description: fresh.description,
 				legalSourceUrl: fresh.legalSourceUrl,
 				officialUrl: fresh.officialUrl,
@@ -98,9 +100,9 @@ export async function resolveNigeriaGraph(
 		// New head seats (holder not yet recorded) are safe to add to existing bodies: persist never renames them.
 		const missing = Object.values(catalog.nodes)
 			.filter((node) => !parsed.nodes[node.id])
-			.filter((node) => newOrgs.has(node.id) || (node.type === 'dept_head' && node.parentId && (newOrgs.has(node.parentId) || node.unrecorded)))
+			.filter((node) => newOrgs.has(node.id) || (node.type === 'dept_head' && node.parentId && (newOrgs.has(node.parentId) || node.unrecorded || !parsed.nodes[node.parentId]?.head)))
 			.map((node) => node.id)
-		if (!missing.length) return { graph: parsed, source: 'neon' as const }
+		if (!missing.length) return { graph: applyVerifiedHeads(parsed), source: 'neon' as const }
 
 		const nodes = { ...parsed.nodes }
 		const edges = { ...parsed.edges }
@@ -127,10 +129,10 @@ export async function resolveNigeriaGraph(
 			}
 		}
 		return {
-			graph: {
+			graph: applyVerifiedHeads({
 				...parsed, nodes, edges,
 				...listsFor(nodes),
-			},
+			}),
 			source: 'neon' as const,
 		}
 	}

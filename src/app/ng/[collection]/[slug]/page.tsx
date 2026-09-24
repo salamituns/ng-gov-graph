@@ -123,21 +123,24 @@ export default async function EntityPage({ params }: PageProps) {
 				</p>
 				{seat && node.type !== 'dept_head' ? <p className="entity-seat-title">{seat.name}</p> : null}
 				{holder ? (
-					<Link href={seat ? nodePath(gov, seat) : nodePath(gov, node)} className="holder-card">
-						{holder.imageUrl ? (
-							<Image src={holder.imageUrl} alt="" width={48} height={48} className="holder-portrait" unoptimized />
-						) : (
-							<span className="holder-portrait holder-initials">{holder.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('')}</span>
-						)}
-						<span>
-							<strong>{holder.name}</strong>
-							<small>
-								{holder.acting ? 'Acting · ' : ''}
-								{holder.appointedYear ? `${node.type === 'elected' || seat?.id.includes('senator') || seat?.id.includes('rep-') ? 'Since' : 'Appointed'} ${holder.appointedYear}` : 'Incumbent'}
-								{holder.party ? ` · ${holder.party}` : ''}
-							</small>
-						</span>
-					</Link>
+					<>
+						<Link href={seat ? nodePath(gov, seat) : nodePath(gov, node)} className="holder-card">
+							{holder.imageUrl ? (
+								<Image src={holder.imageUrl} alt="" width={48} height={48} className="holder-portrait" unoptimized />
+							) : (
+								<span className="holder-portrait holder-initials">{holder.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('')}</span>
+							)}
+							<span>
+								<strong>{holder.name}</strong>
+								<small>
+									{holder.acting ? 'Acting · ' : ''}
+									{holder.appointedYear ? `${node.type === 'elected' || seat?.id.includes('senator') || seat?.id.includes('rep-') ? 'Since' : 'Appointed'} ${holder.appointedYear}` : 'Incumbent'}
+									{holder.party ? ` · ${holder.party}` : ''}
+								</small>
+							</span>
+						</Link>
+						{holder.sourceUrl ? <p className="entity-sources"><a href={holder.sourceUrl} target="_blank" rel="noreferrer">Officeholder source</a>{holder.sourceCheckedAt ? ` · as of ${holder.sourceCheckedAt}` : ''}</p> : null}
+					</>
 				) : seat ? (
 					<div className="holder-card is-vacant">
 						<span className="holder-portrait" />
