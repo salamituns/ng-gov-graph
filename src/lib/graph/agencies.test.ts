@@ -35,5 +35,18 @@ describe('parastatals', () => {
 		)
 		assert.equal(graph.nodes['ng-minister-of-state-finance'].people.length, 0)
 		assert.equal(graph.nodes['ng-minister-of-transportation'].people[0]?.acting, undefined)
+		for (const [id, parent] of [
+			['ng-nbte', 'ng-ministry-of-education'],
+			['ng-tetfund', 'ng-ministry-of-education'],
+			['ng-naqs', 'ng-ministry-of-agriculture'],
+			['ng-arcn', 'ng-ministry-of-agriculture'],
+			['ng-nimr', 'ng-ministry-of-health'],
+		]) {
+			assert.equal(graph.nodes[id]?.parentId, parent)
+			assert.ok(graph.nodes[id]?.legalSourceUrl?.startsWith('https://'))
+		}
+		assert.ok(graph.departments.length >= 100)
+		assert.equal(graph.nodes['ng-boa']?.type, 'corporation')
+		assert.equal(graph.nodes['ng-naic']?.type, 'corporation')
 	})
 })

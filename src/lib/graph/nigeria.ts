@@ -59,7 +59,43 @@ export async function resolveNigeriaGraph(
 ) {
 	const parsed = parseGraphSnapshot(await loadPayload())
 	if (parsed) {
-		return { graph: parsed, source: 'neon' as const }
+		const missing = nigeriaAgenciesCatalog.entities
+			.map((agency) => agency.id)
+			.filter((id) => !parsed.nodes[id])
+		if (!missing.length) return { graph: parsed, source: 'neon' as const }
+
+		// Stored snapshots carry live officeholders. Add catalog agencies without replacing them.
+		const catalog = compileNigeriaGraph()
+		const nodes = { ...parsed.nodes }
+		const edges = { ...parsed.edges }
+		const added = new Set(missing)
+		for (const id of missing) {
+			const node = catalog.nodes[id]
+			if (node) nodes[id] = { ...node, edges: [], connectedNodes: [] }
+		}
+		for (const edge of Object.values(catalog.edges)) {
+			if (!added.has(edge.fromId) && !added.has(edge.toId)) continue
+			if (!nodes[edge.fromId] || !nodes[edge.toId] || edges[edge.id]) continue
+			edges[edge.id] = edge
+			for (const [id, peerId] of [[edge.fromId, edge.toId], [edge.toId, edge.fromId]]) {
+				const node = nodes[id]
+				nodes[id] = {
+					...node,
+					edges: [...node.edges, edge.id],
+					connectedNodes: node.connectedNodes.includes(peerId)
+						? node.connectedNodes : [...node.connectedNodes, peerId],
+				}
+			}
+		}
+		return {
+			graph: {
+				...parsed, nodes, edges,
+				departments: [...parsed.departments, ...missing.filter((id) => nodes[id]?.type === 'department')],
+				corporations: [...parsed.corporations, ...missing.filter((id) => nodes[id]?.type === 'corporation')],
+				satellites: [...parsed.satellites, ...missing],
+			},
+			source: 'neon' as const,
+		}
 	}
 	return { graph: compileNigeriaGraph(), source: 'catalog' as const }
 }

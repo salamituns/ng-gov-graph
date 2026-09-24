@@ -95,7 +95,7 @@ export default async function EntityPage({ params }: PageProps) {
 				<p className="detail-description">{node.description}</p>
 				<div className="detail-sources">
 					{node.legalSourceUrl ? (
-						<a href={node.legalSourceUrl}>Legal source</a>
+						<a href={node.legalSourceUrl}>Source</a>
 					) : null}
 					{node.officialUrl ? (
 						<a href={node.officialUrl}>Official website</a>
@@ -125,11 +125,11 @@ export default async function EntityPage({ params }: PageProps) {
 							</p>
 						</div>
 					</div>
-				) : (
+				) : node.head ? (
 					<div className="detail-holder detail-vacant">
-						Seat vacant — no current officeholder on record.
+						No current officeholder is recorded for this seat.
 					</div>
-				)}
+				) : null}
 				<Tabs defaultValue="news" className="detail-tabs">
 					<TabsList aria-label="Entity information">
 						<TabsTrigger value="news">News</TabsTrigger>
