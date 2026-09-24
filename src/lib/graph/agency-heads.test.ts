@@ -21,6 +21,11 @@ describe('agency heads from Wikipedia', () => {
 
 	it('fills only unrecorded seats and ignores pages not about Nigeria', async () => {
 		const graph = compileNigeriaGraph()
+		for (const id of ['ng-npa', 'ng-sec']) {
+			graph.nodes[`${id}-head`].people = []
+			graph.nodes[`${id}-head`].unrecorded = true
+			graph.nodes[id].people = []
+		}
 		const pages: Record<string, string> = {
 			'Nigerian Ports Authority': INFOBOX,
 			'Securities and Exchange Commission': '{{Infobox| jurisdiction = United States | chief1_name = Paul Atkins | chief1_position = Chairman}}',

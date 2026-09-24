@@ -30,7 +30,7 @@ export function diffOfficeholders(previous: CompiledGraph | null, next: Compiled
 	for (const seat of seats(next)) {
 		const before = previous.nodes[seat.id]?.people[0]?.name
 		const after = seat.people[0]?.name
-		if (!before || (after && slug(before) === slug(after))) continue
+		if (!before || (after && slug(before) === slug(after)) || seat.people[0]?.sourceCheckedAt) continue
 		const base = {
 			kind: 'personnel' as const,
 			date,
@@ -129,8 +129,8 @@ export function appointmentsFromNews(news: NewsItem[], labels: MentionLabel[], g
 export function applyAppointments(graph: CompiledGraph, changes: PersonnelChange[]) {
 	for (const change of [...changes].sort((a, b) => a.date.localeCompare(b.date))) {
 		const seat = graph.nodes[change.positionId]
-		if (change.departure || seat?.type !== 'dept_head' || !seat.unrecorded) continue
-		const person = { name: change.personName, appointedYear: Number(change.date.slice(0, 4)) }
+		if (change.departure || seat?.type !== 'dept_head' || (!seat.unrecorded && !(change.sourceUrl && seat.people[0]?.sourceCheckedAt && change.date > seat.people[0].sourceCheckedAt))) continue
+		const person = { name: change.personName, appointedYear: Number(change.date.slice(0, 4)), sourceUrl: change.sourceUrl, sourceCheckedAt: change.date }
 		seat.people = [person]
 		delete seat.unrecorded
 		const org = seat.parentId ? graph.nodes[seat.parentId] : undefined

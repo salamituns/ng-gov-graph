@@ -11,7 +11,7 @@ describe('personnel change detection', () => {
 		const previous = structuredClone(graph)
 		const next = structuredClone(graph)
 		next.nodes['ng-minister-of-finance'].people = [{ name: 'Ada Example' }]
-		next.nodes['ng-firs-head'].people = [{ name: 'New Chair' }]
+		next.nodes['ng-frsc-head'].people = [{ name: 'New Marshal' }]
 		const changes = diffOfficeholders(previous, next, '2026-09-24')
 		assert.equal(changes.length, 1)
 		assert.equal(changes[0].personName, 'Ada Example')
@@ -56,5 +56,15 @@ describe('personnel change detection', () => {
 		assert.deepEqual(merged.map((change) => [change.personName, change.date]), [['Bola', '2026-09-05'], ['Ada', '2026-09-01']])
 		const news = mergeNews([{ id: '1', url: 'u1', summary: 'a', publication: 'p', publishedAt: '2026-09-01' }], [{ id: '2', url: 'u2', summary: 'b', publication: 'p', publishedAt: '2026-09-02' }])
 		assert.deepEqual(news.map((item) => item.url), ['u2', 'u1'])
+	})
+
+	it('accepts a later official appointment without replaying older news over a checked holder', () => {
+		const checked = structuredClone(graph)
+		const base = { kind: 'personnel' as const, id: 'later', personName: 'New Director', positionId: 'ng-ngsa-head', positionName: 'Director-General', groupId: 'ng-ngsa', entryMode: 'appointed' as const, departure: false, predecessorName: null, sourceUrl: 'https://ngsa.gov.ng/new-director/' }
+		applyAppointments(checked, [{ ...base, date: '2026-09-20' }])
+		assert.equal(checked.nodes['ng-ngsa-head'].people[0]?.name, 'Olusegun O. Ige')
+		applyAppointments(checked, [{ ...base, date: '2026-09-25' }])
+		assert.equal(checked.nodes['ng-ngsa-head'].people[0]?.name, 'New Director')
+		assert.equal(checked.nodes['ng-ngsa'].people[0]?.sourceUrl, base.sourceUrl)
 	})
 })

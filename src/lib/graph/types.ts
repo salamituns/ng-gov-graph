@@ -34,6 +34,8 @@ export interface Officeholder {
 	party?: string
 	acting?: boolean
 	imageUrl?: string
+	sourceUrl?: string
+	sourceCheckedAt?: string
 }
 
 export interface SeatSpec {

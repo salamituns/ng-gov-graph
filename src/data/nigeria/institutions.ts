@@ -85,7 +85,7 @@ export const AGENCY_HEADS: Record<string, HeadSpec> = {
 	'ng-cac': { title: 'Registrar-General' },
 	'ng-ndlea': { title: 'Chairman and Chief Executive' },
 	'ng-ncc': { title: 'Executive Vice-Chairman', confirm: true, basis: 'the Nigerian Communications Act 2003' },
-	'ng-firs': { title: 'Executive Chairman', confirm: true, basis: 'the Federal Inland Revenue Service (Establishment) Act 2007' },
+	'ng-firs': { title: 'Executive Chairman', confirm: true, basis: 'the Nigeria Revenue Service (Establishment) Act 2025' },
 	'ng-customs': { title: 'Comptroller-General' },
 	'ng-dmo': { title: 'Director-General' },
 	'ng-ndic': { title: 'Managing Director' },

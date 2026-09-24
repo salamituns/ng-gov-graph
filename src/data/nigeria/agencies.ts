@@ -17,11 +17,12 @@ const AGENCIES: Array<{
 }> = [
 	{
 		id: 'ng-firs',
-		name: 'Federal Inland Revenue Service',
-		description: 'Assesses and collects federal taxes other than customs and excise.',
-		officialUrl: 'https://www.firs.gov.ng/',
+		name: 'Nigeria Revenue Service',
+		description: 'Assesses and collects taxes and other revenue accruing to the Federation.',
+		officialUrl: 'https://www.nrs.gov.ng/',
+		legalSourceUrl: 'https://nass.gov.ng/documents/download/11251',
 		parentId: 'ng-ministry-of-finance',
-		aliases: ['FIRS'],
+		aliases: ['NRS', 'FIRS', 'Federal Inland Revenue Service'],
 	},
 	{
 		id: 'ng-customs',

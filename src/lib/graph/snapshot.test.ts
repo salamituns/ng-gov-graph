@@ -51,4 +51,20 @@ describe('resolveNigeriaGraph', () => {
 		assert.equal(graph.corporations.filter((id) => id === 'ng-boa').length, 1)
 		assert.ok(!stored.nodes['ng-nbte'])
 	})
+
+	it('fills sourced heads in a stored snapshot and replaces only a documented predecessor', async () => {
+		const stored = compileNigeriaGraph()
+		stored.nodes['ng-ngsa-head'].people = []
+		stored.nodes['ng-ngsa-head'].unrecorded = true
+		stored.nodes['ng-ngsa'].people = []
+		stored.nodes['ng-jamb-head'].people = [{ name: 'Is-haq Oloyede' }]
+		stored.nodes['ng-jamb'].people = [{ name: 'Is-haq Oloyede' }]
+		stored.nodes['ng-ncc-head'].people = [{ name: 'Different recorded holder' }]
+		stored.nodes['ng-ncc'].people = [{ name: 'Different recorded holder' }]
+		const { graph } = await resolveNigeriaGraph(async () => stored)
+		assert.equal(graph.nodes['ng-ngsa-head'].people[0]?.name, 'Olusegun O. Ige')
+		assert.equal(graph.nodes['ng-ngsa'].people[0]?.sourceUrl, 'https://ngsa.gov.ng/management-team/')
+		assert.equal(graph.nodes['ng-jamb-head'].people[0]?.name, 'Segun Aina')
+		assert.equal(graph.nodes['ng-ncc-head'].people[0]?.name, 'Different recorded holder')
+	})
 })
