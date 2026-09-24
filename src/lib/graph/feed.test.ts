@@ -110,3 +110,12 @@ describe('parseChangesFeed', () => {
 		assert.equal(parseChangesFeed([{ kind: 'other' }]), null)
 	})
 })
+
+describe('publication names', () => {
+	it('drops the page prefix WordPress adds to later feed pages', async () => {
+		const { publicationName } = await import('./feed')
+		assert.equal(publicationName('Page 3 &#8211; The State House, Abuja'), 'The State House, Abuja')
+		assert.equal(publicationName('Page 2 | Premium Times Nigeria'), 'Premium Times Nigeria')
+		assert.equal(publicationName('Punch Newspapers - Latest News'), 'Punch Newspapers')
+	})
+})
