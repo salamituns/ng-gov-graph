@@ -78,7 +78,16 @@ export async function resolveNigeriaGraph(
 	if (parsed) {
 		// Stored snapshots carry live officeholders. Back-fill any catalog body added since the last seed.
 		const catalog = compileNigeriaGraph()
-		const missing = Object.keys(catalog.nodes).filter((id) => !parsed.nodes[id])
+		// Seats are left alone: persist renames or drops placeholder seats on purpose, so only
+		// organizations come back, with seats only when their organization is new too.
+		const newOrgs = new Set(
+			Object.values(catalog.nodes)
+				.filter((node) => node.type !== 'dept_head' && !parsed.nodes[node.id])
+				.map((node) => node.id),
+		)
+		const missing = Object.values(catalog.nodes)
+			.filter((node) => newOrgs.has(node.id) || (node.type === 'dept_head' && node.parentId && newOrgs.has(node.parentId)))
+			.map((node) => node.id)
 		if (!missing.length) return { graph: parsed, source: 'neon' as const }
 
 		const nodes = { ...parsed.nodes }

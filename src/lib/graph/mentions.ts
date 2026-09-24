@@ -5,7 +5,11 @@ export interface MentionLabel {
 	label: string
 	/** Person labels resolve to the person's primary seat, never to every office they hold. */
 	kind: 'entity' | 'person'
+	/** A bare surname only counts after a title, so "Musa" alone never tags the Defence minister. */
+	titled?: boolean
 }
+
+const TITLES = ['President', 'Vice President', 'Senator', 'Sen.', 'Governor', 'Gov.', 'Minister', 'Speaker', 'Deputy Speaker', 'Justice', 'Chief Justice', 'Chairman', 'Dr.', 'Dr', 'Mr', 'Mrs', 'Ms', 'Prof.', 'Hon.']
 
 export interface MentionSpan {
 	id: string
@@ -32,6 +36,25 @@ function escape(value: string) {
 }
 
 /**
+ * Each officeholder's primary seat: elected offices first, then courts, commissions and
+ * departments, top-level bodies before sub-agencies. Tinubu is the President, not the Petroleum minister.
+ */
+export function primarySeats(graph: CompiledGraph): Map<string, GraphNode> {
+	const ranked = Object.values(graph.nodes)
+		.filter((node) => node.type !== 'dept_head' && node.type !== 'constituency')
+		.sort(
+			(a, b) => (ELECTED_FIRST[a.type] ?? 9) - (ELECTED_FIRST[b.type] ?? 9) || (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0),
+		)
+	const primary = new Map<string, GraphNode>()
+	for (const node of ranked) {
+		for (const person of node.people) {
+			if (person.name && !primary.has(person.name)) primary.set(person.name, node)
+		}
+	}
+	return primary
+}
+
+/**
  * Builds the label table used to tag news. Institutions match on their name and aliases;
  * officeholders match on their full name, or a distinctive surname, and resolve to one primary seat.
  */
@@ -48,15 +71,7 @@ export function mentionLabels(graph: CompiledGraph): MentionLabel[] {
 		}
 	}
 
-	const primary = new Map<string, GraphNode>()
-	const ranked = [...orgs].sort(
-		(a, b) => (ELECTED_FIRST[a.type] ?? 9) - (ELECTED_FIRST[b.type] ?? 9) || (a.parentId ? 1 : 0) - (b.parentId ? 1 : 0),
-	)
-	for (const node of ranked) {
-		for (const person of node.people) {
-			if (person.name && !primary.has(person.name)) primary.set(person.name, node)
-		}
-	}
+	const primary = primarySeats(graph)
 	const surnames = new Map<string, number>()
 	for (const name of primary.keys()) {
 		const surname = name.split(/\s+/).at(-1) ?? ''
@@ -66,7 +81,7 @@ export function mentionLabels(graph: CompiledGraph): MentionLabel[] {
 		labels.push({ id: node.id, label: name, kind: 'person' })
 		const surname = name.split(/\s+/).at(-1) ?? ''
 		if (surname.length >= 4 && surnames.get(surname) === 1 && /^[A-Z]/.test(surname)) {
-			labels.push({ id: node.id, label: surname, kind: 'person' })
+			labels.push({ id: node.id, label: surname, kind: 'person', titled: true })
 		}
 	}
 	return labels.sort((a, b) => b.label.length - a.label.length)
@@ -82,7 +97,10 @@ export function findMentions(text: string, labels: MentionLabel[]): MentionSpan[
 		const body = entry.kind === 'person'
 			? `(?:${escape(entry.label)}|${escape(entry.label.toUpperCase())})`
 			: escape(entry.label)
-		const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, `${flags}u`)
+		const title = entry.titled
+			? `(?<=(?:${TITLES.flatMap((word) => [word, word.toUpperCase()]).map(escape).join('|')})\\s)`
+			: ''
+		const pattern = new RegExp(`${title}(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, `${flags}u`)
 		for (const match of text.matchAll(pattern)) {
 			const start = match.index ?? 0
 			const end = start + match[0].length

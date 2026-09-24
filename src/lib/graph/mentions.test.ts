@@ -18,6 +18,13 @@ describe('news mentions', () => {
 		assert.deepEqual(ids, ['ng-president'])
 	})
 
+	it('matches a bare surname only after a title', () => {
+		assert.deepEqual(mentionedIds('President Tinubu met the press.', labels), ['ng-president'])
+		const defenceHead = graph.nodes['ng-ministry-of-defence'].people[0]?.name ?? ''
+		const surname = defenceHead.split(/\s+/).at(-1) ?? ''
+		assert.equal(mentionedIds(`${surname} Ibrahim opened a shop.`, labels).includes('ng-ministry-of-defence'), false)
+	})
+
 	it('prefers the longest label and never overlaps spans', () => {
 		const spans = findMentions('The Ministry of Finance met the Federal Inland Revenue Service.', labels)
 		assert.deepEqual(spans.map((span) => span.id), ['ng-ministry-of-finance', 'ng-firs'])

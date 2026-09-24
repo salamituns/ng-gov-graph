@@ -162,7 +162,8 @@ export function parseRssNews(
 /** Re-derives entity tags so stories stored before a matcher fix are tagged by the current rules. */
 export function retagNews(news: NewsItem[], labels: MentionLabel[]): NewsItem[] {
 	return news.map((item) => {
-		if (/<gov_entities=/.test(item.summary)) return item
+		const inline = [...item.summary.matchAll(/<gov_entities='([^']+)'>/g)].map((match) => match[1])
+		if (inline.length) return { ...item, entityIds: [...new Set([...inline, ...(item.entityIds ?? [])])] }
 		const text = `${item.summary}. ${item.excerpt ?? ''}`
 		return { ...item, entityIds: mentionedIds(text, labels) }
 	})

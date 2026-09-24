@@ -1,4 +1,5 @@
 import type { NewsItem } from '@/data/nigeria/news'
+import { primarySeats } from './mentions'
 import type { CompiledGraph } from './types'
 
 export type PowerWindow = 7 | 30 | 90
@@ -97,6 +98,7 @@ export interface PowerLink {
 export function powerPeople(graph: CompiledGraph, news: NewsItem[], days: number, now: Date, limit = 20) {
 	const cutoff = new Date(now)
 	cutoff.setUTCDate(cutoff.getUTCDate() - days)
+	const primary = primarySeats(graph)
 	const tally = new Map<string, PowerPerson>()
 	let articles = 0
 	const sources = new Set<string>()
@@ -105,14 +107,19 @@ export function powerPeople(graph: CompiledGraph, news: NewsItem[], days: number
 		if (published && (published < cutoff || published > now)) continue
 		articles += 1
 		sources.add(item.publication)
+		const named = new Set<string>()
 		for (const id of new Set(item.entityIds ?? [])) {
-			const node = graph.nodes[id]
-			const person = node?.people[0]
+			const person = graph.nodes[id]?.people[0]
+			if (person?.name) named.add(person.name)
+		}
+		for (const name of named) {
+			const node = primary.get(name)
+			const person = node?.people.find((candidate) => candidate.name === name)
 			if (!node || !person) continue
 			const head = node.head ? graph.nodes[node.head] : undefined
-			const entry = tally.get(person.name) ?? {
+			const entry = tally.get(name) ?? {
 				nodeId: node.id,
-				name: person.name,
+				name,
 				job: head?.name ?? node.name,
 				imageUrl: person.imageUrl,
 				party: person.party,
@@ -124,7 +131,7 @@ export function powerPeople(graph: CompiledGraph, news: NewsItem[], days: number
 			if (date && (!entry.latest || date > entry.latest.date)) {
 				entry.latest = { date, headline: item.summary.replace(/<[^>]+>/g, ''), url: item.url }
 			}
-			tally.set(person.name, entry)
+			tally.set(name, entry)
 		}
 	}
 	const people = [...tally.values()]
