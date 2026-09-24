@@ -1,10 +1,16 @@
 import type { Catalog, EntitySpec } from '@/lib/graph/types'
 
+const EDUCATION_SOURCE = 'https://education.gov.ng/wp-content/uploads/2020/05/FEDERAL-MINISTRY-OF-EDUCATION-HANDBOOK.pdf'
+const AGRICULTURE_SOURCE = 'https://agriculture.gov.ng/wp-content/uploads/2024/06/FMAFS-Road-Map-Strategies.pdf'
+const HEALTH_SOURCE = 'https://health.gov.ng/agencies/'
+
 const AGENCIES: Array<{
 	id: string
 	name: string
 	description: string
-	officialUrl: string
+	officialUrl?: string
+	legalSourceUrl?: string
+	type?: EntitySpec['type']
 	parentId: string
 	aliases?: string[]
 }> = [
@@ -352,15 +358,74 @@ const AGENCIES: Array<{
 		parentId: 'ng-armed-forces',
 		aliases: ['Air Force'],
 	},
+	// The ministry handbook names these parastatals under Education.
+	...([
+		['nbte', 'National Board for Technical Education', 'Coordinates technical and vocational education.'],
+		['ncce', 'National Commission for Colleges of Education', 'Regulates colleges of education.'],
+		['trcn', 'Teachers Registration Council of Nigeria', 'Registers and regulates the teaching profession.'],
+		['lrcn', 'Librarians Registration Council of Nigeria', 'Registers and regulates librarians.'],
+		['cpn', 'Computer Professionals Registration Council of Nigeria', 'Registers and regulates computer professionals.'],
+		['nabteb', 'National Business and Technical Examinations Board', 'Conducts business and technical examinations.'],
+		['neco', 'National Examinations Council', 'Conducts national school examinations.'],
+		['nti', 'National Teachers Institute', 'Provides teacher education and professional development.'],
+		['tetfund', 'Tertiary Education Trust Fund', 'Funds public tertiary education.'],
+		['nmec', 'National Commission for Mass Literacy, Adult and Non-Formal Education', 'Coordinates adult and non-formal education.'],
+		['ncne', 'National Commission for Nomadic Education', 'Supports education for nomadic communities.'],
+		['nerdc', 'Nigerian Educational Research and Development Council', 'Develops curricula and education research.'],
+		['niepa', 'National Institute for Educational Planning and Administration', 'Trains education planners and administrators.'],
+		['nmc', 'National Mathematical Centre', 'Supports mathematics teaching and research.'],
+		['nln', 'National Library of Nigeria', 'Operates the national library and bibliographic services.'],
+		['ninlan', 'National Institute for Nigerian Languages', 'Promotes research and teaching in Nigerian languages.'],
+		['nflv', 'Nigerian French Language Village', 'Provides French language immersion and training.'],
+		['nalv', 'Nigerian Arabic Language Village', 'Provides Arabic language immersion and training.'],
+	] as const).map(([id, name, description]) => ({
+		id: `ng-${id}`,
+		name,
+		description,
+		parentId: 'ng-ministry-of-education',
+		legalSourceUrl: EDUCATION_SOURCE,
+		aliases: [id.toUpperCase()],
+	})),
+	// The ministry roadmap lists its parastatals, including these nine bodies.
+	...([
+		['naqs', 'Nigeria Agricultural Quarantine Service', 'Inspects and controls agricultural imports and exports.'],
+		['boa', 'Bank of Agriculture', 'Provides finance for agriculture and rural enterprise.'],
+		['naic', 'Nigerian Agricultural Insurance Corporation', 'Insures agricultural production.'],
+		['nasc', 'National Agricultural Seeds Council', 'Regulates seed quality and the seed industry.'],
+		['armti', 'Agricultural and Rural Management Training Institute', 'Trains agricultural and rural development managers.'],
+		['arcn', 'Agricultural Research Council of Nigeria', 'Coordinates agricultural research institutes.'],
+		['nias', 'Nigerian Institute of Animal Science', 'Regulates professional animal science practice.'],
+		['vcn', 'Veterinary Council of Nigeria', 'Regulates veterinary practice.'],
+		['niss', 'Nigeria Institute of Soil Science', 'Promotes and regulates soil science practice.'],
+	] as const).map(([id, name, description]) => ({
+		id: `ng-${id}`,
+		name,
+		description,
+		parentId: 'ng-ministry-of-agriculture',
+		legalSourceUrl: AGRICULTURE_SOURCE,
+		type: id === 'boa' || id === 'naic' ? 'corporation' as const : 'department' as const,
+		aliases: [id.toUpperCase()],
+	})),
+	...([
+		['nimr', 'Nigerian Institute of Medical Research', 'Conducts medical research on public-health priorities.'],
+		['niprd', 'National Institute for Pharmaceutical Research and Development', 'Conducts pharmaceutical research and development.'],
+	] as const).map(([id, name, description]) => ({
+		id: `ng-${id}`,
+		name,
+		description,
+		parentId: 'ng-ministry-of-health',
+		legalSourceUrl: HEALTH_SOURCE,
+		aliases: [id.toUpperCase()],
+	})),
 ]
 
 const entities: EntitySpec[] = AGENCIES.map((agency) => ({
 	id: agency.id,
 	name: agency.name,
-	type: 'department',
+	type: agency.type ?? 'department',
 	sector: 'executive',
 	description: agency.description,
-	legalSourceUrl: agency.officialUrl,
+	legalSourceUrl: agency.legalSourceUrl ?? agency.officialUrl ?? '',
 	officialUrl: agency.officialUrl,
 	aliases: agency.aliases,
 	parentId: agency.parentId,

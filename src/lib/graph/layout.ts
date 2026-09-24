@@ -139,10 +139,13 @@ export function layoutGraph(
 		})
 		const children = childrenOf.get(node.id) ?? []
 		const total = children.reduce((sum, child) => sum + weight(child), 0)
-		let cursor = start
-		for (const child of children) {
-			const next = cursor + ((end - start) * weight(child)) / total
-			placeBranch(child, cursor, next, Math.min(outer, childRadius ?? radius + 64))
+		const minSpan = children.length * 17 / outer
+		const span = Math.max(end - start, minSpan)
+		let cursor = angle - span / 2
+		for (const [index, child] of children.entries()) {
+			const next = cursor + (span * weight(child)) / total
+			const baseRadius = childRadius ?? radius + 64
+			placeBranch(child, cursor, next, Math.min(outer, baseRadius + (index % 2) * scale * 0.04))
 			cursor = next
 		}
 	}
@@ -158,10 +161,10 @@ export function layoutGraph(
 		if (!group.length) return
 		const total = group.reduce((sum, node) => sum + weight(node), 0)
 		let cursor = start
-		group.forEach((node, index) => {
+		group.forEach((node) => {
 			const next = cursor + ((end - start) * weight(node)) / total
 			const radius = rootRadius ?? (leaders ? scale * 0.23 : legislative ? scale * 0.25 : scale * 0.34)
-			const angle = start + ((end - start) * (index + 0.5)) / group.length
+			const angle = (cursor + next) / 2
 			placeBranch(node, cursor, next, radius, angle, childRadius)
 			cursor = next
 		})
@@ -173,7 +176,11 @@ export function layoutGraph(
 		const regular = group.filter((node) => !leaders.includes(node))
 		const states = regular.filter((node) => node.type === 'state')
 		const mixed = sector === 'executive' && states.length > 0 && states.length < regular.length
-		if (mixed) placeGroup(states, arc.start, arc.end, false, false, scale * 0.265, scale * 0.44)
+		if (mixed) {
+			const split = Math.round(states.length * (1.25 - arc.start) / (arc.end - arc.start - 0.7))
+			placeGroup(states.slice(0, split), arc.start, 1.25, false, false, scale * 0.265, scale * 0.315)
+			placeGroup(states.slice(split), 1.95, arc.end, false, false, scale * 0.265, scale * 0.315)
+		}
 		const sectorRegular = mixed ? regular.filter((node) => node.type !== 'state') : regular
 		if (leaders.length) {
 			const leaderStart = 1.25
@@ -197,6 +204,30 @@ export function layoutGraph(
 				sector === 'executive' ? scale * 0.46 : undefined,
 			)
 		}
+	}
+
+	// Dense ministry clusters need a small final separation after ring placement.
+	// ponytail: quadratic scan is fine for this catalog; use spatial bins if it grows into thousands of visible nodes.
+	for (let pass = 0; pass < 32; pass++) {
+		let moved = false
+		for (let i = 1; i < placed.length; i++) {
+			for (let j = i + 1; j < placed.length; j++) {
+				const a = placed[i]
+				const b = placed[j]
+				const dx = b.x - a.x
+				const dy = b.y - a.y
+				const distance = Math.hypot(dx, dy)
+				if (distance >= 21) continue
+				const angle = distance ? Math.atan2(dy, dx) : (i + j) * 2.4
+				const shift = (21 - distance) / 2 + 0.05
+				a.x -= Math.cos(angle) * shift
+				a.y -= Math.sin(angle) * shift
+				b.x += Math.cos(angle) * shift
+				b.y += Math.sin(angle) * shift
+				moved = true
+			}
+		}
+		if (!moved) break
 	}
 
 	if (options?.mode === 'people') {
