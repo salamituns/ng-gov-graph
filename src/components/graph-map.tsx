@@ -151,14 +151,14 @@ export function GraphMap({
 						</text>
 					</g>
 				))}
-				{organizations.filter((band) => visible(band.id) && (band.children > 2 || family.has(band.id))).map((band) => (
+				{organizations.filter((band) => visible(band.id)).map((band) => (
 					<path
 						key={band.id}
 						d={band.d}
 						fill={SECTOR_COLOR[band.sector]}
-						fillOpacity={family.has(band.id) ? 0.24 : 0.12}
+						fillOpacity={family.has(band.id) ? 0.24 : band.children > 2 ? 0.14 : 0.07}
 						stroke={SECTOR_COLOR[band.sector]}
-						strokeOpacity={family.has(band.id) ? 0.75 : 0.32}
+						strokeOpacity={family.has(band.id) ? 0.75 : band.children > 2 ? 0.38 : 0.24}
 						strokeWidth={0.8}
 						/>
 				))}

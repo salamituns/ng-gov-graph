@@ -306,7 +306,7 @@ export function organizationBands(placed: PlacedNode[], width: number, height: n
 		)
 		if (!children.length) return []
 		const childRadius = Math.max(...children.map((child) => Math.hypot(child.x - cx, child.y - cy)))
-		const inner = Math.max(Math.hypot(item.x - cx, item.y - cy) + 15, childRadius - 15)
+		const inner = Math.max(0, Math.hypot(item.x - cx, item.y - cy) - 14)
 		const outer = Math.min(
 			Math.min(width, height) * 0.49,
 			childRadius + 15,
