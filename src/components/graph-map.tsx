@@ -1,458 +1,323 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { glyphPath } from '@/lib/graph/glyph'
-import { layoutGraph, organizationBands, sectorBands } from '@/lib/graph/layout'
-import { nodePath } from '@/lib/graph/paths'
-import type {
-	CompiledGraph,
-	GraphEdge,
-	GraphNode,
-	NodeType,
-	Sector,
-} from '@/lib/graph/types'
+import { authorityChain, descendantsOf, type AuthorityLink } from '@/lib/graph/authority'
+import { glyphPath, sealPath, seatOffset } from '@/lib/graph/glyph'
+import { layoutGovernment, MAP, RING, type PlacedNode, type Tone } from '@/lib/graph/layout'
+import type { CompiledGraph, NodeType } from '@/lib/graph/types'
 
-const SECTOR_COLOR: Record<Sector, string> = {
-	executive: '#9a8cbb',
-	legislative: '#bd9b81',
-	judicial: '#b8a765',
-	independent: '#998db6',
-}
-
-const EXECUTIVE_LANDMARKS: Record<string, string> = {
-	'ng-office-of-sgf': 'OSGF',
-	'ng-ministry-of-defence': 'Defence',
-	'ng-ministry-of-health': 'Health',
-	'ng-ministry-of-education': 'Education',
-	'ng-ministry-of-interior': 'Interior',
-	'ng-ministry-of-finance': 'Finance',
-	'ng-ministry-of-petroleum': 'Petroleum',
-}
-
-const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
+export const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
 	elected: 'Elected offices',
-	department: 'Departments & agencies',
+	department: 'Agencies & departments',
+	dept_head: 'Office holders',
 	commission: 'Commissions',
 	advisory: 'Advisory bodies',
 	court: 'Courts',
 	corporation: 'Corporations',
 	state: 'States',
-	dept_head: 'Officeholders',
 }
 
-const EDGE_LABEL: Record<GraphEdge['type'], string> = {
+const LINK_LABEL: Record<AuthorityLink['type'], string> = {
+	elects: 'Elects',
 	appoints: 'Appoints',
 	confirms: 'Confirms',
-	elects: 'Elects',
 	oversees: 'Oversees',
-	dept_head: 'Heads',
-	advises: 'Advises',
-	ex_officio: 'Ex officio',
-	office: 'Offices',
-	administers: 'Administers',
+	contains: 'Part of',
 }
 
 interface GraphMapProps {
-	gov: string
 	graph: CompiledGraph
+	layer: 'federal' | 'state'
 	selectedId?: string
-	mode?: 'orgs' | 'people' | 'chamber'
-	weights?: Record<string, number>
+	onSelect: (id: string) => void
 }
 
-export function GraphMap({
-	gov,
-	graph,
-	selectedId,
-	mode = 'orgs',
-	weights,
-}: GraphMapProps) {
-	const width = 920
-	const height = 720
+export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) {
 	const [hoverId, setHoverId] = useState<string | null>(null)
-	const [hiddenEntities, setHiddenEntities] = useState<Set<NodeType>>(new Set())
-	const [hiddenEdges, setHiddenEdges] = useState<Set<GraphEdge['type']>>(new Set())
-	const placed = useMemo(
-		() => layoutGraph(graph, width, height, { mode }),
-		[graph, mode],
+	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
+	const layout = useMemo(() => layoutGovernment(graph, { layer }), [graph, layer])
+	const at = useMemo(() => new Map(layout.nodes.map((item) => [item.id, item])), [layout])
+
+	// A seat selects the organization it belongs to, so a minister's page lights up the ministry.
+	const focusId = selectedId && !at.has(selectedId) ? graph.nodes[selectedId]?.parentId : selectedId
+	const chain = useMemo(
+		() => (focusId && at.has(focusId) ? authorityChain(graph, focusId).filter((link) => at.has(link.fromId) && at.has(link.toId)) : []),
+		[graph, focusId, at],
 	)
-	const at = useMemo(
-		() => new Map(placed.map((item) => [item.id, item])),
-		[placed],
+	const fan = useMemo(
+		() => (focusId ? descendantsOf(graph, focusId).filter((id) => at.has(id)) : []),
+		[graph, focusId, at],
 	)
-	const bands = useMemo(
-		() => sectorBands(width, height).filter((band) => placed.some(
-			(item) => item.node.sector === band.sector && (!item.node.parentId || !at.has(item.node.parentId)),
-		)),
-		[placed, at],
-	)
-	const organizations = useMemo(() => organizationBands(placed, width, height), [placed])
-	const entityTypes = [...new Set(placed.map((item) => item.node.type))].filter(
-		(type) => type !== 'constituency',
-	)
-	const visibleEdges = Object.values(graph.edges).filter(
-		(edge) => at.has(edge.fromId) && at.has(edge.toId),
-	)
-	const edgeTypes = [...new Set(visibleEdges.map((edge) => edge.type))]
-	const visible = (id: string) => {
-		const item = at.get(id)
-		return item && !hiddenEntities.has(item.node.type)
-	}
-	const activeId = hoverId ?? selectedId
-	const activeOrgId = activeId?.replace(/^holder:/, '')
-	const connected = new Set(
-		activeId
-			? (graph.nodes[activeOrgId ?? '']?.connectedNodes ?? [])
-			: [],
-	)
-	const family = new Set<string>()
-	if (activeOrgId) {
-		for (const node of Object.values(graph.nodes)) {
-			let current: GraphNode | undefined = node
-			const seen = new Set<string>()
-			while (current && !seen.has(current.id)) {
-				if (current.id === activeOrgId) {
-					family.add(node.id)
-					break
-				}
-				seen.add(current.id)
-				current = current.parentId ? graph.nodes[current.parentId] : undefined
-			}
-		}
-		let parentId = graph.nodes[activeOrgId]?.parentId
-		while (parentId && !family.has(parentId)) {
-			family.add(parentId)
-			parentId = graph.nodes[parentId]?.parentId
-		}
-	}
+	const lit = new Set(chain.flatMap((link) => [link.fromId, link.toId]))
 	const hover = hoverId ? at.get(hoverId) : undefined
+	const focus = focusId ? at.get(focusId) : undefined
+	const visible = (item: PlacedNode) => !hiddenTypes.has(item.node.type) && !(item.kind === 'dot' && hiddenTypes.has('sub'))
+
+	const toggle = (key: string) =>
+		setHiddenTypes((current) => {
+			const next = new Set(current)
+			if (next.has(key)) next.delete(key)
+			else next.add(key)
+			return next
+		})
+	const nodeTypes = [...new Set(layout.nodes.filter((item) => item.kind !== 'hub').map((item) => item.node.type))]
 
 	return (
-		<div className="relative h-full min-h-[420px] overflow-hidden bg-[#1c1a17]">
-			<svg
-				viewBox={`0 -30 ${width} ${height + 60}`}
-				className="h-full w-full"
-				role="group"
-				aria-label="Nigeria government graph"
-			>
-				<rect width={width} height={height} fill="#1c1a17" />
-				{bands.map((band) => (
-					<g key={band.sector}>
-						<path d={band.d} fill={SECTOR_COLOR[band.sector]} opacity={0.16} />
-						<text
-							x={band.labelX}
-							y={band.labelY}
-							textAnchor="middle"
-							fill={SECTOR_COLOR[band.sector]}
-							fontSize={11}
-							letterSpacing="0.24em"
-						>
-							{band.sector.toUpperCase()}
+		<div className="graph-map">
+			<svg viewBox={layout.viewBox} role="group" aria-label="Map of the Nigerian government" className="graph-svg">
+				<Markers />
+				{layout.wedges.map((wedge) => (
+					<g key={wedge.key}>
+						<path d={wedge.d} className={`wedge wedge-${wedge.tone}`} />
+						<path id={`arc-${wedge.key.replace(/\s+/g, '-')}`} d={wedge.labelArc} fill="none" />
+						<text className={`wedge-label tone-${wedge.tone}`}>
+							<textPath href={`#arc-${wedge.key.replace(/\s+/g, '-')}`} startOffset="50%" textAnchor="middle">
+								{wedge.label}
+							</textPath>
 						</text>
 					</g>
 				))}
-				{organizations.filter((band) => visible(band.id)).map((band) => (
-					<path
-						key={band.id}
-						d={band.d}
-						fill={SECTOR_COLOR[band.sector]}
-						fillOpacity={family.has(band.id) ? 0.24 : band.children > 2 ? 0.14 : 0.07}
-						stroke={SECTOR_COLOR[band.sector]}
-						strokeOpacity={family.has(band.id) ? 0.75 : band.children > 2 ? 0.38 : 0.24}
-						strokeWidth={0.8}
-						/>
+				{layout.bands.map((band) => <path key={band.key} d={band.d} className={`band band-${band.tone}`} />)}
+				{layout.rings.map((ring) => <path key={ring.key} d={ring.d} className="ring-guide" />)}
+				<circle cx={MAP.cx} cy={MAP.cy} r={RING.disc} className="hub-disc" />
+				{layout.labels.map((label) => (
+					<g key={label.key}>
+						<path id={`label-${label.key}`} d={label.d} fill="none" />
+						<text className={`arc-label arc-label-${label.size} tone-${label.tone}`}>
+							<textPath href={`#label-${label.key}`} startOffset="50%" textAnchor="middle">{label.text}</textPath>
+						</text>
+					</g>
 				))}
-				{visibleEdges
-					.filter(
-						(edge) =>
-							activeId &&
-							!hiddenEdges.has(edge.type) &&
-							visible(edge.fromId) &&
-							visible(edge.toId) &&
-							((family.has(edge.fromId) && family.has(edge.toId)) ||
-								edge.fromId === activeOrgId || edge.toId === activeOrgId),
-					)
-					.map((edge) => {
-						const from = at.get(edge.fromId)
-						const to = at.get(edge.toId)
-						if (!from || !to) {
-							return null
-						}
+
+				{focus && fan.length > 0 && (
+					<g className="fan">
+						{fan.map((id) => {
+							const target = at.get(id)!
+							return <line key={id} x1={focus.x} y1={focus.y} x2={target.x} y2={target.y} className={`fan-line tone-${focus.tone}`} />
+						})}
+					</g>
+				)}
+				<g className="chain">
+					{chain.map((link) => {
+						const from = at.get(link.fromId)!
+						const to = at.get(link.toId)!
 						return (
-							<line
-								key={edge.id}
-								x1={from.x}
-								y1={from.y}
-								x2={to.x}
-								y2={to.y}
-								stroke="rgba(223,209,191,0.55)"
-								strokeWidth={1.2}
-								strokeDasharray={edge.type === 'elects' ? undefined : edge.type === 'oversees' ? '2 3' : '4 3'}
-							/>
+							<path
+								key={`${link.fromId}-${link.toId}-${link.type}`}
+								d={linkPath(from, to)}
+								className={`chain-link link-${link.type} tone-${link.type === 'elects' ? 'hub' : link.type === 'confirms' ? 'legislative' : from.tone}`}
+								markerMid={link.type === 'elects' ? 'url(#m-elects)' : undefined}
+								markerEnd={link.type === 'elects' ? undefined : `url(#m-${link.type}-${link.type === 'confirms' ? 'legislative' : from.tone})`}
+							>
+								<title>{`${from.node.name} ${LINK_LABEL[link.type].toLowerCase()} ${to.node.name}`}</title>
+							</path>
 						)
 					})}
-				{mode === 'people'
-					? placed
-							.filter((item) => item.id.startsWith('holder:') && visible(item.id) && visible(item.id.slice('holder:'.length)))
-							.map((item) => {
-								const parent = at.get(item.id.slice('holder:'.length))
-								if (!parent) {
-									return null
-								}
-								return (
-									<line
-										key={`seat-${item.id}`}
-										x1={parent.x}
-										y1={parent.y}
-										x2={item.x}
-										y2={item.y}
-										stroke="rgba(244,231,195,0.35)"
-										strokeWidth={1}
-									/>
-								)
-							})
-					: null}
-				{placed.filter((item) => !hiddenEntities.has(item.node.type)).map((item) => {
-					const isHub = item.node.type === 'constituency'
-					const isExecutiveOffice = item.node.type === 'elected' && item.node.sector === 'executive'
-					const isSel = item.id === selectedId
-					const isHolder = item.id.startsWith('holder:')
-					const orgId = item.id.replace(/^holder:/, '')
-					const isLit =
-						!hoverId ||
-						item.id === activeId ||
-						orgId === activeId ||
-						family.has(orgId) ||
-						connected.has(orgId)
-					const fill = isHub
-						? '#b67c5b'
-						: SECTOR_COLOR[item.node.sector ?? 'independent']
-					const parent = item.node.parentId
-						? graph.nodes[item.node.parentId]
-						: undefined
-					const href =
-						isHolder && parent
-							? nodePath(gov, parent)
-							: nodePath(gov, item.node)
-					const portrait = isHolder ? item.node.people[0]?.imageUrl : undefined
-					const weight = weights?.[orgId] ?? 0
-					const radius = isHub
-						? 58
-						: portrait
-							? 16
-							: weights
-								? 5 + Math.min(14, Math.sqrt(weight) * 5)
-								: isExecutiveOffice
-									? 11
-								: item.node.parentId
-									? 4.5
-									: 7.5
-					const clipId = `clip-${item.id.replace(/[^a-zA-Z0-9_-]/g, '')}`
-					const showLabel =
-						isHub ||
-						isSel ||
-						hoverId === item.id ||
-						isExecutiveOffice ||
-						(mode === 'orgs' && Boolean(EXECUTIVE_LANDMARKS[item.id])) ||
-						(!isHolder &&
-							!item.node.parentId &&
-							placed.filter(
-								(other) =>
-									other.node.sector === item.node.sector &&
-									!other.node.parentId &&
-									other.node.type !== 'constituency',
-							).length <= 8)
-					return (
-						<a
-							key={item.id}
-							href={href}
-							aria-label={item.node.name}
-							onFocus={() => setHoverId(item.id)}
-							onBlur={() => setHoverId(null)}
-						>
-							<g
-								onMouseEnter={() => setHoverId(item.id)}
-								onMouseLeave={() => setHoverId(null)}
-								opacity={isLit ? 1 : 0.18}
-								className="cursor-pointer"
-							>
-								{portrait ? (
-									<>
-										<clipPath id={clipId}>
-											<circle cx={item.x} cy={item.y} r={radius} />
-										</clipPath>
-										<image
-											href={portrait}
-											x={item.x - radius}
-											y={item.y - radius}
-											width={radius * 2}
-											height={radius * 2}
-											clipPath={`url(#${clipId})`}
-										/>
-									</>
-								) : isHub ? (
-									<>
-										<circle
-											cx={item.x}
-											cy={item.y}
-											r={radius + 8}
-											fill="#1c1a17"
-										/>
-										<circle
-											cx={item.x}
-											cy={item.y}
-											r={radius}
-											fill="#573b30"
-											stroke={fill}
-											strokeWidth={1.3}
-											strokeDasharray="3 3"
-										/>
-										<text
-											x={item.x}
-											y={item.y - 5}
-											textAnchor="middle"
-											fill="#d99b78"
-											fontSize={12}
-										>
-											People of
-										</text>
-										<text
-											x={item.x}
-											y={item.y + 12}
-											textAnchor="middle"
-											fill="#d99b78"
-											fontSize={14}
-										>
-											Nigeria
-										</text>
-									</>
-								) : (
-									<>
-										{isSel && (
-											<circle
-												cx={item.x}
-												cy={item.y}
-												r={radius + 7}
-												fill="none"
-												stroke={fill}
-												strokeWidth={1.5}
-											/>
-										)}
-										<path
-											d={glyphPath(item.node.type, item.x, item.y, radius)}
-											fill={fill}
-											fillOpacity={
-												weights ? 0.35 + Math.min(0.65, weight / 5) : 0.28
-											}
-											stroke={fill}
-											strokeWidth={isSel || hoverId === item.id ? 1.8 : 0.8}
-										/>
-									</>
-								)}
-								{showLabel && !isHub ? (
-									<text
-										x={item.x}
-										y={(mode === 'people' && isExecutiveOffice) || item.id === 'ng-vice-president'
-										? item.y - radius - 10 : item.y + radius + 12}
-										textAnchor="middle"
-										fill="#d5c9bb"
-										fontSize={isExecutiveOffice ? 11 : 9}
-									>
-										{(mode === 'orgs' && EXECUTIVE_LANDMARKS[item.id]) || shortLabel(item.node)}
-									</text>
-								) : null}
-							</g>
-						</a>
-					)
-				})}
+				</g>
+
+				{layout.nodes.filter(visible).map((item) => (
+					<Node
+						key={item.id}
+						item={item}
+						state={item.id === focusId ? 'selected' : lit.has(item.id) || fan.includes(item.id) ? 'lit' : item.id === hoverId ? 'hover' : 'idle'}
+						onSelect={onSelect}
+						onHover={setHoverId}
+					/>
+				))}
+				{hover && hover.kind !== 'hub' && <HoverPill item={hover} />}
 			</svg>
+			{focus && focus.kind !== 'hub' ? (
+				<p className={`map-caption tone-${focus.tone}`}>{focus.node.name}</p>
+			) : null}
 			<details className="graph-legend">
 				<summary>Legend</summary>
 				<div className="graph-legend-content">
 					<p>Entities</p>
-					{entityTypes.map((type) => (
+					{nodeTypes.map((type) => (
 						<label key={type}>
-							<input
-								type="checkbox"
-								aria-label={ENTITY_LABEL[type] ?? type}
-								checked={!hiddenEntities.has(type)}
-								onChange={() => {
-									setHoverId(null)
-									setHiddenEntities((current) => {
-										const next = new Set(current)
-										if (next.has(type)) next.delete(type)
-										else next.add(type)
-										return next
-									})
-								}}
-							/>
-							<svg viewBox="0 0 24 24" aria-hidden="true">
-								<path d={glyphPath(type, 12, 12, 9)} />
-							</svg>
+							<input type="checkbox" checked={!hiddenTypes.has(type)} onChange={() => toggle(type)} />
+							<svg viewBox="0 0 24 24" aria-hidden="true"><path d={glyphPath(type, 12, 12, 7.5)} /></svg>
 							{ENTITY_LABEL[type] ?? type}
 						</label>
 					))}
-					{edgeTypes.length > 0 && (
-						<>
-							<p>Relationships</p>
-							{edgeTypes.map((type) => (
-								<label key={type}>
-									<input
-										type="checkbox"
-										aria-label={EDGE_LABEL[type]}
-										checked={!hiddenEdges.has(type)}
-										onChange={() => {
-											setHiddenEdges((current) => {
-												const next = new Set(current)
-												if (next.has(type)) next.delete(type)
-												else next.add(type)
-												return next
-											})
-										}}
-									/>
-									<span className={`legend-edge ${type}`} aria-hidden="true" />
-									{EDGE_LABEL[type]}
-								</label>
-							))}
-						</>
+					{layout.nodes.some((item) => item.kind === 'dot') && (
+						<label>
+							<input type="checkbox" checked={!hiddenTypes.has('sub')} onChange={() => toggle('sub')} />
+							<svg viewBox="0 0 24 24" aria-hidden="true" className="legend-dots">
+								<circle cx="7" cy="9" r="2.6" /><circle cx="15" cy="9" r="2.6" /><circle cx="11" cy="16" r="2.6" />
+							</svg>
+							Sub-agencies
+						</label>
 					)}
+					<p>Relationships</p>
+					{(['elects', 'appoints', 'confirms', 'oversees'] as const).map((type) => (
+						<span key={type} className="legend-link">
+							<svg viewBox="0 0 28 10" aria-hidden="true">
+								<path d="M 2 5 L 14 5 L 26 5" className={`chain-link link-${type} tone-${type === 'elects' ? 'hub' : type === 'confirms' ? 'legislative' : 'executive'}`}
+									markerMid={type === 'elects' ? 'url(#m-elects)' : undefined}
+									markerEnd={type === 'elects' ? undefined : `url(#m-${type}-${type === 'confirms' ? 'legislative' : 'executive'})`} />
+							</svg>
+							{LINK_LABEL[type]}
+						</span>
+					))}
 				</div>
 			</details>
-			{hover ? (
-				<div
-					className="pointer-events-none absolute z-10 max-w-56 rounded-md border border-white/10 bg-[#302a25]/95 px-3 py-2 text-xs text-[#eee4d9] shadow-lg"
-					style={{
-						left: `${(hover.x / width) * 100}%`,
-						top: `${(hover.y / height) * 100}%`,
-						transform: 'translate(12px, 12px)',
-					}}
-				>
-					<p className="font-medium">{hover.node.name}</p>
-					{hover.node.parentId && graph.nodes[hover.node.parentId] ? (
-						<p className="mt-1 text-[11px] text-white/70">Within {graph.nodes[hover.node.parentId].name}</p>
-					) : null}
-					<p className="mt-1 text-[11px] text-white/60">
-						{hover.node.sector ?? hover.node.type.replace('_', ' ')}
-						{weights?.[hover.id.replace(/^holder:/, '')]
-							? ` · ${weights[hover.id.replace(/^holder:/, '')]} mentions`
-							: ''}
-					</p>
-				</div>
-			) : null}
 		</div>
 	)
 }
 
-function shortLabel(node: GraphNode) {
-	if (node.type === 'elected' && node.sector === 'executive') {
-		return node.name.replace(' of the Federal Republic of Nigeria', '')
+function Node({
+	item,
+	state,
+	onSelect,
+	onHover,
+}: {
+	item: PlacedNode
+	state: 'selected' | 'lit' | 'hover' | 'idle'
+	onSelect: (id: string) => void
+	onHover: (id: string | null) => void
+}) {
+	const activate = () => onSelect(item.id)
+	const common = {
+		role: 'link',
+		tabIndex: item.kind === 'dot' ? -1 : 0,
+		'aria-label': item.node.name,
+		className: `node node-${item.kind} tone-${item.tone} is-${state}`,
+		onClick: activate,
+		onKeyDown: (event: React.KeyboardEvent) => {
+			if (event.key === 'Enter' || event.key === ' ') {
+				event.preventDefault()
+				activate()
+			}
+		},
+		onMouseEnter: () => onHover(item.id),
+		onMouseLeave: () => onHover(null),
+		onFocus: () => onHover(item.id),
+		onBlur: () => onHover(null),
 	}
-	const label =
-		node.aliases[0] && node.aliases[0].length <= 18
-			? node.aliases[0]
-			: node.name
-					.replace('Federal Ministry of ', '')
-					.replace('Ministry of ', '')
-					.replace('National Agency for ', '')
-	return label.length > 22 ? `${label.slice(0, 20)}…` : label
+	if (item.kind === 'hub') {
+		return (
+			<g {...common} className="node node-hub">
+				<path d={sealPath(item.x, item.y, item.r)} className="hub-seal" />
+				<text x={item.x} y={item.y - 3} className="hub-text">People of</text>
+				<text x={item.x} y={item.y + 13} className="hub-text">Nigeria</text>
+			</g>
+		)
+	}
+	if (item.kind === 'dot') {
+		return (
+			<g {...common}>
+				<circle cx={item.x} cy={item.y} r={5} className="hit" />
+				<rect x={item.x - item.r} y={item.y - item.r} width={item.r * 2} height={item.r * 2} rx={0.8} className="dot" />
+			</g>
+		)
+	}
+	if (item.kind === 'assembly' || item.kind === 'chamber') {
+		const w = item.w ?? 40
+		const h = item.h ?? 30
+		return (
+			<g {...common}>
+				<rect x={item.x - w / 2} y={item.y - h / 2} width={w} height={h} rx={h / 2} className={item.kind === 'assembly' ? 'assembly' : 'glyph'} />
+			</g>
+		)
+	}
+	const seat = item.node.head && item.node.type !== 'elected' ? seatOffset(item.r) : null
+	return (
+		<g {...common}>
+			<circle cx={item.x} cy={item.y} r={item.r + 4} className="hit" />
+			<path d={glyphPath(item.node.type, item.x, item.y, item.r)} className="glyph" />
+			{seat && (
+				<circle
+					cx={item.x + seat.dx}
+					cy={item.y + seat.dy}
+					r={seat.r}
+					className={item.node.people.length ? 'seat seat-filled' : 'seat seat-vacant'}
+				>
+					<title>{item.node.people[0]?.name ?? 'Vacant seat'}</title>
+				</circle>
+			)}
+		</g>
+	)
+}
+
+function HoverPill({ item }: { item: PlacedNode }) {
+	const text = item.node.name.length > 46 ? `${item.node.name.slice(0, 44)}…` : item.node.name
+	const width = text.length * 5.9 + 16
+	const above = item.y > MAP.cy - 60
+	const y = above ? item.y - (item.h ?? item.r * 2) / 2 - 22 : item.y + (item.h ?? item.r * 2) / 2 + 6
+	const x = Math.min(MAP.size + 20 - width, Math.max(-20, item.x - width / 2))
+	return (
+		<g className={`hover-pill tone-${item.tone}`} pointerEvents="none">
+			<rect x={x} y={y} width={width} height={17} rx={4} />
+			<text x={x + width / 2} y={y + 12}>{text}</text>
+		</g>
+	)
+}
+
+/** Straight when the path is clear; bowed outward when it would cross the People at the centre. */
+function linkPath(from: PlacedNode, to: PlacedNode) {
+	const pad = (item: PlacedNode) => (item.kind === 'hub' ? item.r + 4 : item.kind === 'assembly' || item.kind === 'chamber' ? (item.h ?? 20) / 2 + 3 : item.r + 4)
+	const dx = to.x - from.x
+	const dy = to.y - from.y
+	const length = Math.hypot(dx, dy) || 1
+	const ux = dx / length
+	const uy = dy / length
+	const ax = from.x + ux * pad(from)
+	const ay = from.y + uy * pad(from)
+	const bx = to.x - ux * pad(to)
+	const by = to.y - uy * pad(to)
+	const mx = (ax + bx) / 2
+	const my = (ay + by) / 2
+	// Distance from the hub centre to the segment decides whether to bow the path.
+	const t = Math.max(0, Math.min(1, ((MAP.cx - ax) * (bx - ax) + (MAP.cy - ay) * (by - ay)) / ((bx - ax) ** 2 + (by - ay) ** 2 || 1)))
+	const near = Math.hypot(ax + (bx - ax) * t - MAP.cx, ay + (by - ay) * t - MAP.cy)
+	const involvesHub = from.kind === 'hub' || to.kind === 'hub'
+	if (involvesHub || near > RING.disc + 6) return `M ${r(ax)} ${r(ay)} L ${r(mx)} ${r(my)} L ${r(bx)} ${r(by)}`
+	// Bow sideways, perpendicular to the link, on the side away from the hub's centre.
+	const closestX = ax + (bx - ax) * t - MAP.cx
+	const closestY = ay + (by - ay) * t - MAP.cy
+	const side = closestX * -uy + closestY * ux >= 0 ? 1 : -1
+	const clearance = RING.disc + 34
+	const tx = MAP.cx + -uy * side * clearance
+	const ty = MAP.cy + ux * side * clearance
+	// A quadratic's midpoint is (A + 2C + B) / 4, so solve for the control point that puts it at T.
+	const cx = (4 * tx - ax - bx) / 2
+	const cy = (4 * ty - ay - by) / 2
+	// Split the quadratic at its midpoint so the elects/appoints marker can sit on a vertex.
+	const q1x = (ax + cx) / 2
+	const q1y = (ay + cy) / 2
+	const q2x = (cx + bx) / 2
+	const q2y = (cy + by) / 2
+	const px = (q1x + q2x) / 2
+	const py = (q1y + q2y) / 2
+	return `M ${r(ax)} ${r(ay)} Q ${r(q1x)} ${r(q1y)} ${r(px)} ${r(py)} Q ${r(q2x)} ${r(q2y)} ${r(bx)} ${r(by)}`
+}
+
+function r(value: number) {
+	return Math.round(value * 10) / 10
+}
+
+function Markers() {
+	const tones: Array<Tone | 'hub'> = ['executive', 'legislative', 'judicial', 'hub']
+	return (
+		<defs>
+			<marker id="m-elects" viewBox="0 0 12 10" refX="6" refY="5" markerWidth="12" markerHeight="10" orient="auto" markerUnits="userSpaceOnUse">
+				<path d="M 1 1 L 5 5 L 1 9 M 6 1 L 10 5 L 6 9" className="marker-stroke tone-hub" />
+			</marker>
+			{tones.flatMap((tone) => [
+				<marker key={`a-${tone}`} id={`m-appoints-${tone}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+					<path d="M 0 0 L 10 5 L 0 10 Z" className={`marker-fill tone-${tone}`} />
+				</marker>,
+				<marker key={`c-${tone}`} id={`m-confirms-${tone}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+					<path d="M 1 1 L 9 5 L 1 9 Z" className={`marker-open tone-${tone}`} />
+				</marker>,
+				<marker key={`o-${tone}`} id={`m-oversees-${tone}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
+					<path d="M 1 1 L 9 5 L 1 9" className={`marker-stroke tone-${tone}`} />
+				</marker>,
+				<marker key={`p-${tone}`} id={`m-contains-${tone}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
+					<path d="M 1 1 L 9 5 L 1 9" className={`marker-stroke tone-${tone}`} />
+				</marker>,
+			])}
+		</defs>
+	)
 }

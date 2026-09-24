@@ -14,13 +14,13 @@ npm run dev
 
 Open [http://localhost:3000/ng](http://localhost:3000/ng).
 
-Layers:
+The map is a persistent shell (`src/app/ng/layout.tsx`): selecting an entity changes the URL and the left panel while the map stays mounted.
 
-- **Federal** (default). Presidency, NASS, courts, MDAs, commissions.
-- **States**. 36 states, Houses of Assembly, FCT.
-- **All**. Both rings.
+- **Graph**: the People at the centre, then rings for the highest authorities, oversight bodies and the administration (the cabinet band), with sub-agencies packed as dot clusters in the outer lobes. Selecting an entity draws its chain of authority back to the People (`src/lib/graph/authority.ts`).
+- **Power map** (`?view=power`): officeholders ranked by how often sourced news names them.
+- **States** (`?layer=states`): the 36 states and the FCT, grouped by geopolitical zone, each with its House of Assembly.
 
-NASS district seats are first-class nodes. They stay off the default map. Open the Senate or House page for the roster.
+Light and dark themes follow the system setting, with a toggle in the map toolbar.
 
 ## Data
 

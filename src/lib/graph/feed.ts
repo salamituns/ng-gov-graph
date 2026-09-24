@@ -1,4 +1,5 @@
 import type { NewsItem } from '@/data/nigeria/news'
+import { mentionedIds, usableEntityLabel, type MentionLabel } from './mentions'
 import type { PersonnelChange } from './types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -111,18 +112,6 @@ function rssField(block: string, tag: string) {
 	return match ? rssText(match[1]) : ''
 }
 
-function entityLabelMatches(label: string) {
-	const trimmed = label.trim()
-	if (/^[A-Z]{2,8}$/.test(trimmed)) {
-		return true
-	}
-	const words = trimmed.split(/\s+/).filter(Boolean)
-	if (words.length <= 1) {
-		return trimmed.length >= 12
-	}
-	return trimmed.length >= 8
-}
-
 function rssDate(value: string) {
 	const parsed = new Date(value)
 	if (Number.isNaN(parsed.getTime())) {
@@ -133,13 +122,13 @@ function rssDate(value: string) {
 
 export function parseRssNews(
 	xml: string,
-	entities: Array<{ id: string; label: string }>,
+	entities: Array<{ id: string; label: string; kind?: MentionLabel['kind'] }>,
 ): NewsItem[] {
 	const channel = xml.match(/<channel[\s\S]*$/i)?.[0] ?? xml
 	const publication = rssField(channel.split(/<item[\s>]/i)[0] ?? '', 'title') || 'Official feed'
-	const labels = entities
-		.map((entity) => ({ id: entity.id, label: entity.label.trim() }))
-		.filter((entity) => entityLabelMatches(entity.label))
+	const labels: MentionLabel[] = entities
+		.map((entity) => ({ id: entity.id, label: entity.label.trim(), kind: entity.kind ?? 'entity' as const }))
+		.filter((entity) => entity.kind === 'person' || usableEntityLabel(entity.label))
 		.sort((a, b) => b.label.length - a.label.length)
 	const items: NewsItem[] = []
 	const seen = new Set<string>()
@@ -151,10 +140,7 @@ export function parseRssNews(
 		}
 		seen.add(url)
 		const description = rssField(block, 'description')
-		const haystack = `${title} ${description}`.toLowerCase()
-		const entityIds = labels
-			.filter((entity) => haystack.includes(entity.label.toLowerCase()))
-			.map((entity) => entity.id)
+		const entityIds = mentionedIds(`${title}. ${description}`, labels)
 		const slug = url
 			.replace(/https?:\/\//, '')
 			.replace(/[^a-z0-9]+/gi, '-')
@@ -171,6 +157,15 @@ export function parseRssNews(
 		})
 	}
 	return items
+}
+
+/** Re-derives entity tags so stories stored before a matcher fix are tagged by the current rules. */
+export function retagNews(news: NewsItem[], labels: MentionLabel[]): NewsItem[] {
+	return news.map((item) => {
+		if (/<gov_entities=/.test(item.summary)) return item
+		const text = `${item.summary}. ${item.excerpt ?? ''}`
+		return { ...item, entityIds: mentionedIds(text, labels) }
+	})
 }
 
 export function newsForEntity(news: NewsItem[], ids: string[]): NewsItem[] {

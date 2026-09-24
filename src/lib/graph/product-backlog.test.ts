@@ -1,92 +1,60 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { layoutGraph, organizationBands, sectorBands } from './layout'
+import { layoutGovernment, MAP, RING } from './layout'
 import { compileNigeriaGraph } from './nigeria'
 import { filterGraph } from './filter'
 import { applyPortraitUrls, mapPortraitUrls, portraitTargets } from './portraits'
 import { civicMonitorEnabled, extractCivicUpdates } from '../ai/monitor'
 
-describe('people layout', () => {
-	it('places every federal organization and keeps children outside their parents', () => {
-		const graph = filterGraph(compileNigeriaGraph(), 'federal')
-		const placed = layoutGraph(graph, 800, 800)
-		assert.equal(placed.length, Object.values(graph.nodes).filter((node) => node.type !== 'dept_head').length)
-		const parent = placed.find((item) => item.id === 'ng-ministry-of-finance')
-		const child = placed.find((item) => item.id === 'ng-firs')
-		const grandchild = placed.find((item) => item.id === 'ng-frsc')
-		assert.ok(parent)
-		assert.ok(child)
-		assert.ok(grandchild)
-		const parentDist = Math.hypot(parent.x - 400, parent.y - 400)
-		const childDist = Math.hypot(child.x - 400, child.y - 400)
-		assert.equal(childDist > parentDist, true)
-		const president = placed.find((item) => item.id === 'ng-president')
-		const vicePresident = placed.find((item) => item.id === 'ng-vice-president')
-		assert.ok(president)
-		assert.ok(vicePresident)
-		assert.ok(Math.hypot(president.x - 400, president.y - 400) < parentDist)
-		assert.ok(Math.hypot(vicePresident.x - 400, vicePresident.y - 400) < parentDist)
-		assert.ok(Math.hypot(president.x - vicePresident.x, president.y - vicePresident.y) > 40)
-		const ministries = placed.filter(
-			(item) => item.node.sector === 'executive' && !item.node.parentId && item.node.type !== 'elected',
-		)
-		const distances = ministries.map((item) => Math.round(Math.hypot(item.x - 400, item.y - 400)))
-		assert.ok(distances.every((distance) => Math.abs(distance - 312) < 15))
-		assert.ok(ministries.every((item, index) => ministries.slice(index + 1).every(
-			(other) => Math.hypot(item.x - other.x, item.y - other.y) > 20,
-		)))
-		const bands = organizationBands(placed, 800, 800)
-		const parents = new Set(
-			placed
-				.filter((item) => item.node.parentId && item.node.type !== 'dept_head')
-				.map((item) => item.node.parentId),
-		)
-		assert.deepEqual(new Set(bands.map((band) => band.id)), parents)
-		assert.ok(bands.every((band) => !band.d.includes('NaN')))
-		const executiveOutline = sectorBands(800, 800).find((band) => band.sector === 'executive')
-		assert.ok(executiveOutline && executiveOutline.d.split('L').length > 100)
+describe('government layout', () => {
+	const graph = filterGraph(compileNigeriaGraph(), 'federal')
+	const layout = layoutGovernment(graph)
+	const at = new Map(layout.nodes.map((item) => [item.id, item]))
+	const radius = (id: string) => {
+		const item = at.get(id)
+		assert.ok(item, `${id} is placed`)
+		return Math.hypot(item.x - MAP.cx, item.y - MAP.cy)
+	}
+
+	it('places every federal body exactly once', () => {
+		const ids = layout.nodes.map((item) => item.id)
+		assert.equal(new Set(ids).size, ids.length)
+		const bodies = Object.values(graph.nodes).filter((node) => node.type !== 'dept_head')
+		assert.equal(ids.length, bodies.length)
 	})
 
-	it('places occupied officeholders as holder nodes in people mode', () => {
-		const graph = compileNigeriaGraph()
-		const orgs = layoutGraph(graph, 800, 800, { mode: 'orgs' })
-		const people = layoutGraph(graph, 800, 800, { mode: 'people' })
-		assert.equal(
-			orgs.some((item) => item.id.startsWith('holder:')),
-			false,
-		)
-		assert.equal(
-			people.some((item) => item.id === 'holder:ng-president'),
-			true,
-		)
-		assert.equal(
-			people.some((item) => item.id.startsWith('holder:ng-senator-')),
-			false,
-		)
-		const holder = people.find((item) => item.id === 'holder:ng-president')
-		assert.equal(
-			holder?.node.people[0]?.imageUrl,
-			graph.nodes['ng-president'].people[0]?.imageUrl,
-		)
-		assert.ok(
-			people.filter((item) => item.id.startsWith('holder:')).every(
-				(item) => Math.hypot(item.x - 400, item.y - 400) <= 800 * 0.47,
-			),
-		)
+	it('puts each tier on its ring and sub-agencies outside their ministry', () => {
+		assert.ok(Math.abs(radius('ng-president') - RING.authority) < 1)
+		assert.ok(Math.abs(radius('ng-vice-president') - RING.authority) < 1)
+		assert.ok(Math.abs(radius('ng-inec') - RING.oversight) < 1)
+		assert.ok(Math.abs(radius('ng-ministry-of-finance') - RING.administration) < 1)
+		assert.ok(Math.abs(radius('ng-office-of-sgf') - RING.administration) < 1)
+		assert.ok(radius('ng-firs') > radius('ng-ministry-of-finance') + 40)
+		assert.equal(at.get('ng-firs')?.kind, 'dot')
+		assert.equal(at.get('ng-frsc')?.kind, 'dot')
 	})
 
-	it('keeps the combined federal and state view legible', () => {
-		const placed = layoutGraph(compileNigeriaGraph(), 920, 720)
-		const nodes = placed.filter((item) => item.node.type !== 'constituency')
-		for (const [index, item] of nodes.entries()) {
-			for (const other of nodes.slice(index + 1)) {
-				assert.ok(Math.hypot(item.x - other.x, item.y - other.y) >= 14, `${item.id} overlaps ${other.id}`)
+	it('keeps glyphs from overlapping and paths well formed', () => {
+		const glyphs = layout.nodes.filter((item) => item.kind === 'glyph')
+		for (const [index, item] of glyphs.entries()) {
+			for (const other of glyphs.slice(index + 1)) {
+				assert.ok(Math.hypot(item.x - other.x, item.y - other.y) >= item.r + other.r + 4, `${item.id} overlaps ${other.id}`)
 			}
 		}
-		const state = placed.find((item) => item.id === 'ng-lagos-state')
-		const house = placed.find((item) => item.id === 'ng-lagos-house-of-assembly')
-		assert.ok(state && house)
-		assert.ok(Math.hypot(house.x - 460, house.y - 360) > Math.hypot(state.x - 460, state.y - 360))
+		const paths = [...layout.wedges.map((wedge) => wedge.d), ...layout.bands.map((band) => band.d), ...layout.rings.map((ring) => ring.d)]
+		assert.ok(paths.every((d) => d.startsWith('M') && !d.includes('NaN')))
+		assert.deepEqual(layout.wedges.map((wedge) => wedge.key).sort(), ['executive', 'judicial', 'legislative'])
+	})
+
+	it('draws the States layer as six geopolitical zones', () => {
+		const states = layoutGovernment(filterGraph(compileNigeriaGraph(), 'state'), { layer: 'state' })
+		assert.equal(states.wedges.length, 6)
+		const place = new Map(states.nodes.map((item) => [item.id, item]))
+		const lagos = place.get('ng-lagos-state')
+		const house = place.get('ng-lagos-house-of-assembly')
+		assert.ok(lagos && house)
+		assert.ok(Math.hypot(house.x - MAP.cx, house.y - MAP.cy) > Math.hypot(lagos.x - MAP.cx, lagos.y - MAP.cy))
+		assert.equal(states.nodes.filter((item) => item.node.type === 'state').length, 37)
 	})
 })
 

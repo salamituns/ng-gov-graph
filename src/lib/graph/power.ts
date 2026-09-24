@@ -72,3 +72,72 @@ export function powerSlice(graph: CompiledGraph, mentions: PowerMention[]): Comp
 	)
 	return { ...graph, nodes, edges }
 }
+
+export interface PowerPerson {
+	/** The seat-holding organization the person is credited to. */
+	nodeId: string
+	name: string
+	job: string
+	imageUrl?: string
+	party?: string
+	sector: string
+	total: number
+	latest?: { date: string; headline: string; url: string }
+}
+
+export interface PowerLink {
+	fromId: string
+	toId: string
+}
+
+/**
+ * Ranks officeholders by the stories that name them or the office they hold, then links
+ * the ones who appoint each other, mirroring the CivLab power map.
+ */
+export function powerPeople(graph: CompiledGraph, news: NewsItem[], days: number, now: Date, limit = 20) {
+	const cutoff = new Date(now)
+	cutoff.setUTCDate(cutoff.getUTCDate() - days)
+	const tally = new Map<string, PowerPerson>()
+	let articles = 0
+	const sources = new Set<string>()
+	for (const item of news) {
+		const published = item.publishedAt ? new Date(`${item.publishedAt.slice(0, 10)}T00:00:00Z`) : undefined
+		if (published && (published < cutoff || published > now)) continue
+		articles += 1
+		sources.add(item.publication)
+		for (const id of new Set(item.entityIds ?? [])) {
+			const node = graph.nodes[id]
+			const person = node?.people[0]
+			if (!node || !person) continue
+			const head = node.head ? graph.nodes[node.head] : undefined
+			const entry = tally.get(person.name) ?? {
+				nodeId: node.id,
+				name: person.name,
+				job: head?.name ?? node.name,
+				imageUrl: person.imageUrl,
+				party: person.party,
+				sector: node.sector ?? 'executive',
+				total: 0,
+			}
+			entry.total += 1
+			const date = item.publishedAt?.slice(0, 10)
+			if (date && (!entry.latest || date > entry.latest.date)) {
+				entry.latest = { date, headline: item.summary.replace(/<[^>]+>/g, ''), url: item.url }
+			}
+			tally.set(person.name, entry)
+		}
+	}
+	const people = [...tally.values()]
+		.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name))
+		.slice(0, limit)
+	const shown = new Set(people.map((person) => person.nodeId))
+	const links: PowerLink[] = []
+	for (const edge of Object.values(graph.edges)) {
+		if (edge.type !== 'appoints') continue
+		const toOrg = graph.nodes[edge.toId]?.parentId ?? edge.toId
+		if (shown.has(edge.fromId) && shown.has(toOrg) && edge.fromId !== toOrg) {
+			links.push({ fromId: edge.fromId, toId: toOrg })
+		}
+	}
+	return { people, links, articles, sources: [...sources], days }
+}
