@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { authorityChain, descendantsOf, type AuthorityLink } from '@/lib/graph/authority'
 import { glyphPath, sealPath, seatOffset } from '@/lib/graph/glyph'
-import { layoutGovernment, MAP, RING, type PlacedNode, type Tone } from '@/lib/graph/layout'
+import { layoutGovernment, MAP, readableArc, RING, type PlacedNode, type Tone } from '@/lib/graph/layout'
 import type { CompiledGraph, NodeType } from '@/lib/graph/types'
 
 export const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
@@ -15,6 +15,15 @@ export const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
 	court: 'Courts',
 	corporation: 'Corporations',
 	state: 'States',
+}
+
+/** The verb shown when a reader hovers a relationship, read as "<source> <verb> <target>". */
+const LINK_VERB: Record<AuthorityLink['type'], string> = {
+	elects: 'elects',
+	appoints: 'appoints',
+	confirms: 'confirms',
+	oversees: 'oversees',
+	contains: 'includes',
 }
 
 const LINK_LABEL: Record<AuthorityLink['type'], string> = {
@@ -35,6 +44,8 @@ interface GraphMapProps {
 export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) {
 	const [hoverId, setHoverId] = useState<string | null>(null)
 	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
+	const [edgeHover, setEdgeHover] = useState<{ text: string; tone: string; x: number; y: number } | null>(null)
+	const svgRef = useRef<SVGSVGElement>(null)
 	const layout = useMemo(() => layoutGovernment(graph, { layer }), [graph, layer])
 	const at = useMemo(() => new Map(layout.nodes.map((item) => [item.id, item])), [layout])
 
@@ -49,8 +60,43 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 		[graph, focusId, at],
 	)
 	const lit = new Set(chain.flatMap((link) => [link.fromId, link.toId]))
-	const hover = hoverId ? at.get(hoverId) : undefined
 	const focus = focusId ? at.get(focusId) : undefined
+	// Selecting a body opens its dot cluster into full glyphs fanned out beneath it, as on CivLab.
+	const expanded = useMemo(() => {
+		const opened = new Map<string, PlacedNode>()
+		if (!focus || focus.kind === 'dot' || focus.kind === 'hub') return opened
+		const dots = fan.map((id) => at.get(id)!).filter((item) => item.kind === 'dot')
+		const perRow = 12
+		dots.forEach((item, index) => {
+			const row = Math.floor(index / perRow)
+			const inRow = Math.min(perRow, dots.length - row * perRow)
+			const r = RING.cluster + 2 + row * 17
+			const angle = focus.angle + (((index % perRow) - (inRow - 1) / 2) * 15) / r
+			opened.set(item.id, {
+				...item,
+				x: MAP.cx + Math.cos(angle) * r,
+				y: MAP.cy + Math.sin(angle) * r,
+				angle,
+				r: 4.6,
+				kind: 'glyph',
+			})
+		})
+		return opened
+	}, [focus, fan, at])
+	const place = (id: string) => expanded.get(id) ?? at.get(id)
+	const hub = layout.nodes.find((item) => item.kind === 'hub')
+	const rotation = useTurn(focus && focus.kind !== 'hub' ? Math.PI / 2 - focus.angle : 0)
+	const hover = hoverId ? place(hoverId) : undefined
+	const edgeProps = (text: string, tone: string) => ({
+		onMouseMove: (event: React.MouseEvent) => {
+			const svg = svgRef.current
+			const matrix = svg?.getScreenCTM()
+			if (!svg || !matrix) return
+			const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse())
+			setEdgeHover({ text, tone, x: point.x, y: point.y })
+		},
+		onMouseLeave: () => setEdgeHover(null),
+	})
 	const visible = (item: PlacedNode) => !hiddenTypes.has(item.node.type) && !(item.kind === 'dot' && hiddenTypes.has('sub'))
 
 	const toggle = (key: string) =>
@@ -64,36 +110,24 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 
 	return (
 		<div className="graph-map">
-			<svg viewBox={layout.viewBox} role="group" aria-label="Map of the Nigerian government" className="graph-svg">
+			<svg ref={svgRef} viewBox={layout.viewBox} role="group" aria-label="Map of the Nigerian government" className="graph-svg">
 				<Markers />
-				{layout.wedges.map((wedge) => (
-					<g key={wedge.key}>
-						<path d={wedge.d} className={`wedge wedge-${wedge.tone}`} />
-						<path id={`arc-${wedge.key.replace(/\s+/g, '-')}`} d={wedge.labelArc} fill="none" />
-						<text className={`wedge-label tone-${wedge.tone}`}>
-							<textPath href={`#arc-${wedge.key.replace(/\s+/g, '-')}`} startOffset="50%" textAnchor="middle">
-								{wedge.label}
-							</textPath>
-						</text>
-					</g>
-				))}
+				<g transform={`rotate(${(rotation * 180) / Math.PI} ${MAP.cx} ${MAP.cy})`}>
+				{layout.wedges.map((wedge) => <path key={wedge.key} d={wedge.d} className={`wedge wedge-${wedge.tone}`} />)}
 				{layout.bands.map((band) => <path key={band.key} d={band.d} className={`band band-${band.tone}`} />)}
 				{layout.rings.map((ring) => <path key={ring.key} d={ring.d} className="ring-guide" />)}
 				<circle cx={MAP.cx} cy={MAP.cy} r={RING.disc} className="hub-disc" />
-				{layout.labels.map((label) => (
-					<g key={label.key}>
-						<path id={`label-${label.key}`} d={label.d} fill="none" />
-						<text className={`arc-label arc-label-${label.size} tone-${label.tone}`}>
-							<textPath href={`#label-${label.key}`} startOffset="50%" textAnchor="middle">{label.text}</textPath>
-						</text>
-					</g>
-				))}
 
 				{focus && fan.length > 0 && (
 					<g className="fan">
 						{fan.map((id) => {
-							const target = at.get(id)!
-							return <line key={id} x1={focus.x} y1={focus.y} x2={target.x} y2={target.y} className={`fan-line tone-${focus.tone}`} />
+							const target = place(id)!
+							return (
+								<g key={id} className="link-group" {...edgeProps(LINK_VERB.oversees, focus.tone)}>
+									<line x1={focus.x} y1={focus.y} x2={target.x} y2={target.y} className="link-hit" />
+									<line x1={focus.x} y1={focus.y} x2={target.x} y2={target.y} className={`fan-line tone-${focus.tone}`} />
+								</g>
+							)
 						})}
 					</g>
 				)}
@@ -101,30 +135,53 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 					{chain.map((link) => {
 						const from = at.get(link.fromId)!
 						const to = at.get(link.toId)!
+						const tone = link.type === 'elects' ? 'hub' : link.type === 'confirms' ? 'legislative' : from.tone
+						const d = linkPath(from, to)
 						return (
-							<path
-								key={`${link.fromId}-${link.toId}-${link.type}`}
-								d={linkPath(from, to)}
-								className={`chain-link link-${link.type} tone-${link.type === 'elects' ? 'hub' : link.type === 'confirms' ? 'legislative' : from.tone}`}
-								markerMid={link.type === 'elects' ? 'url(#m-elects)' : undefined}
-								markerEnd={link.type === 'elects' ? undefined : `url(#m-${link.type}-${link.type === 'confirms' ? 'legislative' : from.tone})`}
-							>
-								<title>{`${from.node.name} ${LINK_LABEL[link.type].toLowerCase()} ${to.node.name}`}</title>
-							</path>
+							<g key={`${link.fromId}-${link.toId}-${link.type}`} className="link-group" {...edgeProps(LINK_VERB[link.type], tone)}>
+								<title>{`${from.node.name} ${LINK_VERB[link.type]} ${to.node.name}`}</title>
+								<path d={d} className="link-hit" />
+								<path
+									d={d}
+									className={`chain-link link-${link.type} tone-${tone}`}
+									markerMid={link.type === 'elects' ? 'url(#m-elects)' : `url(#m-${link.type}-${tone})`}
+								/>
+							</g>
 						)
 					})}
 				</g>
 
-				{layout.nodes.filter(visible).map((item) => (
+				{layout.nodes.filter((item) => item.kind !== 'hub' && visible(item)).map((item) => (
 					<Node
 						key={item.id}
-						item={item}
+						item={expanded.get(item.id) ?? item}
 						state={item.id === focusId ? 'selected' : lit.has(item.id) || fan.includes(item.id) ? 'lit' : item.id === hoverId ? 'hover' : 'idle'}
 						onSelect={onSelect}
 						onHover={setHoverId}
 					/>
 				))}
-				{hover && hover.kind !== 'hub' && <HoverPill item={hover} />}
+				</g>
+				{/* Titles sit outside the rotating group and are re-laid each frame so they never read upside down. */}
+				{[...layout.wedges.map((wedge) => ({ key: `arc-${wedge.key}`, text: wedge.label, arc: wedge.labelArc, className: `wedge-label tone-${wedge.tone}` })),
+					...layout.labels.map((label) => ({ key: `label-${label.key}`, text: label.text, arc: label.arc, className: `arc-label arc-label-${label.size} tone-${label.tone}` }))].map((label) => {
+					const id = label.key.replace(/[^a-zA-Z0-9-]/g, '-')
+					return (
+						<g key={label.key} pointerEvents="none">
+							<path id={id} d={readableArc(label.arc.r, label.arc.start + rotation, label.arc.end + rotation)} fill="none" />
+							<text className={label.className}>
+								<textPath href={`#${id}`} startOffset="50%" textAnchor="middle">{label.text}</textPath>
+							</text>
+						</g>
+					)
+				})}
+				{hub && <Node item={hub} state="idle" onSelect={onSelect} onHover={setHoverId} />}
+				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} />}
+				{edgeHover && !hover && (
+					<g className={`edge-pill tone-${edgeHover.tone}`} pointerEvents="none">
+						<rect x={edgeHover.x + 6} y={edgeHover.y - 22} width={edgeHover.text.length * 5.6 + 12} height={15} rx={4} />
+						<text x={edgeHover.x + 12} y={edgeHover.y - 11.5}>{edgeHover.text}</text>
+					</g>
+				)}
 			</svg>
 			{focus && focus.kind !== 'hub' ? (
 				<p className={`map-caption tone-${focus.tone}`}>{focus.node.name}</p>
@@ -154,8 +211,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 						<span key={type} className="legend-link">
 							<svg viewBox="0 0 28 10" aria-hidden="true">
 								<path d="M 2 5 L 14 5 L 26 5" className={`chain-link link-${type} tone-${type === 'elects' ? 'hub' : type === 'confirms' ? 'legislative' : 'executive'}`}
-									markerMid={type === 'elects' ? 'url(#m-elects)' : undefined}
-									markerEnd={type === 'elects' ? undefined : `url(#m-${type}-${type === 'confirms' ? 'legislative' : 'executive'})`} />
+									markerMid={type === 'elects' ? 'url(#m-elects)' : `url(#m-${type}-${type === 'confirms' ? 'legislative' : 'executive'})`} />
 							</svg>
 							{LINK_LABEL[type]}
 						</span>
@@ -240,6 +296,46 @@ function Node({
 	)
 }
 
+/**
+ * Turns the map so the selection sits at six o'clock, easing along the shorter way round.
+ * The first render starts at the target, so a deep link does not spin on load.
+ */
+function useTurn(target: number) {
+	const [angle, setAngle] = useState(target)
+	const current = useRef(target)
+	useEffect(() => {
+		const from = current.current
+		const turn = Math.PI * 2
+		const delta = ((((target - from + Math.PI) % turn) + turn) % turn) - Math.PI
+		if (Math.abs(delta) < 1e-4) return
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+			current.current = from + delta
+			setAngle(from + delta)
+			return
+		}
+		const start = performance.now()
+		let frame = 0
+		const step = (now: number) => {
+			const t = Math.min(1, (now - start) / 700)
+			const eased = 1 - (1 - t) ** 3
+			current.current = from + delta * eased
+			setAngle(current.current)
+			if (t < 1) frame = requestAnimationFrame(step)
+		}
+		frame = requestAnimationFrame(step)
+		return () => cancelAnimationFrame(frame)
+	}, [target])
+	return angle
+}
+
+function turn(item: PlacedNode, angle: number): PlacedNode {
+	const dx = item.x - MAP.cx
+	const dy = item.y - MAP.cy
+	const cos = Math.cos(angle)
+	const sin = Math.sin(angle)
+	return { ...item, x: MAP.cx + dx * cos - dy * sin, y: MAP.cy + dx * sin + dy * cos }
+}
+
 function HoverPill({ item }: { item: PlacedNode }) {
 	const text = item.node.name.length > 46 ? `${item.node.name.slice(0, 44)}…` : item.node.name
 	const width = text.length * 5.9 + 16
@@ -305,16 +401,16 @@ function Markers() {
 				<path d="M 1 1 L 5 5 L 1 9 M 6 1 L 10 5 L 6 9" className="marker-stroke tone-hub" />
 			</marker>
 			{tones.flatMap((tone) => [
-				<marker key={`a-${tone}`} id={`m-appoints-${tone}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+				<marker key={`a-${tone}`} id={`m-appoints-${tone}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
 					<path d="M 0 0 L 10 5 L 0 10 Z" className={`marker-fill tone-${tone}`} />
 				</marker>,
-				<marker key={`c-${tone}`} id={`m-confirms-${tone}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
+				<marker key={`c-${tone}`} id={`m-confirms-${tone}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="9" markerHeight="9" orient="auto" markerUnits="userSpaceOnUse">
 					<path d="M 1 1 L 9 5 L 1 9 Z" className={`marker-open tone-${tone}`} />
 				</marker>,
-				<marker key={`o-${tone}`} id={`m-oversees-${tone}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
+				<marker key={`o-${tone}`} id={`m-oversees-${tone}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
 					<path d="M 1 1 L 9 5 L 1 9" className={`marker-stroke tone-${tone}`} />
 				</marker>,
-				<marker key={`p-${tone}`} id={`m-contains-${tone}`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
+				<marker key={`p-${tone}`} id={`m-contains-${tone}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
 					<path d="M 1 1 L 9 5 L 1 9" className={`marker-stroke tone-${tone}`} />
 				</marker>,
 			])}

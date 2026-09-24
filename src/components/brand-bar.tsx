@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ChevronDown } from 'lucide-react'
+import { LayerMenu } from '@/components/layer-menu'
 
 export interface Crumb {
 	label: string
@@ -15,15 +15,7 @@ export function BrandBar({ crumbs = [], layer = 'federal' }: { crumbs?: Crumb[];
 				<strong>Govgraph</strong>
 			</Link>
 			<span className="brand-slash">/</span>
-			<details className="layer-menu">
-				<summary aria-label="Choose government layer">
-					{layer === 'state' ? 'Nigeria · States' : 'Nigeria'} <ChevronDown size={14} />
-				</summary>
-				<nav aria-label="Government layer">
-					<Link href="/ng" aria-current={layer === 'federal' ? 'page' : undefined}>Federal government</Link>
-					<Link href="/ng?layer=states" aria-current={layer === 'state' ? 'page' : undefined}>States &amp; governors</Link>
-				</nav>
-			</details>
+			<LayerMenu layer={layer} />
 			{crumbs.map((crumb) => (
 				<span key={crumb.label} className="brand-crumb">
 					<span className="brand-slash">/</span>

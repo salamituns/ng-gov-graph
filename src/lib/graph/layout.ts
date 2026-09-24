@@ -43,8 +43,8 @@ export interface Wedge {
 	tone: Tone
 	label: string
 	d: string
-	/** Arc for the wedge's title, drawn so the text always reads left to right. */
-	labelArc: string
+	/** Arc for the wedge's title; the renderer turns it into a readable path at the current rotation. */
+	labelArc: LabelArc
 }
 
 export interface RingGuide {
@@ -55,10 +55,16 @@ export interface RingGuide {
 	d: string
 }
 
+export interface LabelArc {
+	r: number
+	start: number
+	end: number
+}
+
 export interface ArcLabel {
 	key: string
 	text: string
-	d: string
+	arc: LabelArc
 	tone: Tone
 	size: 'ring' | 'band'
 }
@@ -223,7 +229,7 @@ function lobedWedge(start: number, end: number, base: number, clusters: Cluster[
 	const large = end - start > Math.PI ? 1 : 0
 	return {
 		d: `${rim.join(' ')} L ${pt(RING.disc, end)} A ${RING.disc} ${RING.disc} 0 ${large} 0 ${pt(RING.disc, start)} Z`,
-		labelArc: readableArc(labelR, start, end),
+		labelArc: { r: labelR, start, end },
 	}
 }
 
@@ -326,7 +332,7 @@ function layoutFederal(graph: CompiledGraph): GovernmentLayout {
 				const start = Math.min(...cabinet) - 0.05
 				const end = Math.max(...cabinet) + 0.05
 				bands.push({ key: 'cabinet', tone, d: bandPath(RING.administration - 21, RING.administration + 21, start, end) })
-				labels.push({ key: 'cabinet', text: 'CABINET', tone, size: 'band', d: readableArc(RING.administration + 26, 0.25, 0.75) })
+				labels.push({ key: 'cabinet', text: 'CABINET', tone, size: 'band', arc: { r: RING.administration + 26, start: 0.25, end: 0.75 } })
 			}
 		} else if (tone === 'legislative') {
 			const mid = (arc.start + arc.end) / 2
@@ -338,7 +344,7 @@ function layoutFederal(graph: CompiledGraph): GovernmentLayout {
 						id: chamber.id, node: chamber, x: p.x + (index ? 21 : -21), y: p.y, angle: mid, r: 13, w: 38, h: 30, kind: 'chamber', tone,
 					})
 				})
-				labels.push({ key: 'assembly', text: 'NATIONAL ASSEMBLY', tone, size: 'band', d: readableArc(RING.authority + 38, mid - 0.4, mid + 0.4) })
+				labels.push({ key: 'assembly', text: 'NATIONAL ASSEMBLY', tone, size: 'band', arc: { r: RING.authority + 38, start: mid - 0.4, end: mid + 0.4 } })
 			}
 			const rest = [...tiers.oversight, ...tiers.administration]
 			for (const { item, angle } of spread(rest, arc.start + GAP, arc.end - GAP, (node) => want(node, RING.administration, 44))) {
@@ -385,9 +391,9 @@ function layoutFederal(graph: CompiledGraph): GovernmentLayout {
 		}
 	}
 	labels.push(
-		{ key: 'authority', text: 'HIGHEST AUTHORITY', tone: 'executive', size: 'ring', d: readableArc(RING.authority - 12, 0.3, 1.25) },
-		{ key: 'oversight', text: 'OVERSIGHT', tone: 'executive', size: 'ring', d: readableArc(RING.oversight - 11, 1.36, 1.78) },
-		{ key: 'administration', text: 'ADMINISTRATION', tone: 'executive', size: 'ring', d: readableArc(RING.administration - 30, 1.2, 1.94) },
+		{ key: 'authority', text: 'HIGHEST AUTHORITY', tone: 'executive', size: 'ring', arc: { r: RING.authority - 12, start: 0.3, end: 1.25 } },
+		{ key: 'oversight', text: 'OVERSIGHT', tone: 'executive', size: 'ring', arc: { r: RING.oversight - 11, start: 1.36, end: 1.78 } },
+		{ key: 'administration', text: 'ADMINISTRATION', tone: 'executive', size: 'ring', arc: { r: RING.administration - 30, start: 1.2, end: 1.94 } },
 	)
 
 	return finish({ nodes, wedges, rings, bands, labels })
@@ -444,7 +450,7 @@ function layoutStates(graph: CompiledGraph): GovernmentLayout {
 			}
 		}
 	}
-	labels.push({ key: 'governors', text: 'STATES & GOVERNORS', tone: 'executive', size: 'ring', d: readableArc(236 - 18, 1.25, 1.9) })
-	labels.push({ key: 'assemblies', text: 'HOUSES OF ASSEMBLY', tone: 'legislative', size: 'ring', d: readableArc(302 + 18, 1.2, 1.94) })
+	labels.push({ key: 'governors', text: 'STATES & GOVERNORS', tone: 'executive', size: 'ring', arc: { r: 236 - 18, start: 1.25, end: 1.9 } })
+	labels.push({ key: 'assemblies', text: 'HOUSES OF ASSEMBLY', tone: 'legislative', size: 'ring', arc: { r: 302 + 18, start: 1.2, end: 1.94 } })
 	return finish({ nodes, wedges, rings, bands: [], labels })
 }

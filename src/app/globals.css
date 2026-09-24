@@ -229,8 +229,12 @@
 .marker-fill { fill:var(--tone); }
 .marker-open { fill:var(--gg-surface); stroke:var(--tone); stroke-width:1.3; }
 .marker-stroke { fill:none; stroke:var(--tone); stroke-width:1.4; }
-.hover-pill rect { fill:color-mix(in srgb, var(--tone) 22%, var(--gg-panel)); stroke:color-mix(in srgb, var(--tone) 50%, transparent); stroke-width:.6; }
-.hover-pill text { fill:color-mix(in srgb, var(--tone) 75%, var(--gg-text)); font-size:10px; font-weight:500; text-anchor:middle; }
+.hover-pill rect { fill:var(--tone); }
+.hover-pill text { fill:#16151a; font-size:10px; font-weight:600; text-anchor:middle; }
+.link-hit { fill:none; stroke:transparent; stroke-width:11; pointer-events:stroke; cursor:help; }
+.link-group:hover .chain-link, .link-group:hover .fan-line { stroke-width:2.2; opacity:1; }
+.edge-pill rect { fill:var(--gg-panel); stroke:color-mix(in srgb, var(--tone) 45%, transparent); stroke-width:.6; }
+.edge-pill text { fill:var(--tone); font-size:9.5px; font-weight:600; }
 .map-caption { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); max-width:60%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:3px 7px; border-radius:4px; font-size:13px; font-weight:500; color:color-mix(in srgb, var(--tone) 80%, var(--gg-text)); background:color-mix(in srgb, var(--tone) 18%, transparent); }
 .graph-legend { position:absolute; z-index:6; left:14px; bottom:14px; font-size:13px; }
 .graph-legend summary { list-style:none; cursor:pointer; padding:6px 12px; border-radius:9px; background:var(--gg-panel); box-shadow:var(--gg-shadow); }
@@ -266,19 +270,21 @@
 .power-recent { text-anchor:middle; fill:var(--gg-hub); font-size:9.5px; }
 
 /* ---------- Panel ---------- */
-.brand-bar { min-height:44px; min-width:0; overflow:hidden; display:flex; align-items:center; gap:7px; padding:0 18px; border-radius:11px; background:var(--gg-panel); box-shadow:var(--gg-shadow); font-size:15px; white-space:nowrap; }
+.brand-bar { position:relative; z-index:30; min-height:44px; min-width:0; display:flex; align-items:center; gap:7px; padding:0 18px; border-radius:11px; background:var(--gg-panel); box-shadow:var(--gg-shadow); font-size:15px; white-space:nowrap; }
 .brand-home { display:flex; align-items:center; gap:7px; }
 .brand-mark { color:var(--gg-legislative); font-size:22px; line-height:1; }
 .brand-slash { color:var(--gg-faint); }
-.brand-crumb { display:flex; align-items:center; gap:7px; min-width:0; }
+.brand-crumb { display:flex; align-items:center; gap:7px; min-width:0; overflow:hidden; }
 .brand-crumb > a, .brand-crumb > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .brand-home, .brand-slash, .layer-menu { flex:none; }
 .brand-crumb a:hover { text-decoration:underline; }
 .layer-menu { position:relative; }
-.layer-menu summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:3px; color:var(--gg-text); }
-.layer-menu summary::-webkit-details-marker { display:none; }
-.layer-menu nav { position:absolute; top:30px; left:-8px; z-index:20; display:grid; min-width:190px; padding:4px; border-radius:9px; background:var(--gg-panel); box-shadow:0 12px 28px #0003; }
-.layer-menu nav a { padding:7px 10px; border-radius:6px; font-size:13px; }
+.layer-menu button { display:flex; align-items:center; gap:3px; color:var(--gg-text); }
+.layer-menu button:hover { color:var(--gg-muted); }
+.layer-menu nav { position:absolute; top:30px; left:-10px; z-index:40; display:grid; gap:2px; min-width:240px; padding:5px; border-radius:10px; background:var(--gg-panel); box-shadow:0 14px 34px #0003, 0 0 0 1px var(--gg-line); }
+.layer-menu nav a { display:grid; gap:1px; padding:8px 10px; border-radius:7px; }
+.layer-menu nav a strong { font-size:13px; font-weight:500; }
+.layer-menu nav a small { font-size:11px; color:var(--gg-muted); }
 .layer-menu nav a:hover, .layer-menu nav a[aria-current] { background:var(--gg-panel-2); }
 .panel-card { padding:22px 21px 24px; border-radius:11px; background:var(--gg-panel); box-shadow:var(--gg-shadow); }
 .panel-card h2 { font-size:15px; font-weight:600; letter-spacing:-.01em; }
@@ -414,3 +420,6 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .node-dot.is-selected .dot { stroke:var(--tone); stroke-width:2.2; paint-order:stroke; }
 /* The panel scrolls; its cards must never be squashed by the flex column (overflow:hidden drops min-height to 0). */
 .shell-panel > * { flex-shrink:0; }
+.part-of-card { padding:10px 12px; }
+.part-of-card strong { font-size:14px; }
+.empty-box { padding:22px; border:1px solid var(--gg-line); border-radius:8px; text-align:center; color:var(--gg-muted); font-size:13px; }

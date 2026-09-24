@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { BrandBar, type Crumb } from '@/components/brand-bar'
 import { ChamberRosterList } from '@/components/chamber-roster'
-import { ConnectionGroup, type ConnectionCard } from '@/components/panel-client'
+import { ConnectionGroup, Glyph, type ConnectionCard } from '@/components/panel-client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authorityChain, descendantsOf, organizationOf } from '@/lib/graph/authority'
 import { newsForEntity } from '@/lib/graph/feed'
@@ -74,7 +74,6 @@ function connectionGroups(gov: string, graph: CompiledGraph, node: GraphNode) {
 	const parent = org?.parentId ? graph.nodes[org.parentId] : undefined
 	return [
 		{ title: nested > children.length ? `Sub-agencies (${nested} including nested)` : 'Sub-agencies', cards: children.map((item) => card(gov, item, item.people[0]?.name)) },
-		{ title: 'Part of', cards: parent ? [card(gov, parent)] : [] },
 		{ title: 'Elected by', cards: from('elects') },
 		{ title: 'Appointed by', cards: from('appoints') },
 		{ title: 'Confirmed by', cards: from('confirms') },
@@ -146,9 +145,18 @@ export default async function EntityPage({ params }: PageProps) {
 						</span>
 					</div>
 				) : null}
+				{parent && parent.type !== 'constituency' && node.type !== 'dept_head' ? (
+					<>
+						<p className="entity-seat-title">Part of</p>
+						<Link href={nodePath(gov, parent)} className="holder-card part-of-card">
+							<Glyph type={parent.type} tone={toneOf(parent)} size={12} />
+							<span><strong>{parent.name}</strong></span>
+						</Link>
+					</>
+				) : null}
 			</article>
 
-			<Tabs defaultValue={stories.length ? 'news' : 'connections'} className="entity-tabs">
+			<Tabs defaultValue="news" className="entity-tabs">
 				<TabsList aria-label="About this entity">
 					<TabsTrigger value="news">News{stories.length ? ` (${stories.length})` : ''}</TabsTrigger>
 					<TabsTrigger value="connections">Who’s connected?</TabsTrigger>
@@ -156,7 +164,7 @@ export default async function EntityPage({ params }: PageProps) {
 				<TabsContent value="news" className="entity-tab">
 					<h2>Media</h2>
 					{stories.length === 0 ? (
-						<p className="muted-copy">No sourced story names {node.name} or its agencies yet.</p>
+						<p className="empty-box">No recent news</p>
 					) : (
 						<ul className="story-list">
 							{stories.map((item) => (
