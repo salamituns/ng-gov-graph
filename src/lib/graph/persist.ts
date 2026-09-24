@@ -2,7 +2,7 @@ import { nigeriaChanges } from '@/data/nigeria/changes'
 import { nigeriaNews } from '@/data/nigeria/news'
 import { getDb } from '@/db'
 import { civicFeed, graphSnapshots } from '@/db/schema'
-import { compileNigeriaGraph } from '@/lib/graph/nigeria'
+import { compileNigeriaGraph, parseGraphSnapshot } from '@/lib/graph/nigeria'
 import { overlayNassOccupancy } from '@/lib/graph/nass-live'
 import { overlayPortraits } from '@/lib/graph/portraits'
 import { overlayNaltfOccupancy } from '@/lib/graph/naltf-fill'
@@ -10,6 +10,8 @@ import { overlayOrderpaperOccupancy } from '@/lib/graph/orderpaper-fill'
 import { overlayWikiOccupancy, adoptConstituencyIds } from '@/lib/graph/wiki-fill'
 import {
 	CHANGES_FEED_ID,
+	fetchCivicFeed,
+	fetchNeonSnapshot,
 	NEWS_FEED_ID,
 	NIGERIA_SNAPSHOT_ID,
 } from '@/lib/graph/store'
@@ -73,43 +75,46 @@ export function persistNigeriaGraph(options?: {
 			graph = await overlayNaltfOccupancy(graph)
 			graph = await overlayOrderpaperOccupancy(graph)
 			graph = adoptConstituencyIds(graph)
+			const { overlayAgencyHeads } = await import('@/lib/graph/agency-heads')
+			graph = await overlayAgencyHeads(graph)
 		}
 		if (options?.portraits) {
 			graph = await overlayPortraits(graph)
 		}
-		await upsertSnapshot(graph)
-		let news = nigeriaNews
-		let changes = nigeriaChanges
+		const { applyAppointments, diffOfficeholders, appointmentsFromNews, mergeChanges, mergeNews } = await import('@/lib/graph/changes')
+		const { parseChangesFeed, parseNewsFeed, parseRssNews, resolveStoredFeed } = await import('@/lib/graph/feed')
+		const { mentionLabels } = await import('@/lib/graph/mentions')
+		const [previousPayload, storedNews, storedChanges] = await Promise.all([
+			fetchNeonSnapshot(),
+			fetchCivicFeed(NEWS_FEED_ID),
+			fetchCivicFeed(CHANGES_FEED_ID),
+		])
+		const previous = parseGraphSnapshot(previousPayload)
+		const today = new Date().toISOString().slice(0, 10)
+		// History accumulates: stored items are kept and new ones join them.
+		let news = resolveStoredFeed(storedNews, nigeriaNews, parseNewsFeed).items
+		let changes = resolveStoredFeed(storedChanges, nigeriaChanges, parseChangesFeed).items
 		if (options?.monitor) {
 			try {
-				const {
-					defaultCivicGenerate,
-					extractCivicUpdates,
-					fetchCivicSource,
-				} = await import('@/lib/ai/monitor')
-				const { parseRssNews } = await import('@/lib/graph/feed')
-				const source = await fetchCivicSource()
-				if (source) {
-					const extracted = await extractCivicUpdates(
-						source,
-						defaultCivicGenerate,
-					)
-					const { mentionLabels } = await import('@/lib/graph/mentions')
-					const rss = parseRssNews(source, mentionLabels(graph))
-					if (rss.length > 0) {
-						news = rss
-					} else if (extracted.news.length > 0) {
-						news = extracted.news
-					}
-					if (extracted.changes.length > 0) {
-						changes = extracted.changes
-					}
+				const { defaultCivicGenerate, extractCivicUpdates, fetchCivicSources } = await import('@/lib/ai/monitor')
+				const labels = mentionLabels(graph)
+				const sources = await fetchCivicSources()
+				const fresh = sources.flatMap((xml) => parseRssNews(xml, labels))
+				news = mergeNews(news, fresh)
+				// Announcements from the whole stored history, so a seat filled weeks ago is still filled today.
+				changes = mergeChanges(changes, appointmentsFromNews(news, labels, graph))
+				if (sources[0]) {
+					const extracted = await extractCivicUpdates(sources[0], defaultCivicGenerate)
+					changes = mergeChanges(changes, extracted.changes)
+					if (!fresh.length) news = mergeNews(news, extracted.news)
 				}
 			} catch {
-				news = nigeriaNews
-				changes = nigeriaChanges
+				// A failed monitor run keeps yesterday's feeds rather than erasing them.
 			}
 		}
+		graph = applyAppointments(graph, changes)
+		changes = mergeChanges(changes, diffOfficeholders(previous, graph, today))
+		await upsertSnapshot(graph)
 		await upsertFeed(NEWS_FEED_ID, 'news', news)
 		await upsertFeed(CHANGES_FEED_ID, 'changes', changes)
 		return graph

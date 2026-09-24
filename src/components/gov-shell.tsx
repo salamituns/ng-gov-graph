@@ -64,7 +64,14 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 				</div>
 				<div className="map-canvas">
 					{view === 'power' ? (
-						<PowerMap {...power} asOf={asOf} onSelect={(id) => router.push(href({ id, view: 'power' }), { scroll: false })} />
+						<PowerMap
+							{...power}
+							asOf={asOf}
+							selectedId={selectedId}
+							onSelect={(person) => router.push(href({ id: person.seatId ?? person.nodeId, view: 'power' }), { scroll: false })}
+							onSeeOnGraph={(person) => router.push(href({ id: person.seatId ?? person.nodeId, view: 'graph' }), { scroll: false })}
+							onClear={() => router.push(`/${gov}?view=power`, { scroll: false })}
+						/>
 					) : (
 						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} />
 					)}

@@ -30,7 +30,7 @@ export function summarizeOverview(graph: CompiledGraph): OverviewCounts {
 		byBranch,
 		organizationCount: organizations.length,
 		subAgencyCount: graph.satellites.length,
-		vacantSeats: seats.filter((seat) => seat.people.length === 0).length,
+		vacantSeats: seats.filter((seat) => seat.people.length === 0 && !seat.unrecorded).length,
 		actingOfficials: seats.filter((seat) => seat.people.some((person) => person.acting)).length,
 	}
 }

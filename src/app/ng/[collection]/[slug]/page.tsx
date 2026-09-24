@@ -74,6 +74,7 @@ function connectionGroups(gov: string, graph: CompiledGraph, node: GraphNode) {
 	const parent = org?.parentId ? graph.nodes[org.parentId] : undefined
 	return [
 		{ title: nested > children.length ? `Sub-agencies (${nested} including nested)` : 'Sub-agencies', cards: children.map((item) => card(gov, item, item.people[0]?.name)) },
+		{ title: 'Chaired by', cards: from('ex_officio') },
 		{ title: 'Elected by', cards: from('elects') },
 		{ title: 'Appointed by', cards: from('appoints') },
 		{ title: 'Confirmed by', cards: from('confirms') },
@@ -81,6 +82,7 @@ function connectionGroups(gov: string, graph: CompiledGraph, node: GraphNode) {
 		{ title: 'Appoints', cards: outgoing('appoints') },
 		{ title: 'Confirms', cards: outgoing('confirms') },
 		{ title: 'Oversees', cards: outgoing('oversees') },
+		{ title: 'Chairs', cards: outgoing('ex_officio') },
 	]
 }
 
@@ -140,8 +142,8 @@ export default async function EntityPage({ params }: PageProps) {
 					<div className="holder-card is-vacant">
 						<span className="holder-portrait" />
 						<span>
-							<strong>Vacant</strong>
-							<small>No sourced officeholder for this seat</small>
+							<strong>{seat.unrecorded ? 'Officeholder not yet recorded' : 'Vacant'}</strong>
+							<small>{seat.unrecorded ? 'The appointment rule is sourced; the current holder is not yet in the graph' : 'No current officeholder for this seat'}</small>
 						</span>
 					</div>
 				) : null}

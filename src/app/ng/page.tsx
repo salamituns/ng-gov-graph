@@ -39,7 +39,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	const overview = summarizeOverview(graph)
 	const labels = mentionLabels(data.graph)
 
-	const stories = [...data.news].sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+	const stories = data.news.filter((item) => item.entityIds?.length).sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
 	const prose: ProseItem[] = stories.slice(0, 12).map((item) => ({
 		id: item.id,
 		url: item.url,

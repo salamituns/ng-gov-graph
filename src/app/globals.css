@@ -226,6 +226,8 @@
 .fan-line { stroke:var(--tone); stroke-width:.6; stroke-dasharray:2 2.5; opacity:.7; }
 .chain-link { fill:none; stroke:var(--tone); stroke-width:1.3; }
 .chain-link.link-oversees, .chain-link.link-contains { stroke-dasharray:4 3; stroke-width:1.1; }
+.chain-link.link-ex_officio { stroke-dasharray:1 3; stroke-linecap:round; stroke-width:1.6; }
+.node .seat-unrecorded { fill:var(--gg-glyph); stroke-dasharray:1.2 1.2; }
 .marker-fill { fill:var(--tone); }
 .marker-open { fill:var(--gg-surface); stroke:var(--tone); stroke-width:1.3; }
 .marker-stroke { fill:none; stroke:var(--tone); stroke-width:1.4; }
@@ -423,3 +425,28 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .part-of-card { padding:10px 12px; }
 .part-of-card strong { font-size:14px; }
 .empty-box { padding:22px; border:1px solid var(--gg-line); border-radius:8px; text-align:center; color:var(--gg-muted); font-size:13px; }
+.node .seat-selected { stroke:var(--gg-text); stroke-width:1.6; }
+.node.is-selected .seat-selected { fill:var(--tone); stroke:var(--gg-glyph); }
+
+/* ---------- Power map selection ---------- */
+.power-map { position:relative; }
+.power-person.is-dim, .power-link-group.is-dim { opacity:.28; }
+.power-person.is-selected .power-ring { stroke-width:4; }
+.power-link-group.is-active .power-link { stroke:var(--gg-text); stroke-width:1.2; opacity:1; }
+.power-link-label { fill:var(--gg-muted); font-size:10px; }
+.person-card { position:absolute; z-index:8; width:250px; transform:translate(-50%, 10px); padding:14px; border-radius:11px; background:var(--gg-panel); box-shadow:0 14px 40px #0004, 0 0 0 1px var(--gg-line); font-size:12px; }
+.person-card header { display:flex; gap:10px; align-items:center; padding-right:16px; }
+.person-card header img, .person-card-initials { width:40px; height:40px; border-radius:50%; object-fit:cover; object-position:top; flex:none; background:var(--gg-panel-2); display:grid; place-items:center; color:var(--gg-muted); }
+.person-card header strong { display:block; font-size:14px; }
+.person-card header small { color:var(--gg-muted); }
+.person-card-close { position:absolute; top:8px; right:10px; color:var(--gg-muted); font-size:16px; line-height:1; }
+.person-card-stats { margin-top:12px; }
+.person-card-spark { width:120px; height:28px; margin-top:8px; overflow:visible; }
+.person-card-spark polyline { fill:none; stroke:var(--gg-hub); stroke-width:1.5; stroke-linejoin:round; }
+.person-card-caption { color:var(--gg-faint); font-size:10px; }
+.person-card-latest { display:grid; gap:2px; margin-top:10px; line-height:1.35; }
+.person-card-latest span { display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.person-card-latest small { color:var(--gg-muted); }
+.person-card-latest:hover span { text-decoration:underline; }
+.person-card-cta { width:100%; margin-top:12px; padding:8px; border-radius:8px; background:var(--gg-text); color:var(--gg-panel); font-weight:500; }
+.person-card-cta:hover { opacity:.88; }

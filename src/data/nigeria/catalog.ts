@@ -632,6 +632,7 @@ const core: EntitySpec[] = [
 		description: 'Advises the National Judicial Council on nominations to federal judicial offices and appoints and disciplines the staff of federal courts.',
 		legalSourceUrl: `${CONSTITUTION}#s153`,
 		aliases: ['FJSC'],
+		chairedBy: 'ng-supreme-court',
 	},
 	{
 		id: 'ng-clerk-to-the-national-assembly',
@@ -652,6 +653,7 @@ const core: EntitySpec[] = [
 		description: 'Recommends judicial appointments and exercises disciplinary control over judicial officers.',
 		legalSourceUrl: `${CONSTITUTION}#s153`,
 		aliases: ['NJC'],
+		chairedBy: 'ng-supreme-court',
 		head: {
 			id: 'ng-njc-chair',
 			title: 'Chairman of the National Judicial Council',

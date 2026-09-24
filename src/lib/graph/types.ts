@@ -42,6 +42,10 @@ export interface SeatSpec {
 	person: Officeholder | null
 	appointedBy?: string
 	confirmedBy?: string
+	/** The holder is not yet sourced; the seat is not known to be vacant. */
+	unrecorded?: boolean
+	/** The law the appointment is made under, e.g. "section 154 of the Constitution". */
+	basis?: string
 }
 
 export interface EntitySpec {
@@ -57,6 +61,8 @@ export interface EntitySpec {
 	extraSeats?: SeatSpec[]
 	parentId?: string
 	layer?: GraphLayer
+	/** An office whose holder chairs this body ex officio, e.g. the President chairs the Council of State. */
+	chairedBy?: string
 }
 
 export interface Catalog {
@@ -87,6 +93,8 @@ export interface GraphNode {
 	connectedNodes: string[]
 	parentId?: string
 	layer?: GraphLayer
+	/** A seat whose holder is not yet sourced. */
+	unrecorded?: boolean
 }
 
 export interface GraphEdge {

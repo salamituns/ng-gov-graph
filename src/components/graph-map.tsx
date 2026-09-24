@@ -23,6 +23,7 @@ const LINK_VERB: Record<AuthorityLink['type'], string> = {
 	appoints: 'appoints',
 	confirms: 'confirms',
 	oversees: 'oversees',
+	ex_officio: 'chairs',
 	contains: 'includes',
 }
 
@@ -31,6 +32,7 @@ const LINK_LABEL: Record<AuthorityLink['type'], string> = {
 	appoints: 'Appoints',
 	confirms: 'Confirms',
 	oversees: 'Oversees',
+	ex_officio: 'Chairs',
 	contains: 'Part of',
 }
 
@@ -155,6 +157,8 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 					<Node
 						key={item.id}
 						item={expanded.get(item.id) ?? item}
+						seatUnrecorded={Boolean(item.node.head && graph.nodes[item.node.head]?.unrecorded)}
+						seatSelected={Boolean(selectedId && item.node.head === selectedId)}
 						state={item.id === focusId ? 'selected' : lit.has(item.id) || fan.includes(item.id) ? 'lit' : item.id === hoverId ? 'hover' : 'idle'}
 						onSelect={onSelect}
 						onHover={setHoverId}
@@ -207,7 +211,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 						</label>
 					)}
 					<p>Relationships</p>
-					{(['elects', 'appoints', 'confirms', 'oversees'] as const).map((type) => (
+					{(['elects', 'appoints', 'confirms', 'oversees', 'ex_officio'] as const).map((type) => (
 						<span key={type} className="legend-link">
 							<svg viewBox="0 0 28 10" aria-hidden="true">
 								<path d="M 2 5 L 14 5 L 26 5" className={`chain-link link-${type} tone-${type === 'elects' ? 'hub' : type === 'confirms' ? 'legislative' : 'executive'}`}
@@ -225,10 +229,14 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 function Node({
 	item,
 	state,
+	seatUnrecorded = false,
+	seatSelected = false,
 	onSelect,
 	onHover,
 }: {
 	item: PlacedNode
+	seatUnrecorded?: boolean
+	seatSelected?: boolean
 	state: 'selected' | 'lit' | 'hover' | 'idle'
 	onSelect: (id: string) => void
 	onHover: (id: string | null) => void
@@ -286,10 +294,10 @@ function Node({
 				<circle
 					cx={item.x + seat.dx}
 					cy={item.y + seat.dy}
-					r={seat.r}
-					className={item.node.people.length ? 'seat seat-filled' : 'seat seat-vacant'}
+					r={seatSelected ? seat.r + 1.6 : seat.r}
+					className={`${item.node.people.length ? 'seat seat-filled' : seatUnrecorded ? 'seat seat-unrecorded' : 'seat seat-vacant'}${seatSelected ? ' seat-selected' : ''}`}
 				>
-					<title>{item.node.people[0]?.name ?? 'Vacant seat'}</title>
+					<title>{item.node.people[0]?.name ?? (seatUnrecorded ? 'Officeholder not yet recorded' : 'Vacant seat')}</title>
 				</circle>
 			)}
 		</g>
@@ -409,6 +417,9 @@ function Markers() {
 				</marker>,
 				<marker key={`o-${tone}`} id={`m-oversees-${tone}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
 					<path d="M 1 1 L 9 5 L 1 9" className={`marker-stroke tone-${tone}`} />
+				</marker>,
+				<marker key={`x-${tone}`} id={`m-ex_officio-${tone}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
+					<circle cx="5" cy="5" r="3" className={`marker-fill tone-${tone}`} />
 				</marker>,
 				<marker key={`p-${tone}`} id={`m-contains-${tone}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto" markerUnits="userSpaceOnUse">
 					<path d="M 1 1 L 9 5 L 1 9" className={`marker-stroke tone-${tone}`} />

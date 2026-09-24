@@ -1,5 +1,6 @@
 import type { NewsItem } from '@/data/nigeria/news'
 import { primarySeats } from './mentions'
+import { newsHeadline } from './news-text'
 import type { CompiledGraph } from './types'
 
 export type PowerWindow = 7 | 30 | 90
@@ -82,8 +83,14 @@ export interface PowerPerson {
 	imageUrl?: string
 	party?: string
 	sector: string
+	/** The person's seat, so the power map can open their page and "See on the graph" can select it. */
+	seatId?: string
 	total: number
-	latest?: { date: string; headline: string; url: string }
+	/** Mentions this week, and per week for the last twelve weeks, oldest first. */
+	thisWeek: number
+	weeks: number[]
+	rank: number
+	latest?: { date: string; headline: string; url: string; source: string }
 }
 
 export interface PowerLink {
@@ -124,12 +131,22 @@ export function powerPeople(graph: CompiledGraph, news: NewsItem[], days: number
 				imageUrl: person.imageUrl,
 				party: person.party,
 				sector: node.sector ?? 'executive',
+				seatId: node.head,
 				total: 0,
+				thisWeek: 0,
+				weeks: Array.from({ length: 12 }, () => 0),
+				rank: 0,
 			}
 			entry.total += 1
 			const date = item.publishedAt?.slice(0, 10)
+			if (date) {
+				const age = Math.floor((now.getTime() - Date.parse(`${date}T00:00:00Z`)) / 86400000)
+				if (age < 7) entry.thisWeek += 1
+				const week = 11 - Math.floor(age / 7)
+				if (week >= 0 && week < 12) entry.weeks[week] += 1
+			}
 			if (date && (!entry.latest || date > entry.latest.date)) {
-				entry.latest = { date, headline: item.summary.replace(/<[^>]+>/g, ''), url: item.url }
+				entry.latest = { date, headline: newsHeadline(item), url: item.url, source: item.publication }
 			}
 			tally.set(name, entry)
 		}
@@ -137,6 +154,7 @@ export function powerPeople(graph: CompiledGraph, news: NewsItem[], days: number
 	const people = [...tally.values()]
 		.sort((a, b) => b.total - a.total || a.name.localeCompare(b.name))
 		.slice(0, limit)
+		.map((person, index) => ({ ...person, rank: index + 1 }))
 	const shown = new Set(people.map((person) => person.nodeId))
 	const links: PowerLink[] = []
 	for (const edge of Object.values(graph.edges)) {

@@ -58,7 +58,17 @@ export function primarySeats(graph: CompiledGraph): Map<string, GraphNode> {
  * Builds the label table used to tag news. Institutions match on their name and aliases;
  * officeholders match on their full name, or a distinctive surname, and resolve to one primary seat.
  */
+const labelCache = new WeakMap<CompiledGraph, MentionLabel[]>()
+
 export function mentionLabels(graph: CompiledGraph): MentionLabel[] {
+	const cached = labelCache.get(graph)
+	if (cached) return cached
+	const built = buildLabels(graph)
+	labelCache.set(graph, built)
+	return built
+}
+
+function buildLabels(graph: CompiledGraph): MentionLabel[] {
 	const labels: MentionLabel[] = []
 	const orgs = Object.values(graph.nodes).filter(
 		(node) => node.type !== 'dept_head' && node.type !== 'constituency',
@@ -87,12 +97,21 @@ export function mentionLabels(graph: CompiledGraph): MentionLabel[] {
 	return labels.sort((a, b) => b.label.length - a.label.length)
 }
 
-/** Finds non-overlapping mentions, longest label first, on word boundaries. */
-export function findMentions(text: string, labels: MentionLabel[]): MentionSpan[] {
-	const spans: MentionSpan[] = []
-	const taken = (start: number, end: number) => spans.some((span) => start < span.end && end > span.start)
-	for (const entry of labels) {
-		const flags = isAcronym(entry.label) || entry.kind === 'person' ? 'g' : 'gi'
+interface Compiled {
+	entry: MentionLabel
+	pattern: RegExp
+	/** A cheap pre-check: skip the regex when the text cannot contain the label. */
+	probe: string
+}
+
+// Label tables are built once per graph, so their compiled patterns are cached by identity.
+const compiledCache = new WeakMap<MentionLabel[], Compiled[]>()
+
+function compile(labels: MentionLabel[]): Compiled[] {
+	const cached = compiledCache.get(labels)
+	if (cached) return cached
+	const compiled = labels.map((entry) => {
+		const caseless = !(isAcronym(entry.label) || entry.kind === 'person')
 		// State House headlines are set in capitals, so a name also matches its upper-case form.
 		const body = entry.kind === 'person'
 			? `(?:${escape(entry.label)}|${escape(entry.label.toUpperCase())})`
@@ -100,7 +119,24 @@ export function findMentions(text: string, labels: MentionLabel[]): MentionSpan[
 		const title = entry.titled
 			? `(?<=(?:${TITLES.flatMap((word) => [word, word.toUpperCase()]).map(escape).join('|')})\\s)`
 			: ''
-		const pattern = new RegExp(`${title}(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, `${flags}u`)
+		return {
+			entry,
+			pattern: new RegExp(`${title}(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, caseless ? 'giu' : 'gu'),
+			probe: entry.label.toLowerCase(),
+		}
+	})
+	compiledCache.set(labels, compiled)
+	return compiled
+}
+
+/** Finds non-overlapping mentions, longest label first, on word boundaries. */
+export function findMentions(text: string, labels: MentionLabel[]): MentionSpan[] {
+	const spans: MentionSpan[] = []
+	const lower = text.toLowerCase()
+	const taken = (start: number, end: number) => spans.some((span) => start < span.end && end > span.start)
+	for (const { entry, pattern, probe } of compile(labels)) {
+		if (!lower.includes(probe)) continue
+		pattern.lastIndex = 0
 		for (const match of text.matchAll(pattern)) {
 			const start = match.index ?? 0
 			const end = start + match[0].length
