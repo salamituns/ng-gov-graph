@@ -6,7 +6,8 @@ import { nigeriaAgenciesCatalog } from '@/data/nigeria/agencies'
 import { nigeriaNassCatalog } from '@/data/nigeria/nass'
 import { nigeriaStatesCatalog } from '@/data/nigeria/states'
 import { buildGraph } from '@/lib/graph/build-graph'
-import { parseChangesFeed, parseNewsFeed, resolveStoredFeed } from '@/lib/graph/feed'
+import { parseChangesFeed, parseNewsFeed, resolveStoredFeed, retagNews } from '@/lib/graph/feed'
+import { mentionLabels } from '@/lib/graph/mentions'
 import { summarizeOverview } from '@/lib/graph/overview'
 import {
 	CHANGES_FEED_ID,
@@ -54,24 +55,46 @@ export function parseGraphSnapshot(value: unknown): CompiledGraph | null {
 	return value as unknown as CompiledGraph
 }
 
+function listsFor(nodes: CompiledGraph['nodes']) {
+	const ids = (type: GraphNode['type']) => Object.values(nodes).filter((node) => node.type === type).map((node) => node.id)
+	return {
+		elected: ids('elected'),
+		departments: ids('department'),
+		commissions: ids('commission'),
+		advisories: ids('advisory'),
+		courts: ids('court'),
+		corporations: ids('corporation'),
+		deptHeads: ids('dept_head'),
+		satellites: Object.values(nodes)
+			.filter((node) => node.parentId && node.type !== 'dept_head' && node.type !== 'constituency')
+			.map((node) => node.id),
+	}
+}
+
 export async function resolveNigeriaGraph(
 	loadPayload: () => Promise<unknown | null>,
 ) {
 	const parsed = parseGraphSnapshot(await loadPayload())
 	if (parsed) {
-		const missing = nigeriaAgenciesCatalog.entities
-			.map((agency) => agency.id)
-			.filter((id) => !parsed.nodes[id])
+		// Stored snapshots carry live officeholders. Back-fill any catalog body added since the last seed.
+		const catalog = compileNigeriaGraph()
+		// Seats are left alone: persist renames or drops placeholder seats on purpose, so only
+		// organizations come back, with seats only when their organization is new too.
+		const newOrgs = new Set(
+			Object.values(catalog.nodes)
+				.filter((node) => node.type !== 'dept_head' && !parsed.nodes[node.id])
+				.map((node) => node.id),
+		)
+		const missing = Object.values(catalog.nodes)
+			.filter((node) => newOrgs.has(node.id) || (node.type === 'dept_head' && node.parentId && newOrgs.has(node.parentId)))
+			.map((node) => node.id)
 		if (!missing.length) return { graph: parsed, source: 'neon' as const }
 
-		// Stored snapshots carry live officeholders. Add catalog agencies without replacing them.
-		const catalog = compileNigeriaGraph()
 		const nodes = { ...parsed.nodes }
 		const edges = { ...parsed.edges }
 		const added = new Set(missing)
 		for (const id of missing) {
-			const node = catalog.nodes[id]
-			if (node) nodes[id] = { ...node, edges: [], connectedNodes: [] }
+			nodes[id] = { ...catalog.nodes[id], edges: [], connectedNodes: [] }
 		}
 		for (const edge of Object.values(catalog.edges)) {
 			if (!added.has(edge.fromId) && !added.has(edge.toId)) continue
@@ -90,9 +113,7 @@ export async function resolveNigeriaGraph(
 		return {
 			graph: {
 				...parsed, nodes, edges,
-				departments: [...parsed.departments, ...missing.filter((id) => nodes[id]?.type === 'department')],
-				corporations: [...parsed.corporations, ...missing.filter((id) => nodes[id]?.type === 'corporation')],
-				satellites: [...parsed.satellites, ...missing],
+				...listsFor(nodes),
 			},
 			source: 'neon' as const,
 		}
@@ -118,7 +139,7 @@ export const loadNigeriaGraph = cache(async () => {
 		graph: resolved.graph,
 		overview: summarizeOverview(resolved.graph),
 		changes: changes.items,
-		news: news.items,
+		news: retagNews(news.items, mentionLabels(resolved.graph)),
 		newsSource: news.source,
 		changesSource: changes.source,
 		source: resolved.source,

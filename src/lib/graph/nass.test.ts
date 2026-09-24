@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { compileNigeriaGraph } from './nigeria'
 import { filterGraph } from './filter'
-import { layoutGraph } from './layout'
+import { layoutGovernment } from './layout'
 
 describe('NASS occupancy', () => {
 	it('compiles 109 senatorial district seats and 360 House seats', () => {
@@ -42,7 +42,7 @@ describe('NASS occupancy', () => {
 
 	it('keeps district seats off the federal map', () => {
 		const graph = filterGraph(compileNigeriaGraph(), 'federal')
-		const placed = layoutGraph(graph, 800, 800)
+		const placed = layoutGovernment(graph).nodes
 		assert.equal(
 			placed.some((item) => item.id.startsWith('ng-senator-')),
 			false,

@@ -140,3 +140,25 @@ export const nigeriaStatesCatalog: Catalog = {
 		{ fromId: 'ng-ministry-of-fct', toId: 'ng-fct' },
 	],
 }
+
+/** The six geopolitical zones used for federal character and zonal rotation. */
+export const ZONE_ORDER = ['North West', 'North East', 'South South', 'South East', 'South West', 'North Central'] as const
+export type GeopoliticalZone = (typeof ZONE_ORDER)[number]
+
+const ZONE_STATES: Record<GeopoliticalZone, string[]> = {
+	'North Central': ['benue', 'kogi', 'kwara', 'nasarawa', 'niger', 'plateau'],
+	'North East': ['adamawa', 'bauchi', 'borno', 'gombe', 'taraba', 'yobe'],
+	'North West': ['jigawa', 'kaduna', 'kano', 'katsina', 'kebbi', 'sokoto', 'zamfara'],
+	'South East': ['abia', 'anambra', 'ebonyi', 'enugu', 'imo'],
+	'South South': ['akwa-ibom', 'bayelsa', 'cross-river', 'delta', 'edo', 'rivers'],
+	'South West': ['ekiti', 'lagos', 'ogun', 'ondo', 'osun', 'oyo'],
+}
+
+export const STATE_ZONES: Record<string, GeopoliticalZone> = {
+	'ng-fct': 'North Central',
+	...Object.fromEntries(
+		Object.entries(ZONE_STATES).flatMap(([zone, slugs]) =>
+			slugs.map((slug) => [`ng-${slug}-state`, zone as GeopoliticalZone]),
+		),
+	),
+}
