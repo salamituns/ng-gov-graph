@@ -1,5 +1,6 @@
 import type { NewsItem } from '@/data/nigeria/news'
 import { mentionedIds, usableEntityLabel, type MentionLabel } from './mentions'
+import { decodeHtml } from './news-text'
 import type { PersonnelChange } from './types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -125,7 +126,7 @@ export function parseRssNews(
 	entities: Array<{ id: string; label: string; kind?: MentionLabel['kind'] }>,
 ): NewsItem[] {
 	const channel = xml.match(/<channel[\s\S]*$/i)?.[0] ?? xml
-	const publication = rssField(channel.split(/<item[\s>]/i)[0] ?? '', 'title') || 'Official feed'
+	const publication = publicationName(rssField(channel.split(/<item[\s>]/i)[0] ?? '', 'title'))
 	const labels: MentionLabel[] = entities
 		.map((entity) => ({ id: entity.id, label: entity.label.trim(), kind: entity.kind ?? 'entity' as const }))
 		.filter((entity) => entity.kind === 'person' || usableEntityLabel(entity.label))
@@ -159,9 +160,15 @@ export function parseRssNews(
 	return items
 }
 
+/** WordPress titles later feed pages "Page 2 – Daily Trust"; the publication is the name without it. */
+export function publicationName(title: string) {
+	return decodeHtml(title).replace(/^Page \d+\s*[–—|•\-:]\s*/i, '').replace(/\s+-\s+Latest News$/i, '').trim() || 'Official feed'
+}
+
 /** Re-derives entity tags so stories stored before a matcher fix are tagged by the current rules. */
 export function retagNews(news: NewsItem[], labels: MentionLabel[]): NewsItem[] {
-	return news.map((item) => {
+	return news.map((raw) => {
+		const item = { ...raw, publication: publicationName(raw.publication) }
 		const inline = [...item.summary.matchAll(/<gov_entities='([^']+)'>/g)].map((match) => match[1])
 		if (inline.length) return { ...item, entityIds: [...new Set([...inline, ...(item.entityIds ?? [])])] }
 		const text = `${item.summary}. ${item.excerpt ?? ''}`
