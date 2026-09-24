@@ -81,8 +81,10 @@ export function GraphMap({
 		[placed],
 	)
 	const bands = useMemo(
-		() => sectorBands(width, height, placed).filter((band) => placed.some((item) => item.node.sector === band.sector)),
-		[placed],
+		() => sectorBands(width, height).filter((band) => placed.some(
+			(item) => item.node.sector === band.sector && (!item.node.parentId || !at.has(item.node.parentId)),
+		)),
+		[placed, at],
 	)
 	const organizations = useMemo(() => organizationBands(placed, width, height), [placed])
 	const entityTypes = [...new Set(placed.map((item) => item.node.type))].filter(
@@ -128,7 +130,7 @@ export function GraphMap({
 	return (
 		<div className="relative h-full min-h-[420px] overflow-hidden bg-[#1c1a17]">
 			<svg
-				viewBox={`0 0 ${width} ${height}`}
+				viewBox={`0 -30 ${width} ${height + 60}`}
 				className="h-full w-full"
 				role="group"
 				aria-label="Nigeria government graph"
@@ -149,23 +151,26 @@ export function GraphMap({
 						</text>
 					</g>
 				))}
-				{organizations.filter((band) => visible(band.id)).map((band) => (
-				<path
-					key={band.id}
-					d={band.d}
-					fill={SECTOR_COLOR[band.sector]}
-					fillOpacity={family.has(band.id) ? 0.24 : band.children > 2 ? 0.12 : 0.07}
-					stroke={SECTOR_COLOR[band.sector]}
-					strokeOpacity={family.has(band.id) ? 0.75 : band.children > 2 ? 0.32 : 0.2}
-					strokeWidth={0.8}
-				/>
+				{organizations.filter((band) => visible(band.id) && (band.children > 2 || family.has(band.id))).map((band) => (
+					<path
+						key={band.id}
+						d={band.d}
+						fill={SECTOR_COLOR[band.sector]}
+						fillOpacity={family.has(band.id) ? 0.24 : 0.12}
+						stroke={SECTOR_COLOR[band.sector]}
+						strokeOpacity={family.has(band.id) ? 0.75 : 0.32}
+						strokeWidth={0.8}
+						/>
 				))}
 				{visibleEdges
 					.filter(
 						(edge) =>
+							activeId &&
 							!hiddenEdges.has(edge.type) &&
 							visible(edge.fromId) &&
-							visible(edge.toId),
+							visible(edge.toId) &&
+							((family.has(edge.fromId) && family.has(edge.toId)) ||
+								edge.fromId === activeOrgId || edge.toId === activeOrgId),
 					)
 					.map((edge) => {
 						const from = at.get(edge.fromId)
@@ -173,13 +178,6 @@ export function GraphMap({
 						if (!from || !to) {
 							return null
 						}
-						const lit =
-							!activeId ||
-							(family.has(edge.fromId) && family.has(edge.toId)) ||
-							edge.fromId === activeId ||
-							edge.toId === activeId ||
-							edge.fromId === activeId?.replace(/^holder:/, '') ||
-							edge.toId === activeId?.replace(/^holder:/, '')
 						return (
 							<line
 								key={edge.id}
@@ -187,12 +185,8 @@ export function GraphMap({
 								y1={from.y}
 								x2={to.x}
 								y2={to.y}
-								stroke={
-									lit && activeId
-										? 'rgba(223,209,191,0.55)'
-										: 'rgba(223,209,191,0.04)'
-								}
-								strokeWidth={lit && activeId ? 1.2 : 0.5}
+								stroke="rgba(223,209,191,0.55)"
+								strokeWidth={1.2}
 								strokeDasharray={edge.type === 'elects' ? undefined : edge.type === 'oversees' ? '2 3' : '4 3'}
 							/>
 						)
@@ -358,7 +352,8 @@ export function GraphMap({
 								{showLabel && !isHub ? (
 									<text
 										x={item.x}
-										y={mode === 'people' && isExecutiveOffice ? item.y - radius - 10 : item.y + radius + 12}
+										y={(mode === 'people' && isExecutiveOffice) || item.id === 'ng-vice-president'
+										? item.y - radius - 10 : item.y + radius + 12}
 										textAnchor="middle"
 										fill="#d5c9bb"
 										fontSize={isExecutiveOffice ? 11 : 9}

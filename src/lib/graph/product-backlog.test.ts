@@ -27,6 +27,14 @@ describe('people layout', () => {
 		assert.ok(Math.hypot(president.x - 400, president.y - 400) < parentDist)
 		assert.ok(Math.hypot(vicePresident.x - 400, vicePresident.y - 400) < parentDist)
 		assert.ok(Math.hypot(president.x - vicePresident.x, president.y - vicePresident.y) > 40)
+		const ministries = placed.filter(
+			(item) => item.node.sector === 'executive' && !item.node.parentId && item.node.type !== 'elected',
+		)
+		const distances = ministries.map((item) => Math.round(Math.hypot(item.x - 400, item.y - 400)))
+		assert.deepEqual([...new Set(distances)], [312])
+		assert.ok(ministries.every((item, index) => ministries.slice(index + 1).every(
+			(other) => Math.hypot(item.x - other.x, item.y - other.y) > 20,
+		)))
 		const bands = organizationBands(placed, 800, 800)
 		const parents = new Set(
 			placed
@@ -35,14 +43,8 @@ describe('people layout', () => {
 		)
 		assert.deepEqual(new Set(bands.map((band) => band.id)), parents)
 		assert.ok(bands.every((band) => !band.d.includes('NaN')))
-		const federalOutline = sectorBands(800, 800, placed).find((band) => band.sector === 'executive')
-		const stateOutline = sectorBands(
-			800,
-			800,
-			layoutGraph(filterGraph(compileNigeriaGraph(), 'state'), 800, 800),
-		).find((band) => band.sector === 'executive')
-		assert.ok(federalOutline && federalOutline.d.split('L').length > 10)
-		assert.ok(stateOutline && stateOutline.d.split('L').length === 2)
+		const executiveOutline = sectorBands(800, 800).find((band) => band.sector === 'executive')
+		assert.ok(executiveOutline && executiveOutline.d.split('L').length > 100)
 	})
 
 	it('places occupied officeholders as holder nodes in people mode', () => {
@@ -71,6 +73,20 @@ describe('people layout', () => {
 				(item) => Math.hypot(item.x - 400, item.y - 400) <= 800 * 0.47,
 			),
 		)
+	})
+
+	it('keeps the combined federal and state view legible', () => {
+		const placed = layoutGraph(compileNigeriaGraph(), 920, 720)
+		const nodes = placed.filter((item) => item.node.type !== 'constituency')
+		for (const [index, item] of nodes.entries()) {
+			for (const other of nodes.slice(index + 1)) {
+				assert.ok(Math.hypot(item.x - other.x, item.y - other.y) >= 14, `${item.id} overlaps ${other.id}`)
+			}
+		}
+		const state = placed.find((item) => item.id === 'ng-lagos-state')
+		const house = placed.find((item) => item.id === 'ng-lagos-house-of-assembly')
+		assert.ok(state && house)
+		assert.ok(Math.hypot(house.x - 460, house.y - 360) > Math.hypot(state.x - 460, state.y - 360))
 	})
 })
 
