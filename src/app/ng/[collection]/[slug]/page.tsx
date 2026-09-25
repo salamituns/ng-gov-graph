@@ -134,12 +134,13 @@ export default async function EntityPage({ params }: PageProps) {
 								<strong>{holder.name}</strong>
 								<small>
 									{holder.acting ? 'Acting · ' : ''}
-									{holder.appointedYear ? `${node.type === 'elected' || seat?.id.includes('senator') || seat?.id.includes('rep-') ? 'Since' : 'Appointed'} ${holder.appointedYear}` : 'Incumbent'}
+									{holder.handoverUnconfirmed ? 'Appointment announced · handover unconfirmed' : holder.appointedYear ? `${node.type === 'elected' || seat?.id.includes('senator') || seat?.id.includes('rep-') ? 'Since' : 'Appointed'} ${holder.appointedYear}` : 'Incumbent'}
 									{holder.party ? ` · ${holder.party}` : ''}
 								</small>
 							</span>
 						</Link>
 						{holder.sourceUrl ? <p className="entity-sources"><a href={holder.sourceUrl} target="_blank" rel="noreferrer">Officeholder source</a>{holder.sourceCheckedAt ? ` · as of ${holder.sourceCheckedAt}` : ''}</p> : null}
+						{holder.handoverSourceUrl ? <p className="entity-sources"><a href={holder.handoverSourceUrl} target="_blank" rel="noreferrer">Handover report</a></p> : null}
 					</>
 				) : seat ? (
 					<div className="holder-card is-vacant">

@@ -76,7 +76,7 @@ export const AGENCY_HEADS: Record<string, HeadSpec> = {
 	'ng-nln': { title: 'National Librarian' },
 	'ng-ninlan': { title: 'Executive Director' },
 	'ng-nflv': { title: 'Director' },
-	'ng-nalv': { title: 'Director' },
+	'ng-nalv': { title: 'Director and Chief Executive Officer' },
 	'ng-nis': { title: 'Comptroller-General' },
 	'ng-nscdc': { title: 'Commandant-General' },
 	'ng-ncs-corrections': { title: 'Controller-General' },

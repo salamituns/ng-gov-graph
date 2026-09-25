@@ -33,6 +33,8 @@ export interface Officeholder {
 	appointedYear?: number
 	party?: string
 	acting?: boolean
+	handoverUnconfirmed?: boolean
+	handoverSourceUrl?: string
 	imageUrl?: string
 	sourceUrl?: string
 	sourceCheckedAt?: string

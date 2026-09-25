@@ -1,8 +1,8 @@
 import type { CompiledGraph, Officeholder } from '@/lib/graph/types'
 
-// Current holders checked against the linked institutional or firsthand source on 2026-09-24.
+// Agency-head names and appointments checked against the linked institutional or firsthand source on 2026-09-24.
 // Keep the source with each name so a later appointment can be checked before replacing it.
-const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces?: string; acting?: boolean; title?: string }> = {
+const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces?: string; acting?: boolean; title?: string; handoverSourceUrl?: string }> = {
 	'ng-ngsa': { name: 'Olusegun O. Ige', sourceUrl: 'https://ngsa.gov.ng/management-team/' },
 	'ng-nitda': { name: 'Kashifu Inuwa Abdullahi', sourceUrl: 'https://nitda.gov.ng/management-team/' },
 	'ng-ndpc': { name: 'Vincent O. Olatunji', sourceUrl: 'https://ndpc.gov.ng/a-paradigm-shift-dr-olatunji-tasks-staff-on-transformational-leadership/' },
@@ -120,6 +120,8 @@ const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces
 	'ng-nsipa': { name: 'Badamasi Lawal', sourceUrl: 'https://www.nsipa.gov.ng/' },
 	'ng-arcn': { name: 'Adamu Abubakar Dabban', sourceUrl: 'https://ncam.gov.ng/2026/01/16/appointment-of-engr-dr-yinka-segun-ademiluyi-fnse-fniae-as-acting-executive-director-chief-executive-officer-of-national-centre-for-agricultural-mechanization-ncam-ilorin-kwara-state/' },
 	'ng-lrcn': { name: 'Ja’afaru Abdullahi Wase', sourceUrl: 'https://nla.org.ng/news/nla-president-leads-courtesy-visit-to-honourable-minister-of-state-for-education' },
+	'ng-nalv': { name: 'Muhammad Mai Abubakar', title: 'Director and Chief Executive Officer', sourceUrl: 'https://arabicvillage.com.ng/#director' },
+	'ng-bcda': { name: 'Abdulrazak Sa’ad Namdas', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-appoints-namdas-dg-for-bcda-obahiagbon-umeoji-executive-directors-for-ndphc/', handoverSourceUrl: 'https://tgnews.com.ng/bcda-george-still-in-office-as-dg-staff-confirm-over-two-months-after-namdas-appointment/' },
 }
 
 export function applyVerifiedHeads(graph: CompiledGraph): CompiledGraph {
@@ -129,7 +131,7 @@ export function applyVerifiedHeads(graph: CompiledGraph): CompiledGraph {
 		if (!seat || !org) continue
 		const oldName = seat.people[0]?.name
 		if (oldName ? oldName !== holder.replaces || org.people[0]?.name !== oldName : !seat.unrecorded || org.people.length) continue
-		const person: Officeholder = { name: holder.name, sourceUrl: holder.sourceUrl, sourceCheckedAt: '2026-09-24', ...(holder.acting ? { acting: true } : {}) }
+		const person: Officeholder = { name: holder.name, sourceUrl: holder.sourceUrl, sourceCheckedAt: '2026-09-24', ...(holder.acting ? { acting: true } : {}), ...(holder.handoverSourceUrl ? { handoverUnconfirmed: true, handoverSourceUrl: holder.handoverSourceUrl } : {}) }
 		seat.people = [person]
 		if (holder.title) seat.name = holder.title
 		org.people = [person]
