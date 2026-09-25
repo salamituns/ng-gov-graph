@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { authorityChain, descendantsOf, type AuthorityLink } from '@/lib/graph/authority'
+import { authorityChain, descendantsOf, organizationOf, type AuthorityLink } from '@/lib/graph/authority'
 import { glyphPath, sealPath, seatOffset } from '@/lib/graph/glyph'
 import { layoutGovernment, MAP, readableArc, RING, type PlacedNode, type Tone } from '@/lib/graph/layout'
 import type { CompiledGraph, NodeType } from '@/lib/graph/types'
@@ -61,7 +61,24 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 		() => (focusId ? descendantsOf(graph, focusId).filter((id) => at.has(id)) : []),
 		[graph, focusId, at],
 	)
-	const lit = new Set(chain.flatMap((link) => [link.fromId, link.toId]))
+	// What the selection controls: the President's appointments, the Senate's confirmations, a council's chairs.
+	const reach = useMemo(() => {
+		if (!focusId || !at.has(focusId)) return []
+		const sources = new Set([focusId, graph.nodes[focusId]?.head].filter(Boolean))
+		const below = new Set(fan)
+		const seen = new Set<string>()
+		const links: AuthorityLink[] = []
+		for (const edge of Object.values(graph.edges)) {
+			if (!sources.has(edge.fromId) || !(edge.type in LINK_VERB)) continue
+			const toId = organizationOf(graph, edge.toId)
+			const key = `${toId}|${edge.type}`
+			if (toId === focusId || below.has(toId) || !at.has(toId) || seen.has(key)) continue
+			seen.add(key)
+			links.push({ fromId: focusId, toId, type: edge.type as AuthorityLink['type'] })
+		}
+		return links
+	}, [graph, focusId, fan, at])
+	const lit = new Set([...chain, ...reach].flatMap((link) => [link.fromId, link.toId]))
 	const focus = focusId ? at.get(focusId) : undefined
 	// Selecting a body opens its dot cluster into full glyphs fanned out beneath it, as on CivLab.
 	const expanded = useMemo(() => {
@@ -133,6 +150,20 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 						})}
 					</g>
 				)}
+				<g className="reach">
+					{reach.map((link) => {
+						const from = at.get(link.fromId)!
+						const to = at.get(link.toId)!
+						const tone = link.type === 'confirms' ? 'legislative' : link.type === 'elects' ? 'hub' : from.tone
+						return (
+							<g key={`${link.toId}-${link.type}`} className="link-group" {...edgeProps(LINK_VERB[link.type], tone)}>
+								<title>{`${from.node.name} ${LINK_VERB[link.type]} ${to.node.name}`}</title>
+								<line x1={from.x} y1={from.y} x2={to.x} y2={to.y} className="link-hit" />
+								<path d={`M ${from.x} ${from.y} L ${(from.x + to.x) / 2} ${(from.y + to.y) / 2} L ${to.x} ${to.y}`} className={`reach-link link-${link.type} tone-${tone}`} markerMid={link.type === 'elects' ? 'url(#m-elects)' : `url(#m-${link.type}-${tone})`} />
+							</g>
+						)
+					})}
+				</g>
 				<g className="chain">
 					{chain.map((link) => {
 						const from = at.get(link.fromId)!

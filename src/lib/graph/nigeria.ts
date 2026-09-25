@@ -8,6 +8,7 @@ import { nigeriaNassCatalog } from '@/data/nigeria/nass'
 import { nigeriaStatesCatalog } from '@/data/nigeria/states'
 import { applyVerifiedHeads } from '@/data/nigeria/verified-heads'
 import { buildGraph } from '@/lib/graph/build-graph'
+import { portraitSize } from '@/lib/graph/portraits'
 import { parseChangesFeed, parseNewsFeed, resolveStoredFeed, retagNews } from '@/lib/graph/feed'
 import { mentionLabels } from '@/lib/graph/mentions'
 import { summarizeOverview } from '@/lib/graph/overview'
@@ -77,6 +78,9 @@ export async function resolveNigeriaGraph(
 	if (parsed) {
 		// Stored snapshots carry live officeholders. Back-fill any catalog body added since the last seed.
 		const catalog = compileNigeriaGraph()
+		for (const node of Object.values(parsed.nodes)) {
+			for (const person of node.people) if (person.imageUrl) person.imageUrl = portraitSize(person.imageUrl)
+		}
 		// Organization names and metadata belong to the catalog; the snapshot contributes live officeholders.
 		for (const [id, node] of Object.entries(parsed.nodes)) {
 			const fresh = catalog.nodes[id]

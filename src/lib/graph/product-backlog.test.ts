@@ -163,3 +163,26 @@ describe('civic monitor', () => {
 		assert.match(source, /Cabinet/)
 	})
 })
+
+describe('portrait matching', () => {
+	it('matches the person, not a namesake', async () => {
+		const { isSamePerson, officialImage } = await import('./portraits')
+		assert.equal(isSamePerson('Ali Muhammad Ali', 'Muhammad Ali Pate', 'Nigerian physician'), false)
+		assert.equal(isSamePerson('Mohammed Mohammed', 'Amina J. Mohammed', 'Nigerian diplomat'), false)
+		assert.equal(isSamePerson('Benjamin Kalu', 'Benjamin Okezie Kalu', 'Nigerian politician'), true)
+		assert.equal(isSamePerson('Benjamin Kalu', 'Benjamin Kalu (footballer)', 'English footballer'), false)
+		const page = `<img src="/uploads/dummy.png" alt="Mohammed Idris"><img src="/uploads/courtesy-visit.jpg" alt="Idris"><img src="/uploads/hon-idris.jpg" alt="">`
+		assert.equal(officialImage(page, 'https://fmino.gov.ng/about/', 'Mohammed Idris'), 'https://fmino.gov.ng/uploads/hon-idris.jpg')
+		assert.equal(officialImage('<img src="/x.jpg" alt="DG receives delegation from the EU climate group led by Barikor">', 'https://nesrea.gov.ng/', 'Innocent Barikor'), null)
+	})
+})
+
+describe('portrait size', () => {
+	it('shrinks oversized Wikimedia thumbnails and leaves the rest alone', async () => {
+		const { portraitSize } = await import('./portraits')
+		const base = 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/X.jpg/'
+		assert.equal(portraitSize(`${base}3840px-X.jpg`), `${base}500px-X.jpg`)
+		assert.equal(portraitSize(`${base}250px-X.jpg`), `${base}250px-X.jpg`)
+		assert.equal(portraitSize('https://nass.gov.ng/photo/92.jpg'), 'https://nass.gov.ng/photo/92.jpg')
+	})
+})
