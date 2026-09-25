@@ -36,6 +36,8 @@ export interface Officeholder {
 	handoverUnconfirmed?: boolean
 	handoverSourceUrl?: string
 	imageUrl?: string
+	/** The official page that publishes the portrait. */
+	imageSourceUrl?: string
 	sourceUrl?: string
 	sourceCheckedAt?: string
 }

@@ -140,7 +140,13 @@ export default async function EntityPage({ params }: PageProps) {
 								</small>
 							</span>
 						</Link>
-						{holder.sourceUrl ? <p className="entity-sources"><a href={holder.sourceUrl} target="_blank" rel="noreferrer">Officeholder source</a>{holder.sourceCheckedAt ? ` · as of ${holder.sourceCheckedAt}` : ''}</p> : null}
+						{holder.sourceUrl || holder.imageSourceUrl ? (
+							<p className="entity-sources">
+								{holder.sourceUrl ? <a href={holder.sourceUrl} target="_blank" rel="noreferrer">Officeholder source</a> : null}
+								{holder.sourceUrl && holder.sourceCheckedAt ? ` · as of ${holder.sourceCheckedAt}` : ''}
+								{holder.imageSourceUrl ? <a href={holder.imageSourceUrl} target="_blank" rel="noreferrer">Photo source</a> : null}
+							</p>
+						) : null}
 						{holder.handoverSourceUrl ? <p className="entity-sources"><a href={holder.handoverSourceUrl} target="_blank" rel="noreferrer">Handover report</a></p> : null}
 					</>
 				) : seat ? (
