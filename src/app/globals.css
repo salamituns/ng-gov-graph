@@ -477,3 +477,13 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .election-next strong { color:var(--gg-text); font-weight:500; }
 .election-source { display:inline-block; margin-top:10px; font-size:11px; color:var(--gg-faint); }
 .election-source:hover { color:var(--gg-text); }
+
+/* ---------- Nigeria at the core ---------- */
+.nigeria-core .core-state { fill:var(--gg-hub-fill); stroke:var(--gg-hub); stroke-width:.55; stroke-linejoin:round; cursor:pointer; transition:fill .12s; }
+.nigeria-core .core-state:hover { fill:color-mix(in srgb, var(--gg-hub) 55%, var(--gg-hub-fill)); }
+.nigeria-core .core-state.is-selected { fill:var(--gg-hub); }
+.nigeria-core .core-capital { fill:var(--gg-hub); stroke:var(--gg-hub-fill); stroke-width:.6; }
+.dark .nigeria-core .core-state { fill:color-mix(in srgb, var(--gg-hub-fill) 70%, var(--gg-disc)); stroke:#f0b48c; }
+.dark .nigeria-core .core-capital { fill:#fbe3cf; stroke:var(--gg-hub-fill); }
+.panel-footer span { display:block; margin-top:4px; }
+.panel-footer a { text-decoration:underline; text-underline-offset:2px; }

@@ -154,7 +154,10 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 				</p>
 			</section>
 			<footer className="panel-footer">
-				Govgraph maps Nigeria’s institutions, the offices inside them, and the constitutional and statutory links between them. Every entity links to its legal source.
+				Govgraph maps Nigeria’s institutions, the offices inside them, and the constitutional and statutory links between them. Every entity links to its legal source.{' '}
+				<span>
+					Map of Nigeria: <a href="https://www.geoboundaries.org/" target="_blank" rel="noreferrer">geoBoundaries</a> (GRID3, 2022), CC BY 4.0.
+				</span>
 			</footer>
 		</>
 	)

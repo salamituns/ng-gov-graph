@@ -33,6 +33,10 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 	const layer = params.get('layer') === 'states' || params.get('layer') === 'state' || selectedLayer === 'state' ? 'state' : 'federal'
 	const view = params.get('view') === 'power' ? 'power' : 'graph'
 	const visible = useMemo(() => filterGraph(graph, layer), [graph, layer])
+	const stateNames = useMemo(
+		() => Object.fromEntries(Object.values(graph.nodes).filter((node) => node.type === 'state').map((node) => [node.id, node.name])),
+		[graph],
+	)
 
 	const href = (next: { id?: string; view?: 'graph' | 'power' }) => {
 		const query = new URLSearchParams(params.toString())
@@ -73,7 +77,7 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 							onClear={() => router.push(`/${gov}?view=power`, { scroll: false })}
 						/>
 					) : (
-						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} />
+						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} stateNames={stateNames} />
 					)}
 				</div>
 				<nav className="map-views" aria-label="Map view">
