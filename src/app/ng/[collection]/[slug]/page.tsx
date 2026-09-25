@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { Newspaper } from 'lucide-react'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { BrandBar, type Crumb } from '@/components/brand-bar'
+import { ElectionCountdown } from '@/components/election-countdown'
+import { GENERAL_ELECTION } from '@/data/nigeria/elections'
 import { ChamberRosterList } from '@/components/chamber-roster'
 import { ConnectionGroup, Glyph, type ConnectionCard } from '@/components/panel-client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -168,6 +170,7 @@ export default async function EntityPage({ params }: PageProps) {
 					</>
 				) : null}
 			</article>
+			{node.id === GENERAL_ELECTION.authorityId ? <ElectionCountdown serverNow={new Date().toISOString()} inecHref={nodePath(gov, node)} /> : null}
 
 			<Tabs defaultValue="news" className="entity-tabs">
 				<TabsList aria-label="About this entity">
