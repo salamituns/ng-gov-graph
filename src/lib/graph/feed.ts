@@ -1,6 +1,6 @@
 import type { NewsItem } from '@/data/nigeria/news'
 import { mentionedIds, usableEntityLabel, type MentionLabel } from './mentions'
-import { decodeHtml } from './news-text'
+import { cleanExcerpt, decodeHtml } from './news-text'
 import type { PersonnelChange } from './types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -116,6 +116,11 @@ function rssField(block: string, tag: string) {
 	return match ? rssText(match[1]) : ''
 }
 
+/** A site's logo or stand-in used as the share image when an article has no picture of its own. */
+export function usableImage(url: string | undefined) {
+	return url && /^https:\/\//.test(url) && !/logo|default|placeholder|favicon|blank|no-image|gravatar/i.test(url) ? url : undefined
+}
+
 /** The lead image of a feed item: media tags, an image enclosure, or the first real image in the body. */
 export function rssImage(block: string): string | undefined {
 	const candidates = [
@@ -129,7 +134,7 @@ export function rssImage(block: string): string | undefined {
 	]
 	return candidates
 		.map((url) => url?.replace(/&amp;/g, '&').replace(/&#0?38;/g, '&'))
-		.find((url) => url && /^https:\/\//.test(url) && !/gravatar|emoji|feeds\.feedburner|pixel|\.svg(\?|$)/i.test(url))
+		.find((url) => usableImage(url) && !/emoji|feeds\.feedburner|pixel|\.svg(\?|$)/i.test(url!))
 }
 
 function rssDate(value: string) {
@@ -169,7 +174,7 @@ export function parseRssNews(
 		items.push({
 			id: `rss-${slug}`,
 			summary: title,
-			excerpt: description || undefined,
+			excerpt: cleanExcerpt(description) || undefined,
 			url,
 			publication,
 			publishedAt: rssDate(rssField(block, 'pubDate')),
@@ -188,7 +193,7 @@ export function publicationName(title: string) {
 /** Re-derives entity tags so stories stored before a matcher fix are tagged by the current rules. */
 export function retagNews(news: NewsItem[], labels: MentionLabel[]): NewsItem[] {
 	return news.map((raw) => {
-		const item = { ...raw, publication: publicationName(raw.publication) }
+		const item = { ...raw, publication: publicationName(raw.publication), imageUrl: usableImage(raw.imageUrl), excerpt: raw.excerpt ? cleanExcerpt(raw.excerpt) : raw.excerpt }
 		const inline = [...item.summary.matchAll(/<gov_entities='([^']+)'>/g)].map((match) => match[1])
 		if (inline.length) return { ...item, entityIds: [...new Set([...inline, ...(item.entityIds ?? [])])] }
 		const text = `${item.summary}. ${item.excerpt ?? ''}`
@@ -221,8 +226,7 @@ export function pageImage(html: string): string | undefined {
 		head.match(/<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i) ??
 		head.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ??
 		head.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
-	const url = match?.[1]?.replace(/&amp;/g, '&')
-	return url && /^https:\/\//.test(url) ? url : undefined
+	return usableImage(match?.[1]?.replace(/&amp;/g, '&'))
 }
 
 /**

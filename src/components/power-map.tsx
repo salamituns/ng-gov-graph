@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { useRef, useState } from 'react'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 
 interface PowerMapProps {
@@ -19,7 +20,7 @@ interface PowerMapProps {
 
 const ROWS = [1, 3, 5, 5, 6]
 const WIDTH = 800
-const HEIGHT = 760
+const HEIGHT = 840
 
 function toneOf(sector: string) {
 	return sector === 'legislative' || sector === 'judicial' ? sector : 'executive'
@@ -31,6 +32,14 @@ function initials(name: string) {
 
 /** People named most in the news, ranked top to bottom and sized by how often they appear. */
 export function PowerMap({ people, links, articles, sources, days, asOf, selectedId, onSelect, onSeeOnGraph, onClear }: PowerMapProps) {
+	const [hover, setHover] = useState<{ text: string; x: number; y: number } | null>(null)
+	const svgRef = useRef<SVGSVGElement>(null)
+	const point = (event: React.MouseEvent) => {
+		const matrix = svgRef.current?.getScreenCTM()
+		if (!matrix) return { x: 0, y: 0 }
+		const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse())
+		return { x: p.x, y: p.y }
+	}
 	const max = Math.max(1, ...people.map((person) => person.total))
 	const placed: Array<PowerPerson & { x: number; y: number; r: number }> = []
 	let index = 0
@@ -58,7 +67,7 @@ export function PowerMap({ people, links, articles, sources, days, asOf, selecte
 						: `No officeholders are named in sourced news from the last ${days} days.`}
 				</p>
 			</header>
-			<svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="power-svg" role="group" aria-label="People named most in the news" onClick={(event) => event.target === event.currentTarget && onClear()}>
+			<svg ref={svgRef} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="power-svg" role="group" aria-label="People named most in the news" onClick={(event) => event.target === event.currentTarget && onClear()}>
 				<defs>
 					{placed.map((person) => (
 						<clipPath key={person.nodeId} id={`pm-${person.nodeId}`}>
@@ -71,12 +80,13 @@ export function PowerMap({ people, links, articles, sources, days, asOf, selecte
 					const to = at.get(link.toId)
 					if (!from || !to) return null
 					const active = selected && (link.fromId === selected.nodeId || link.toId === selected.nodeId)
+					const path = curve(from, to)
 					return (
-						<g key={`${link.fromId}-${link.toId}`} className={`power-link-group ${active ? 'is-active' : selected ? 'is-dim' : ''}`}>
-							<line x1={from.x} y1={from.y + from.r} x2={to.x} y2={to.y - to.r} className="power-link" />
-							{active ? (
-								<text x={(from.x + to.x) / 2 + 8} y={(from.y + from.r + to.y - to.r) / 2} className="power-link-label">appoints</text>
-							) : null}
+						<g key={`${link.fromId}-${link.toId}`} className={`power-link-group link-${link.type} ${active ? 'is-active' : selected ? 'is-dim' : ''}`}>
+							<title>{`${from.name} ${link.verb} ${to.name}`}</title>
+							<path d={path.d} className="power-link-hit" onMouseMove={(event) => setHover({ text: link.verb, ...point(event) })} onMouseLeave={() => setHover(null)} />
+							<path d={path.d} className="power-link" />
+							{active ? <text x={path.label.x} y={path.label.y} className="power-link-label" textAnchor="middle">{link.verb}</text> : null}
 						</g>
 					)
 				})}
@@ -118,6 +128,12 @@ export function PowerMap({ people, links, articles, sources, days, asOf, selecte
 						</g>
 					)
 				})}
+				{hover ? (
+					<g className="power-hover" pointerEvents="none">
+						<rect x={hover.x + 8} y={hover.y - 24} width={hover.text.length * 6.2 + 14} height={17} rx={4} />
+						<text x={hover.x + 15} y={hover.y - 12}>{hover.text}</text>
+					</g>
+				) : null}
 			</svg>
 			{selected ? <PersonCard person={selected} asOf={asOf} days={days} onSeeOnGraph={() => onSeeOnGraph(selected)} onClose={onClear} style={{ left: `${(selected.x / WIDTH) * 100}%`, top: `${((selected.y + selected.r) / HEIGHT) * 100}%` }} /> : null}
 		</div>
@@ -153,6 +169,22 @@ function PersonCard({ person, asOf, days, style, onSeeOnGraph, onClose }: { pers
 			<button type="button" className="person-card-cta" onClick={onSeeOnGraph}>See on the graph</button>
 		</div>
 	)
+}
+
+/** A gentle bow, so a line from the President to the bottom row skirts the people in between. */
+function curve(from: { x: number; y: number; r: number }, to: { x: number; y: number; r: number }) {
+	const [a, b] = from.y <= to.y ? [from, to] : [to, from]
+	const start = { x: a.x, y: a.y + a.r }
+	const end = { x: b.x, y: b.y - b.r }
+	const bend = Math.max(-60, Math.min(60, (end.x - start.x) * 0.25))
+	const control = { x: (start.x + end.x) / 2 + bend, y: (start.y + end.y) / 2 }
+	// Labels sit near the far end of each link, so several links from one person spread out instead of stacking.
+	const at = (t: number) => ({
+		x: (1 - t) ** 2 * start.x + 2 * (1 - t) * t * control.x + t * t * end.x,
+		y: (1 - t) ** 2 * start.y + 2 * (1 - t) * t * control.y + t * t * end.y,
+	})
+	const label = at(from.y <= to.y ? 0.8 : 0.2)
+	return { d: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`, label: { x: label.x, y: label.y - 4 } }
 }
 
 function daysBetween(from: string, to: string) {
