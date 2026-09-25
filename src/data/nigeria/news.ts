@@ -8,6 +8,8 @@ export interface NewsItem {
 	entityIds?: string[]
 	/** The article's lead image, from the feed or the page's og:image. */
 	imageUrl?: string
+	/** The article body has been read for appointments; it is not fetched again. */
+	bodyScanned?: boolean
 }
 
 export const nigeriaNews: NewsItem[] = [

@@ -141,7 +141,7 @@ export interface PersonnelChange {
 	positionId: string
 	positionName: string
 	groupId: string
-	entryMode: 'appointed' | 'elected' | 'sworn'
+	entryMode: 'appointed' | 'elected' | 'sworn' | 'reappointed'
 	departure: boolean
 	predecessorName: string | null
 	sourceUrl?: string

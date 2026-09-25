@@ -32,6 +32,7 @@ export function parseNewsFeed(value: unknown): NewsItem[] | null {
 			publication: entry.publication,
 			publishedAt: typeof entry.publishedAt === 'string' ? entry.publishedAt : undefined,
 			imageUrl: typeof entry.imageUrl === 'string' ? entry.imageUrl : undefined,
+			bodyScanned: entry.bodyScanned === true ? true : undefined,
 			entityIds: Array.isArray(entry.entityIds)
 				? entry.entityIds.filter((id): id is string => typeof id === 'string')
 				: undefined,
@@ -64,7 +65,8 @@ export function parseChangesFeed(value: unknown): PersonnelChange[] | null {
 		if (
 			entry.entryMode !== 'appointed' &&
 			entry.entryMode !== 'elected' &&
-			entry.entryMode !== 'sworn'
+			entry.entryMode !== 'sworn' &&
+			entry.entryMode !== 'reappointed'
 		) {
 			return null
 		}

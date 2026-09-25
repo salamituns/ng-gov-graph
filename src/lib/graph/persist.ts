@@ -81,7 +81,7 @@ export function persistNigeriaGraph(options?: {
 		if (options?.portraits) {
 			graph = await overlayPortraits(graph)
 		}
-		const { applyAppointments, diffOfficeholders, appointmentsFromNews, mergeChanges, mergeNews } = await import('@/lib/graph/changes')
+		const { applyAppointments, diffOfficeholders, appointmentsFromNews, fetchAppointmentBodies, mergeChanges, mergeNews } = await import('@/lib/graph/changes')
 		const { enrichNewsImages, parseChangesFeed, parseNewsFeed, parseRssNews, resolveStoredFeed } = await import('@/lib/graph/feed')
 		const { mentionLabels } = await import('@/lib/graph/mentions')
 		const [previousPayload, storedNews, storedChanges] = await Promise.all([
@@ -103,7 +103,8 @@ export function persistNigeriaGraph(options?: {
 				news = mergeNews(news, fresh)
 				news = await enrichNewsImages(news)
 				// Announcements from the whole stored history, so a seat filled weeks ago is still filled today.
-				changes = mergeChanges(changes, appointmentsFromNews(news, labels, graph))
+				const bodies = await fetchAppointmentBodies(news)
+				changes = mergeChanges(changes, appointmentsFromNews(news, labels, graph, bodies))
 				if (sources[0]) {
 					const extracted = await extractCivicUpdates(sources[0], defaultCivicGenerate)
 					changes = mergeChanges(changes, extracted.changes)
