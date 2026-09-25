@@ -256,12 +256,18 @@
 .legend-link .chain-link { stroke:var(--gg-muted); }
 
 /* ---------- Power map ---------- */
-.power-map { width:100%; height:100%; display:flex; flex-direction:column; }
+.power-map { width:100%; height:100%; max-height:calc(100vh - 106px); display:flex; flex-direction:column; }
 .power-heading { text-align:center; }
 .power-heading h2 { font-size:11px; font-weight:600; letter-spacing:.24em; text-transform:uppercase; }
 .power-heading p { color:var(--gg-muted); font-size:12px; margin-top:3px; }
-.power-svg { flex:1; min-height:0; width:100%; }
-.power-link { stroke:var(--gg-faint); stroke-width:.8; opacity:.7; }
+.power-svg { flex:1 1 0; min-height:0; width:100%; height:100%; }
+.power-link { fill:none; stroke:var(--gg-executive); stroke-width:.9; opacity:.55; }
+.link-confirms .power-link { stroke:var(--gg-legislative); }
+.link-chairs .power-link { stroke:var(--gg-hub); stroke-dasharray:1.5 3; stroke-linecap:round; }
+.power-link-hit { fill:none; stroke:transparent; stroke-width:12; pointer-events:stroke; cursor:help; }
+.power-link-group:hover .power-link { opacity:1; stroke-width:1.8; }
+.power-hover rect { fill:var(--gg-panel); stroke:var(--gg-line); }
+.power-hover text { fill:var(--gg-text); font-size:10.5px; font-weight:600; }
 .power-person { cursor:pointer; outline:none; }
 .power-ring { fill:var(--gg-panel-2); stroke:var(--tone); stroke-width:2.5; }
 .power-person.is-recent .power-ring { filter:drop-shadow(0 0 7px color-mix(in srgb, var(--gg-hub) 70%, transparent)); }
@@ -432,8 +438,8 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .power-map { position:relative; }
 .power-person.is-dim, .power-link-group.is-dim { opacity:.28; }
 .power-person.is-selected .power-ring { stroke-width:4; }
-.power-link-group.is-active .power-link { stroke:var(--gg-text); stroke-width:1.2; opacity:1; }
-.power-link-label { fill:var(--gg-muted); font-size:10px; }
+.power-link-group.is-active .power-link { stroke-width:1.6; opacity:1; }
+.power-link-label { fill:var(--gg-text); font-size:9.5px; font-weight:600; paint-order:stroke; stroke:var(--gg-surface); stroke-width:3px; }
 .person-card { position:absolute; z-index:8; width:250px; transform:translate(-50%, 10px); padding:14px; border-radius:11px; background:var(--gg-panel); box-shadow:0 14px 40px #0004, 0 0 0 1px var(--gg-line); font-size:12px; }
 .person-card header { display:flex; gap:10px; align-items:center; padding-right:16px; }
 .person-card header img, .person-card-initials { width:40px; height:40px; border-radius:50%; object-fit:cover; object-position:top; flex:none; background:var(--gg-panel-2); display:grid; place-items:center; color:var(--gg-muted); }

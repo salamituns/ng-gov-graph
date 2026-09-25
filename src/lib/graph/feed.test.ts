@@ -119,3 +119,20 @@ describe('publication names', () => {
 		assert.equal(publicationName('Punch Newspapers - Latest News'), 'Punch Newspapers')
 	})
 })
+
+describe('news images', () => {
+	it('ignores a site logo used as the share image', async () => {
+		const { pageImage, usableImage } = await import('./feed')
+		assert.equal(pageImage('<meta property="og:image" content="https://cdn.punchng.com/wp-content/uploads/2020/08/18131509/punch-logo-500x179-1.png">'), undefined)
+		assert.equal(usableImage('https://dailytrust.com/wp-content/uploads/2026/09/unga-1.jpg'), 'https://dailytrust.com/wp-content/uploads/2026/09/unga-1.jpg')
+	})
+})
+
+describe('excerpt boilerplate', () => {
+	it('drops "Read More" links and "The post … appeared first on" footers', async () => {
+		const { cleanExcerpt } = await import('./news-text')
+		assert.equal(cleanExcerpt('NECO released results Read More: https://punchng.com/neco-records/'), 'NECO released results')
+		assert.equal(cleanExcerpt('Shettima spoke at the UN. The post Nigeria restates demand appeared first on Premium Times.'), 'Shettima spoke at the UN.')
+		assert.equal(cleanExcerpt('Shettima spoke at the UN. The post Nigeria restates demand appeared f'), 'Shettima spoke at the UN.')
+	})
+})

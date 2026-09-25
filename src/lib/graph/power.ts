@@ -96,6 +96,9 @@ export interface PowerPerson {
 export interface PowerLink {
 	fromId: string
 	toId: string
+	/** The relationship, read "<from> <verb> <to>": appoints, confirms, or chairs a council the other sits on. */
+	verb: string
+	type: 'appoints' | 'confirms' | 'chairs'
 }
 
 /**
@@ -156,13 +159,32 @@ export function powerPeople(graph: CompiledGraph, news: NewsItem[], days: number
 		.slice(0, limit)
 		.map((person, index) => ({ ...person, rank: index + 1 }))
 	const shown = new Set(people.map((person) => person.nodeId))
-	const links: PowerLink[] = []
+	const links = new Map<string, PowerLink>()
+	const add = (link: PowerLink) => {
+		if (link.fromId !== link.toId && shown.has(link.fromId) && shown.has(link.toId)) links.set(`${link.fromId}>${link.toId}`, link)
+	}
+	const orgOf = (id: string) => (graph.nodes[id]?.type === 'dept_head' ? graph.nodes[id]?.parentId ?? id : id)
 	for (const edge of Object.values(graph.edges)) {
-		if (edge.type !== 'appoints') continue
-		const toOrg = graph.nodes[edge.toId]?.parentId ?? edge.toId
-		if (shown.has(edge.fromId) && shown.has(toOrg) && edge.fromId !== toOrg) {
-			links.push({ fromId: edge.fromId, toId: toOrg })
+		if (edge.type === 'appoints') add({ fromId: orgOf(edge.fromId), toId: orgOf(edge.toId), verb: 'appoints', type: 'appoints' })
+	}
+	// The Senate confirms through its presiding officer, so the Senate President carries its confirmations.
+	const senatePresident = people.find((person) => person.nodeId === 'ng-senate')
+	if (senatePresident) {
+		for (const edge of Object.values(graph.edges)) {
+			if (edge.type === 'confirms' && edge.fromId === 'ng-senate') add({ fromId: 'ng-senate', toId: orgOf(edge.toId), verb: 'confirms', type: 'confirms' })
 		}
 	}
-	return { people, links, articles, sources: [...sources], days }
+	// Councils chaired ex officio whose members are other people on the map: the Vice-President chairs the
+	// National Economic Council, whose members include every state governor and the CBN Governor.
+	for (const edge of Object.values(graph.edges)) {
+		if (edge.type !== 'ex_officio' || !shown.has(edge.fromId)) continue
+		const council = graph.nodes[edge.toId]
+		if (council?.id !== 'ng-national-economic-council') continue
+		for (const person of people) {
+			const node = graph.nodes[person.nodeId]
+			if (node?.type === 'state' || node?.id === 'ng-cbn') add({ fromId: edge.fromId, toId: person.nodeId, verb: 'chairs NEC', type: 'chairs' })
+		}
+	}
+	const edgesOut = [...links.values()]
+	return { people, links: edgesOut, articles, sources: [...sources], days }
 }

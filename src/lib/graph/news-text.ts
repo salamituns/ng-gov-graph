@@ -24,6 +24,16 @@ export function decodeHtml(value: string) {
 	return decodeInline(value).trim()
 }
 
+/** Feed boilerplate that is not part of the story: "Read More: https://…", "The post … appeared first on …". */
+export function cleanExcerpt(value: string) {
+	return value
+		.replace(/\s*Read More:?\s*https?:\/\/\S+/gi, '')
+		.replace(/\s*The post\b[\s\S]*?appeared first on\b[\s\S]*$/i, '')
+		.replace(/\s*The post\b[^.]*$/i, '')
+		.replace(/\s*(?:Continue reading|Read more)\s*(?:→|»|\.\.\.)?\s*$/i, '')
+		.trim()
+}
+
 const SMALL_WORDS = new Set(['a', 'an', 'and', 'as', 'at', 'by', 'for', 'from', 'in', 'of', 'on', 'or', 'the', 'to', 'with'])
 const ACRONYMS = /^(FG|FCT|NNPC|NNPCL|ECOWAS|NASS|INEC|CBN|EFCC|ICPC|FEC|APC|PDP|LP|AU|UN|US|UK|FID|SGF|IGP|CJN|\$[\d.]+[MBK]?)$/
 
