@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { BrandBar } from '@/components/brand-bar'
+import { ElectionCountdown } from '@/components/election-countdown'
 import { NewsProse, type ProseItem } from '@/components/panel-client'
 import { changesInWindow } from '@/lib/graph/feed'
 import { filterGraph, parseLayer } from '@/lib/graph/filter'
@@ -68,6 +69,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	return (
 		<>
 			<BrandBar layer={layer} />
+			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} />
 			<section className="panel-card">
 				<h1 className="sr-only">Nigeria government graph</h1>
 				<h2>Latest News</h2>
