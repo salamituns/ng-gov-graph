@@ -10,6 +10,7 @@ describe('personnel change detection', () => {
 	it('reports a replaced officeholder with the predecessor, but not a first-time fill', () => {
 		const previous = structuredClone(graph)
 		const next = structuredClone(graph)
+		previous.nodes['ng-frsc-head'].people = []
 		next.nodes['ng-minister-of-finance'].people = [{ name: 'Ada Example' }]
 		next.nodes['ng-frsc-head'].people = [{ name: 'New Marshal' }]
 		const changes = diffOfficeholders(previous, next, '2026-09-24')

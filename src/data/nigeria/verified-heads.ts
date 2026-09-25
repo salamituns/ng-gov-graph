@@ -1,8 +1,8 @@
 import type { CompiledGraph, Officeholder } from '@/lib/graph/types'
 
-// Current holders checked against the linked agency or federal government source on 2026-09-24.
+// Current holders checked against the linked institutional or firsthand source on 2026-09-24.
 // Keep the source with each name so a later appointment can be checked before replacing it.
-const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces?: string }> = {
+const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces?: string; acting?: boolean; title?: string }> = {
 	'ng-ngsa': { name: 'Olusegun O. Ige', sourceUrl: 'https://ngsa.gov.ng/management-team/' },
 	'ng-nitda': { name: 'Kashifu Inuwa Abdullahi', sourceUrl: 'https://nitda.gov.ng/management-team/' },
 	'ng-ndpc': { name: 'Vincent O. Olatunji', sourceUrl: 'https://ndpc.gov.ng/a-paradigm-shift-dr-olatunji-tasks-staff-on-transformational-leadership/' },
@@ -45,6 +45,81 @@ const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces
 	'ng-ncaa': { name: 'Chris Ona Najomo', sourceUrl: 'https://www.ncaa.gov.ng/media/news/ncaa-engages-stakeholders-ahead-of-2026-hajj-operations/' },
 	'ng-ndlea': { name: 'Mohamed Buba Marwa', sourceUrl: 'https://ndlea.gov.ng/blog/marwa-charges-traditional-rulers-parents-to-take-ownership-of-war-against-drug-abuse' },
 	'ng-firs': { name: 'Zacch Adedeji', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-commends-economic-team-and-ngx-for-stabilising-the-economy-and-the-rebound-of-the-stock-market/' },
+	'ng-boa': { name: 'Ayodeji Oludare Sotinrin', sourceUrl: 'https://boanig.com/our-management/' },
+	'ng-cac': { name: 'Hussaini Ishaq Magaji', sourceUrl: 'https://www.cac.gov.ng/about/department-heads/profile' },
+	'ng-cpn': { name: 'Adebayo Adegbiji', sourceUrl: 'https://cpn.gov.ng/metro/?show=198' },
+	'ng-fha': { name: 'Oyetunde Oladimeji Ojo', sourceUrl: 'https://fha.gov.ng/management-teams' },
+	'ng-itf': { name: 'Afiz Ogun Oluwatoyin', sourceUrl: 'https://www.itf.gov.ng/' },
+	'ng-mco': { name: 'Obadiah Simon Nkom', sourceUrl: 'https://miningcadastre.gov.ng/news' },
+	'ng-nan': { name: 'Ali Muhammad Ali', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-congratulates-nan-managing-director-ali-m-ali-on-his-60th-birthday/' },
+	'ng-nbc': { name: 'Charles Ebuebu', sourceUrl: 'https://fmino.gov.ng/homeland-security-fg-committed-to-strengthening-coordination-for-peace-national-development-information-minister/' },
+	'ng-nln': { name: 'Chinwe Veronica Anunobi', sourceUrl: 'https://www.nln.gov.ng/officeofnl.php' },
+	'ng-nmc': { name: 'Benjamin Oyediran Oyelami', acting: true, sourceUrl: 'https://nmc.edu.ng/2026/04/23/approval-of-new-acting-nmc-director/' },
+	'ng-noa': { name: 'Lanre Issa-Onilu', sourceUrl: 'https://von.gov.ng/childrens-day-noa-calls-for-protection-of-nigerian-children/' },
+	'ng-nrc': { name: 'Kayode Opeifa', sourceUrl: 'https://nrc.gov.ng/management/' },
+	'ng-nta': { name: 'Salihu Abdulhamid Dembos', sourceUrl: 'https://www.nta.ng/news/corporate/nta-dg-salihu-dembos-gets-family-backing-after-tinubus-reappointment' },
+	'ng-nti': { name: 'Sadiya Sani Daura', title: 'Director and Chief Executive', sourceUrl: 'https://von.gov.ng/nti-to-coordinate-teacher-professionalisation-initiative/' },
+	'ng-tcn': { name: 'Sule Ahmed Abdulaziz', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-appoints-new-ptdf-executive-secretary-and-renews-tenure-of-tcn-md-ceo/' },
+	'ng-von': { name: 'Jibrin Baba Ndace', sourceUrl: 'https://von.gov.ng/von-dg-inaugurates-committee-for-2026-christmas-carol/' },
+	'ng-vcn': { name: 'Fadipe Oladotun', acting: true, sourceUrl: 'https://von.gov.ng/vcn-trains-management-staff-on-procurement-compliance/' },
+	'ng-faan': { name: 'Olubunmi Onabanjo-Kuku', sourceUrl: 'https://faan.gov.ng/events/faan-to-host-aci-africa-regional-conference-exhibition-2026-in-abuja/' },
+	'ng-fmbn': { name: 'Shehu Usman Osidi', sourceUrl: 'https://fmbn.gov.ng/about/board-of-directors' },
+	'ng-frc': { name: 'Abdullahi Maikano Saidu', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-announces-26-new-appointments/' },
+	'ng-frcn': { name: 'Mohammed Bulama', sourceUrl: 'https://fmino.gov.ng/fg-launches-free-tv-platform-projects-major-boost-for-jobs-content-industry-economy/' },
+	'ng-frsc': { name: 'Shehu Mohammed', sourceUrl: 'https://frsc.gov.ng/administration/corps-marshal/' },
+	'ng-icrc': { name: 'Jobson Ewalefoh', sourceUrl: 'https://www.icrc.gov.ng/fg-unveils-model-ppp-agreement-to-accelerate-infrastructure-development/' },
+	'ng-naec': { name: 'Anthony Inalegwu Godwin', title: 'Chairman and Chief Executive', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-announces-26-new-appointments/' },
+	'ng-naic': { name: 'Yazid Shehu Umar Danfulani', sourceUrl: 'https://naic.gov.ng/bod/' },
+	'ng-ncce': { name: 'Angela Ajala', sourceUrl: 'https://www.ncce.gov.ng/ES/Details' },
+	'ng-ncmm': { name: 'Olugbile Holloway', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-congratulates-dg-ncmm-olugbile-holloway-on-time100-art-recognition/' },
+	'ng-ncpc': { name: 'Stephen Adegbite', sourceUrl: 'https://www.ncpc.gov.ng/news/press-release-we-must-work-together-to-make-our-pilgrimage-exercise-exemplary-and-create-lasting-impact-ncpc-boss' },
+	'ng-nddc': { name: 'Samuel Ogbuku', sourceUrl: 'https://nddc.gov.ng/WhoWeAre/BoardDetails/1' },
+	'ng-nedc': { name: 'Mohammed Goni Alkali', sourceUrl: 'https://radionigerianortheast.gov.ng/?p=4733' },
+	'ng-nema': { name: 'Zubaida Umar', sourceUrl: 'https://nema.gov.ng/nema-dg-zubaida-umar-honoured-with-responsive-humanitarian-leadership-award/' },
+	'ng-nepc': { name: 'Nonye Ayeni', sourceUrl: 'https://nepc.gov.ng/blog/2026/07/15/nepc-advocates-for-alternative-funding-for-operationalization-of-ecowas-tpo-network/' },
+	'ng-niwa': { name: 'Umar Yusuf Girei', acting: true, sourceUrl: 'https://niwa.gov.ng/niwa-nsib-strengthen-collaboration-to-enhance-safety-on-inland-waterways/' },
+	'ng-nmec': { name: 'Shuni Muhammad Dahiru', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-announces-26-new-appointments/' },
+	'ng-nsib': { name: 'Alex Badeh Jr.', sourceUrl: 'https://www.nsib.gov.ng/' },
+	'ng-nysc': { name: 'Olakunle Oluseye Nafiu', sourceUrl: 'https://nysc.gov.ng/aboutdg.html' },
+	'ng-trcn': { name: 'Ronke Soyombo', sourceUrl: 'https://www.trcn.gov.ng/office-of-registrar' },
+	'ng-amcon': { name: 'Gbenga Alade', sourceUrl: 'https://amcon.com.ng/news-story.php?n=173' },
+	'ng-ferma': { name: 'Chukwuemeka Agbasi', sourceUrl: 'https://ferma.gov.ng/aboutus/management/' },
+	'ng-ncdmb': { name: 'Felix Omatsola Ogbe', sourceUrl: 'https://ncdmb.gov.ng/ncdmb-management/' },
+	'ng-neiti': { name: 'Musa Sarkin Adar', sourceUrl: 'https://fmino.gov.ng/fg-reaffirms-commitment-to-transparency-in-extractive-sector-as-eiti-validators-begin-assessment-in-nigeria/' },
+	'ng-nerdc': { name: 'Salisu Shehu', sourceUrl: 'https://nerdc.gov.ng/content_manager/management_team.html' },
+	'ng-niepa': { name: 'Adebiyi David Shofoyeke', sourceUrl: 'https://niepaondo.org.ng/2026/05/08/fg-appoints-shofoyeke-substantive-dg-of-niepa-as-alausa-inaugurates-education-heads/' },
+	'ng-nihsa': { name: 'Umar Ibrahim Mohammed', sourceUrl: 'https://nimet.gov.ng/news?id=230' },
+	'ng-hyppadec': { name: 'Abubakar Sadiq Yelwa', sourceUrl: 'https://www.nhyppadec.gov.ng/news/md-n-hyppadec-receives-prestigious-award-at-nigeria-public-service-lectures-series-and-awards' },
+	'ng-nimet': { name: 'Charles Anosike', sourceUrl: 'https://nimet.gov.ng/news?id=231' },
+	'ng-nscdc': { name: 'Ahmed Abubakar Audi', sourceUrl: 'https://nscdc.gov.ng/president-tinubu-reaffirms-confidence-in-nscdc-leadership-renews-tenure-of-professor-ahmed-abubakar-audi-mni-ofr-for-another-five-years/' },
+	'ng-nasrda': { name: 'Matthew Adepoju', sourceUrl: 'https://nimet.gov.ng/news?id=230' },
+	'ng-nipost': { name: 'Omotola Odeyemi', sourceUrl: 'https://nipost.gov.ng/board-of-directors/' },
+	'ng-nipc': { name: 'Aisha Rimi', sourceUrl: 'https://nipc.gov.ng/news/2026/06/24/nipc-named-overall-best-performing-mda-in-public-service-reforms-ranking' },
+	'ng-oagf': { name: 'Shamseldeen B. Ogunjimi', sourceUrl: 'https://oagf.gov.ng/agf_profile/mr-ogunjimi-shamseldeen-babatunde/' },
+	'ng-nsitf': { name: 'Oluwaseun Mayomi Faleye', sourceUrl: 'https://nsitf.gov.ng/leadership/demo-1' },
+	'ng-servicom': { name: 'Helen Lawal', acting: true, sourceUrl: 'https://ndic.gov.ng/news-detail?id=28' },
+	'ng-shippers-council': { name: 'Pius Akutah', sourceUrl: 'https://fmino.gov.ng/oyetola-inaugurates-nigerian-shippers-council-governing-board-charges-members-on-accountability-and-sectoral-reform/' },
+	'ng-legal-aid-council': { name: 'Aliyu Bagudu Abubakar', sourceUrl: 'https://von.gov.ng/cra-stakeholders-target-stronger-child-protection-system/' },
+	'ng-notap': { name: 'Obiageli Amadiobi', sourceUrl: 'https://von.gov.ng/notap-nuj-partner-to-commercialise-research-boost-nigerias-revenue/' },
+	'ng-nosdra': { name: 'Chukwuemeka Woke', sourceUrl: 'https://www.nosdra.gov.ng/' },
+	'ng-nmdpra': { name: 'Rabiu Abdullahi Umar', sourceUrl: 'https://www.nuprc.gov.ng/media/news/008881b10f5486500bd74ef3' },
+	'ng-nigcomsat': { name: 'Jane Nkechi Egerton-Idehen', sourceUrl: 'https://nigcomsat.gov.ng/storage/downloads/78cs8ASjWizkRCLwyAXftZTa722JlLo7b2gO6RqE.pdf' },
+	'ng-ninlan': { name: 'Ogbonna Onuoha', sourceUrl: 'https://www.ninlan.edu.ng/about-us/' },
+	'ng-ncs-corrections': { name: 'Sylvester Ndidi Nwakuche', sourceUrl: 'https://www.corrections.gov.ng/news/controller-general-of-corrections-defends-2026-budget-proposals-before-national-assembly-joint-committee-on-interior?news_id=249' },
+	'ng-boundary-commission': { name: 'Adamu Adaji', sourceUrl: 'https://boundarycommission.gov.ng/directors-profiles/' },
+	'ng-federal-fire-service': { name: 'Samuel Adeyemi Olumode', sourceUrl: 'https://nigatom.gov.ng/federal-fire-service-seeks-collaboration-with-naec/' },
+	'ng-code-of-conduct-tribunal': { name: 'Mainasara Umar Kogo', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-appoints-new-chairman-of-the-code-of-conduct-tribunal/' },
+	'ng-public-complaints-commission': { name: 'Bashir Abubakar', sourceUrl: 'https://www.nta.ng/news/nigeria/nafdac-pcc-to-strengthen-partnership-to-curb-circulation-of-counterfeit-medicines-food-products' },
+	'ng-naqs': { name: 'Vincent Isegbe', title: 'Comptroller-General', sourceUrl: 'https://naqs.gov.ng/naqs-and-usda-food-for-progress-forge-strategic-partnership-to-boost-u-s-nigeria-agricultural-trade/' },
+	'ng-armti': { name: 'Olufemi A. Oladunni', sourceUrl: 'https://armti.gov.ng/about-us/' },
+	'ng-nias': { name: 'Udo Herbert', sourceUrl: 'https://nias.gov.ng/management-team/' },
+	'ng-niss': { name: 'Bashiru Ademola Raji', acting: true, sourceUrl: 'https://www.unilorin.edu.ng/raji-appointed-niss-acting-registrar/' },
+	'ng-nflv': { name: 'Samuel Kolawole', sourceUrl: 'https://von.gov.ng/nflv-urges-government-to-strengthen-french-immersion-programs/' },
+	'ng-ncne': { name: 'Abdu Umar Ardo', acting: true, sourceUrl: 'https://blueprint.ng/ncne-prof-usman-hands-over-to-ardo-as-acting-executive-secretary/' },
+	'ng-nasc': { name: 'Fatuhu Muhammed', sourceUrl: 'https://www.fmld.gov.ng/news-details/176' },
+	'ng-nsipa': { name: 'Badamasi Lawal', sourceUrl: 'https://www.nsipa.gov.ng/' },
+	'ng-arcn': { name: 'Adamu Abubakar Dabban', sourceUrl: 'https://ncam.gov.ng/2026/01/16/appointment-of-engr-dr-yinka-segun-ademiluyi-fnse-fniae-as-acting-executive-director-chief-executive-officer-of-national-centre-for-agricultural-mechanization-ncam-ilorin-kwara-state/' },
+	'ng-lrcn': { name: 'Ja’afaru Abdullahi Wase', sourceUrl: 'https://nla.org.ng/news/nla-president-leads-courtesy-visit-to-honourable-minister-of-state-for-education' },
 }
 
 export function applyVerifiedHeads(graph: CompiledGraph): CompiledGraph {
@@ -54,8 +129,9 @@ export function applyVerifiedHeads(graph: CompiledGraph): CompiledGraph {
 		if (!seat || !org) continue
 		const oldName = seat.people[0]?.name
 		if (oldName ? oldName !== holder.replaces || org.people[0]?.name !== oldName : !seat.unrecorded || org.people.length) continue
-		const person: Officeholder = { name: holder.name, sourceUrl: holder.sourceUrl, sourceCheckedAt: '2026-09-24' }
+		const person: Officeholder = { name: holder.name, sourceUrl: holder.sourceUrl, sourceCheckedAt: '2026-09-24', ...(holder.acting ? { acting: true } : {}) }
 		seat.people = [person]
+		if (holder.title) seat.name = holder.title
 		org.people = [person]
 		delete seat.unrecorded
 	}
