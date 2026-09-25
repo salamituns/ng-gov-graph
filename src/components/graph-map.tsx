@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { authorityChain, descendantsOf, organizationOf, type AuthorityLink } from '@/lib/graph/authority'
+import { NIGERIA_MAP } from '@/data/nigeria/map-shapes'
 import { glyphPath, sealPath, seatOffset } from '@/lib/graph/glyph'
 import { layoutGovernment, MAP, readableArc, RING, type PlacedNode, type Tone } from '@/lib/graph/layout'
 import type { CompiledGraph, NodeType } from '@/lib/graph/types'
@@ -41,9 +42,11 @@ interface GraphMapProps {
 	layer: 'federal' | 'state'
 	selectedId?: string
 	onSelect: (id: string) => void
+	/** Names for the states on the core map, which the federal layer's graph does not contain. */
+	stateNames?: Record<string, string>
 }
 
-export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) {
+export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }: GraphMapProps) {
 	const [hoverId, setHoverId] = useState<string | null>(null)
 	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 	const [edgeHover, setEdgeHover] = useState<{ text: string; tone: string; x: number; y: number } | null>(null)
@@ -209,7 +212,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect }: GraphMapProps) 
 						</g>
 					)
 				})}
-				{hub && <Node item={hub} state="idle" onSelect={onSelect} onHover={setHoverId} />}
+				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} onSelect={onSelect} />}
 				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} />}
 				{edgeHover && !hover && (
 					<g className={`edge-pill tone-${edgeHover.tone}`} pointerEvents="none">
@@ -373,6 +376,50 @@ function turn(item: PlacedNode, angle: number): PlacedNode {
 	const cos = Math.cos(angle)
 	const sin = Math.sin(angle)
 	return { ...item, x: MAP.cx + dx * cos - dy * sin, y: MAP.cy + dx * sin + dy * cos }
+}
+
+/**
+ * The People of Nigeria at the centre of the map: the country's outline with its 36 states and the FCT,
+ * always north-up. A state opens its page; Abuja is starred.
+ */
+function NigeriaCore({ x, y, names, selectedId, onSelect }: { x: number; y: number; names: Record<string, string>; selectedId?: string; onSelect: (id: string) => void }) {
+	const [hoverState, setHoverState] = useState<string | null>(null)
+	const scale = 1.08
+	const top = y - 14
+	const named = hoverState ? names[hoverState] : undefined
+	return (
+		<g className="nigeria-core">
+			<g transform={`translate(${x} ${top}) scale(${scale})`}>
+				{Object.entries(NIGERIA_MAP.states).map(([id, d]) => (
+					<path
+						key={id}
+						d={d}
+						role="link"
+						tabIndex={-1}
+						aria-label={names[id] ?? id}
+						className={`core-state${id === selectedId ? ' is-selected' : ''}`}
+						onClick={() => onSelect(id)}
+						onMouseEnter={() => setHoverState(id)}
+						onMouseLeave={() => setHoverState(null)}
+					/>
+				))}
+				<path d={starPath(NIGERIA_MAP.abuja.x, NIGERIA_MAP.abuja.y, 3.2)} className="core-capital" pointerEvents="none">
+					<title>Abuja, Federal Capital Territory</title>
+				</path>
+			</g>
+			<text x={x} y={top + (NIGERIA_MAP.height * scale) / 2 + 17} className="hub-text" pointerEvents="none">
+				{named ?? 'People of Nigeria'}
+			</text>
+		</g>
+	)
+}
+
+function starPath(cx: number, cy: number, r: number) {
+	return `M ${Array.from({ length: 10 }, (_, index) => {
+		const angle = -Math.PI / 2 + (index * Math.PI) / 5
+		const radius = index % 2 ? r * 0.45 : r
+		return `${(cx + Math.cos(angle) * radius).toFixed(2)} ${(cy + Math.sin(angle) * radius).toFixed(2)}`
+	}).join(' L ')} Z`
 }
 
 function HoverPill({ item }: { item: PlacedNode }) {
