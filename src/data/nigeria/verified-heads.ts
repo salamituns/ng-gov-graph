@@ -4,6 +4,8 @@ import type { CompiledGraph, Officeholder } from '@/lib/graph/types'
 // Keep the source with each name so a later appointment can be checked before replacing it.
 const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces?: string; acting?: boolean; title?: string; handoverSourceUrl?: string }> = {
 	'ng-ngsa': { name: 'Olusegun O. Ige', sourceUrl: 'https://ngsa.gov.ng/management-team/' },
+	'ng-bpsr': { name: 'Dasuki Ibrahim Arabi', sourceUrl: 'https://bpsr.gov.ng/management-team' },
+	'ng-nesrea': { name: 'Innocent Barikor', sourceUrl: 'https://nesrea.gov.ng/' },
 	'ng-nitda': { name: 'Kashifu Inuwa Abdullahi', sourceUrl: 'https://nitda.gov.ng/management-team/' },
 	'ng-ndpc': { name: 'Vincent O. Olatunji', sourceUrl: 'https://ndpc.gov.ng/a-paradigm-shift-dr-olatunji-tasks-staff-on-transformational-leadership/' },
 	'ng-tetfund': { name: 'Sonny S. T. Echono', sourceUrl: 'https://www.tetfund.gov.ng/about' },

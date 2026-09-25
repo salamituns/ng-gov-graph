@@ -31,6 +31,8 @@ export function parseNewsFeed(value: unknown): NewsItem[] | null {
 			url: entry.url,
 			publication: entry.publication,
 			publishedAt: typeof entry.publishedAt === 'string' ? entry.publishedAt : undefined,
+			imageUrl: typeof entry.imageUrl === 'string' ? entry.imageUrl : undefined,
+			bodyScanned: entry.bodyScanned === true ? true : undefined,
 			entityIds: Array.isArray(entry.entityIds)
 				? entry.entityIds.filter((id): id is string => typeof id === 'string')
 				: undefined,
@@ -63,7 +65,8 @@ export function parseChangesFeed(value: unknown): PersonnelChange[] | null {
 		if (
 			entry.entryMode !== 'appointed' &&
 			entry.entryMode !== 'elected' &&
-			entry.entryMode !== 'sworn'
+			entry.entryMode !== 'sworn' &&
+			entry.entryMode !== 'reappointed'
 		) {
 			return null
 		}
@@ -113,6 +116,22 @@ function rssField(block: string, tag: string) {
 	return match ? rssText(match[1]) : ''
 }
 
+/** The lead image of a feed item: media tags, an image enclosure, or the first real image in the body. */
+export function rssImage(block: string): string | undefined {
+	const candidates = [
+		block.match(/<media:content[^>]+url=["']([^"']+)["'][^>]*>/i)?.[1],
+		block.match(/<media:thumbnail[^>]+url=["']([^"']+)["']/i)?.[1],
+		block.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]*type=["']image/i)?.[1],
+		block.match(/<enclosure[^>]+type=["']image[^>]+url=["']([^"']+)["']/i)?.[1],
+		...[...block.matchAll(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi)]
+			.filter((match) => !/width=["']?1["'\s]|height=["']?1["'\s]/i.test(match[0]))
+			.map((match) => match[1]),
+	]
+	return candidates
+		.map((url) => url?.replace(/&amp;/g, '&').replace(/&#0?38;/g, '&'))
+		.find((url) => url && /^https:\/\//.test(url) && !/gravatar|emoji|feeds\.feedburner|pixel|\.svg(\?|$)/i.test(url))
+}
+
 function rssDate(value: string) {
 	const parsed = new Date(value)
 	if (Number.isNaN(parsed.getTime())) {
@@ -154,6 +173,7 @@ export function parseRssNews(
 			url,
 			publication,
 			publishedAt: rssDate(rssField(block, 'pubDate')),
+			imageUrl: rssImage(block),
 			entityIds: [...new Set(entityIds)],
 		})
 	}
@@ -192,4 +212,37 @@ export function changesInWindow<T extends { date: string }>(
 		const dated = new Date(`${change.date}T00:00:00Z`)
 		return !Number.isNaN(dated.getTime()) && dated >= cutoff && dated <= now
 	})
+}
+
+/** Reads a page's og:image (or twitter:image), the picture a site chooses for sharing the story. */
+export function pageImage(html: string): string | undefined {
+	const head = html.slice(0, 60000)
+	const match =
+		head.match(/<meta[^>]+property=["']og:image(?::secure_url)?["'][^>]+content=["']([^"']+)["']/i) ??
+		head.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ??
+		head.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
+	const url = match?.[1]?.replace(/&amp;/g, '&')
+	return url && /^https:\/\//.test(url) ? url : undefined
+}
+
+/**
+ * Stories that name the government but arrived without a picture get the article's own share image.
+ * Capped per run so the daily refresh stays quick; the rest are picked up on later runs.
+ */
+export async function enrichNewsImages(news: NewsItem[], fetchImpl: typeof fetch = fetch, limit = 60, concurrency = 8) {
+	const targets = news.filter((item) => !item.imageUrl && item.entityIds?.length).slice(0, limit)
+	let cursor = 0
+	const worker = async () => {
+		while (cursor < targets.length) {
+			const item = targets[cursor++]
+			try {
+				const res = await fetchImpl(item.url, { headers: { 'user-agent': 'Govgraph/0.1' }, signal: AbortSignal.timeout(6000) })
+				if (res.ok) item.imageUrl = pageImage(await res.text())
+			} catch {
+				// A slow or blocked site keeps its placeholder until a later run.
+			}
+		}
+	}
+	await Promise.all(Array.from({ length: concurrency }, worker))
+	return news
 }

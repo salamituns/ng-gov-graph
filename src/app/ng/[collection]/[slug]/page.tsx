@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { Newspaper } from 'lucide-react'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { BrandBar, type Crumb } from '@/components/brand-bar'
 import { ChamberRosterList } from '@/components/chamber-roster'
@@ -139,7 +140,13 @@ export default async function EntityPage({ params }: PageProps) {
 								</small>
 							</span>
 						</Link>
-						{holder.sourceUrl ? <p className="entity-sources"><a href={holder.sourceUrl} target="_blank" rel="noreferrer">Officeholder source</a>{holder.sourceCheckedAt ? ` · as of ${holder.sourceCheckedAt}` : ''}</p> : null}
+						{holder.sourceUrl || holder.imageSourceUrl ? (
+							<p className="entity-sources">
+								{holder.sourceUrl ? <a href={holder.sourceUrl} target="_blank" rel="noreferrer">Officeholder source</a> : null}
+								{holder.sourceUrl && holder.sourceCheckedAt ? ` · as of ${holder.sourceCheckedAt}` : ''}
+								{holder.imageSourceUrl ? <a href={holder.imageSourceUrl} target="_blank" rel="noreferrer">Photo source</a> : null}
+							</p>
+						) : null}
 						{holder.handoverSourceUrl ? <p className="entity-sources"><a href={holder.handoverSourceUrl} target="_blank" rel="noreferrer">Handover report</a></p> : null}
 					</>
 				) : seat ? (
@@ -175,12 +182,21 @@ export default async function EntityPage({ params }: PageProps) {
 						<ul className="story-list">
 							{stories.map((item) => (
 								<li key={item.id}>
-									<a href={item.url} target="_blank" rel="noreferrer">
-										<h3>{newsHeadline(item)}</h3>
+									<div className="story-text">
+										<a href={item.url} target="_blank" rel="noreferrer">
+											<h3>{newsHeadline(item)}</h3>
+										</a>
+										{item.publishedAt ? <time dateTime={item.publishedAt}>{new Date(`${item.publishedAt.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time> : null}
+										{item.excerpt ? <p>{decodeHtml(item.excerpt).slice(0, 260)}</p> : null}
+										<a href={item.url} target="_blank" rel="noreferrer" className="source-pill">{hostOf(item.url)} ↗</a>
+									</div>
+									<a href={item.url} target="_blank" rel="noreferrer" className="story-image" aria-hidden="true" tabIndex={-1}>
+										{item.imageUrl ? (
+											<Image src={item.imageUrl} alt="" width={240} height={160} unoptimized />
+										) : (
+											<Newspaper size={34} strokeWidth={1.4} />
+										)}
 									</a>
-									{item.publishedAt ? <time dateTime={item.publishedAt}>{new Date(`${item.publishedAt.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time> : null}
-									{item.excerpt ? <p>{decodeHtml(item.excerpt).slice(0, 260)}</p> : null}
-									<a href={item.url} target="_blank" rel="noreferrer" className="source-pill">{hostOf(item.url)} ↗</a>
 								</li>
 							))}
 						</ul>

@@ -51,6 +51,24 @@ describe('personnel change detection', () => {
 		assert.deepEqual([merged[0].date, merged[0].personName], ['2026-08-19', 'Abel Olumuyiwa Enitan'])
 	})
 
+	it('reads article bodies: predecessors, lists, renewals, and board chairs', () => {
+		const labels = mentionLabels(graph)
+		const item = (id: string, date: string) => ({ id, url: `https://statehouse.gov.ng/${id}`, publication: 'State House', publishedAt: date, summary: 'PRESIDENT TINUBU MAKES APPOINTMENTS' })
+		const bodies = {
+			'https://statehouse.gov.ng/hos': 'President Bola Ahmed Tinubu has appointed Mr Abel Olumuyiwa Enitan as the Head of the Civil Service of the Federation, effective August 27, 2026.\nMr Enitan succeeds Mrs Didi Esther Walson-Jack, who will retire soon.',
+			'https://statehouse.gov.ng/renew': 'President Bola Ahmed Tinubu has renewed the tenure of the Director-General of the NTA and the Managing Director of the NAN.\nPresident Tinubu first appointed Abdulhamid Salihu Dembos of the NTA and Ali Mohammed Ali of the NAN on October 20, 2023.',
+			'https://statehouse.gov.ng/list': 'President Bola Ahmed Tinubu has announced 26 new appointments, with former governor of Ekiti State, Ayo Fayose, emerging as chairman of the Rural Electrification Agency (REA), and Major General Junaid Bindawa as chairman of the Wages Commission.\nPresident Tinubu also appointed Dr Abuh Mohammed as Director-General of the National Population Commission, Dr Akinola Odeyemi as Managing Director of the Nigerian Bulk Electricity Trading (NBET), and Dr Anthony Inalegwu Godwin as chairman/CEO of the Nigeria Atomic Energy Commission.',
+		}
+		const changes = appointmentsFromNews([item('hos', '2026-08-19'), item('renew', '2026-08-23'), item('list', '2026-07-21')], labels, graph, bodies)
+		const by = (name: string) => changes.find((change) => change.personName === name)
+		assert.equal(by('Abel Olumuyiwa Enitan')?.predecessorName, 'Didi Esther Walson-Jack')
+		assert.equal(by('Abdulhamid Salihu Dembos')?.entryMode, 'reappointed')
+		assert.equal(by('Ali Mohammed Ali')?.positionId, 'ng-nan-head')
+		assert.equal(by('Abuh Mohammed')?.positionId, 'ng-national-population-commission', 'a DG is not the Commission chairman')
+		assert.equal(by('Ayo Fayose')?.positionId, 'ng-rea', 'a board chairman is not the agency head')
+		assert.equal(changes.some((change) => change.personName === 'Akinola Odeyemi'), false, 'NBET is not in the graph')
+	})
+
 	it('keeps history and the first date a change was seen', () => {
 		const first = { kind: 'personnel' as const, id: 'a', date: '2026-09-01', personName: 'Ada', positionId: 'p', positionName: 'P', groupId: 'g', entryMode: 'appointed' as const, departure: false, predecessorName: null }
 		const merged = mergeChanges([first], [{ ...first, id: 'b', date: '2026-09-10' }, { ...first, id: 'c', personName: 'Bola', date: '2026-09-05' }])

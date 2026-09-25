@@ -160,7 +160,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 
 function ChangeCard({ change, graph, gov }: { change: PersonnelChange; graph: CompiledGraph; gov: string }) {
 	const group = graph.nodes[change.groupId]
-	const verb = change.departure ? 'Departed' : change.entryMode === 'elected' ? 'Elected' : change.entryMode === 'sworn' ? 'Sworn in' : 'Appointed'
+	const verb = change.departure ? 'Departed' : change.entryMode === 'elected' ? 'Elected' : change.entryMode === 'sworn' ? 'Sworn in' : change.entryMode === 'reappointed' ? 'Reappointed' : 'Appointed'
 	return (
 		<li className="change-card">
 			<div className="change-meta">
@@ -177,7 +177,9 @@ function ChangeCard({ change, graph, gov }: { change: PersonnelChange; graph: Co
 				<div>
 					<dt>Out</dt>
 					<dd className={change.departure || change.predecessorName ? '' : 'is-empty'}>
-						{change.departure ? change.personName : change.predecessorName ?? 'Predecessor not on record'}
+						{change.departure
+							? change.personName
+							: change.predecessorName ?? (change.entryMode === 'reappointed' ? 'Same officeholder · tenure renewed' : 'Predecessor not on record')}
 					</dd>
 				</div>
 				<div>
