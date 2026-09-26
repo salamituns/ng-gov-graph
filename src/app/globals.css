@@ -190,7 +190,9 @@
 
 /* ---------- Graph ---------- */
 .graph-map { width:100%; height:100%; min-height:0; }
-.graph-svg { width:100%; height:100%; display:block; user-select:none; }
+.graph-svg { width:100%; height:100%; display:block; user-select:none; -webkit-user-select:none; touch-action:pan-y; -webkit-tap-highlight-color:transparent; }
+.graph-svg.is-zoomed { touch-action:none; cursor:grab; }
+.graph-svg.is-zoomed:active { cursor:grabbing; }
 .tone-executive { --tone: var(--gg-executive); --wedge: var(--gg-wedge-executive); }
 .tone-legislative { --tone: var(--gg-legislative); --wedge: var(--gg-wedge-legislative); }
 .tone-judicial { --tone: var(--gg-judicial); --wedge: var(--gg-wedge-judicial); }
@@ -237,7 +239,7 @@
 .link-group:hover .chain-link, .link-group:hover .fan-line { stroke-width:2.2; opacity:1; }
 .edge-pill rect { fill:var(--gg-panel); stroke:color-mix(in srgb, var(--tone) 45%, transparent); stroke-width:.6; }
 .edge-pill text { fill:var(--tone); font-size:9.5px; font-weight:600; }
-.map-caption { position:absolute; left:50%; bottom:18px; transform:translateX(-50%); max-width:60%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:3px 7px; border-radius:4px; font-size:13px; font-weight:500; color:color-mix(in srgb, var(--tone) 80%, var(--gg-text)); background:color-mix(in srgb, var(--tone) 18%, transparent); }
+.map-caption { border:0; cursor:default; position:absolute; left:50%; bottom:18px; transform:translateX(-50%); max-width:60%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:3px 7px; border-radius:4px; font-size:13px; font-weight:500; color:color-mix(in srgb, var(--tone) 80%, var(--gg-text)); background:color-mix(in srgb, var(--tone) 18%, transparent); }
 .graph-legend { position:absolute; z-index:6; left:14px; bottom:14px; font-size:13px; }
 .graph-legend summary { list-style:none; cursor:pointer; padding:6px 12px; border-radius:9px; background:var(--gg-panel); box-shadow:var(--gg-shadow); }
 .graph-legend summary::-webkit-details-marker { display:none; }
@@ -487,3 +489,44 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .dark .nigeria-core .core-capital { fill:#fbe3cf; stroke:var(--gg-hub-fill); }
 .panel-footer span { display:block; margin-top:4px; }
 .panel-footer a { text-decoration:underline; text-underline-offset:2px; }
+
+/* ---------- Zoom ---------- */
+.zoom-controls { position:absolute; z-index:5; right:14px; bottom:64px; display:grid; border-radius:9px; overflow:hidden; background:var(--gg-panel); box-shadow:var(--gg-shadow); }
+.zoom-controls button { width:32px; height:30px; display:grid; place-items:center; font-size:16px; line-height:1; color:var(--gg-text); }
+.zoom-controls button + button { border-top:1px solid var(--gg-line); }
+.zoom-controls button:hover:not(:disabled) { background:var(--gg-panel-2); }
+.zoom-controls button:disabled { color:var(--gg-faint); }
+.map-caption-cta { display:none; }
+
+/* ---------- Phones ---------- */
+@media (max-width: 820px) {
+  /* The brand bar floats over the top of the map, as on CivLab, and stays reachable while scrolling. */
+  .shell-panel > .brand-bar { position:fixed; z-index:30; top:max(10px, env(safe-area-inset-top)); left:10px; right:10px; box-shadow:0 6px 20px #0003; }
+  .shell-map { height:min(74svh, 620px); min-height:440px; }
+  .map-toolbar { top:66px; left:10px; right:10px; }
+  .map-canvas { padding:108px 0 58px; }
+  .map-views { right:10px; bottom:10px; }
+  .graph-legend { left:10px; bottom:10px; }
+  .zoom-controls { right:10px; bottom:58px; }
+  .zoom-controls button { width:40px; height:40px; font-size:18px; }
+  .icon-button { width:40px; height:40px; }
+  .history-buttons button { width:40px; height:40px; }
+  .map-views button { padding:9px 14px; font-size:14px; }
+  .graph-legend summary { padding:9px 13px; }
+  .map-caption { cursor:pointer; bottom:auto; top:114px; max-width:calc(100% - 20px); font-size:13px; padding:6px 10px; }
+  .map-caption-cta { display:inline; }
+  .shell-panel { padding:10px; gap:10px; scroll-margin-top:72px; }
+  .panel-card { padding:18px 16px 20px; }
+  .graph-search { inset:10px 10px auto 10px; transform:none; width:auto; }
+  .layer-menu nav { min-width:220px; }
+  .person-card { width:min(250px, calc(100vw - 40px)); }
+}
+
+/* The narrow power map scrolls; its stage is exactly the drawing, so the person card lands on its person. */
+.power-stage { position:relative; flex:1 1 0; min-height:0; display:flex; }
+.power-map.is-narrow { overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.power-map.is-narrow .power-stage { flex:none; display:block; }
+.power-map.is-narrow .power-svg { height:auto; flex:none; }
+.power-map.is-narrow .power-name { font-size:13px; }
+.power-map.is-narrow .power-job, .power-map.is-narrow .power-count, .power-map.is-narrow .power-recent { font-size:11px; }
+.power-map.is-narrow .power-heading { padding:0 12px 6px; }
