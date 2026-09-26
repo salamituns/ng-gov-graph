@@ -1,12 +1,11 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Newspaper } from 'lucide-react'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { BrandBar, type Crumb } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
 import { GENERAL_ELECTION } from '@/data/nigeria/elections'
 import { ChamberRosterList } from '@/components/chamber-roster'
-import { ConnectionGroup, Glyph, type ConnectionCard } from '@/components/panel-client'
+import { ConnectionGroup, Glyph, StoryImage, type ConnectionCard } from '@/components/panel-client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authorityChain, descendantsOf, organizationOf } from '@/lib/graph/authority'
 import { newsForEntity } from '@/lib/graph/feed'
@@ -194,11 +193,7 @@ export default async function EntityPage({ params }: PageProps) {
 										<a href={item.url} target="_blank" rel="noreferrer" className="source-pill">{hostOf(item.url)} ↗</a>
 									</div>
 									<a href={item.url} target="_blank" rel="noreferrer" className="story-image" aria-hidden="true" tabIndex={-1}>
-										{item.imageUrl ? (
-											<Image src={item.imageUrl} alt="" width={240} height={160} unoptimized />
-										) : (
-											<Newspaper size={34} strokeWidth={1.4} />
-										)}
+										<StoryImage src={item.imageUrl} />
 									</a>
 								</li>
 							))}

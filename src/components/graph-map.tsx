@@ -313,7 +313,7 @@ function Node({
 		role: 'link',
 		tabIndex: item.kind === 'dot' ? -1 : 0,
 		'aria-label': item.node.name,
-		className: `node node-${item.kind} tone-${item.tone} is-${state}`,
+		className: `node node-${item.kind} tone-${item.tone} is-${state}${item.node.id === 'ng-house-of-representatives' ? ' chamber-green' : ''}`,
 		onClick: activate,
 		onKeyDown: (event: React.KeyboardEvent) => {
 			if (event.key === 'Enter' || event.key === ' ') {
