@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { Newspaper } from 'lucide-react'
 import { useState } from 'react'
 import { glyphPath } from '@/lib/graph/glyph'
 import type { NodeType } from '@/lib/graph/types'
@@ -99,4 +100,12 @@ export function ConnectionGroup({ title, cards, limit = 6 }: { title: string; ca
 			)}
 		</section>
 	)
+}
+
+/** A story's picture; a missing or blocked file falls back to the newspaper placeholder. */
+export function StoryImage({ src }: { src?: string }) {
+	const [failed, setFailed] = useState(false)
+	if (!src || failed) return <Newspaper size={34} strokeWidth={1.4} />
+	// eslint-disable-next-line @next/next/no-img-element -- remote news images of unknown size, loaded lazily
+	return <img src={src} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
 }

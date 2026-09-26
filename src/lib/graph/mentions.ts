@@ -9,6 +9,12 @@ export interface MentionLabel {
 	titled?: boolean
 }
 
+const PLACE_WORDS = [
+	'Stadium', 'Airport', 'International', 'University', 'Polytechnic', 'College', 'Hospital', 'Teaching', 'Street', 'Road',
+	'Way', 'Avenue', 'Crescent', 'Close', 'Drive', 'Boulevard', 'Bridge', 'Estate', 'Square', 'Park', 'Hall', 'Centre',
+	'Center', 'Library', 'Barracks', 'Foundation', 'Memorial', 'Mosque', 'Church', 'Cathedral', 'Theatre', 'Hostel', 'House',
+].flatMap((word) => [word, word.toUpperCase()]).join('|')
+
 const TITLES = ['President', 'Vice President', 'Senator', 'Sen.', 'Governor', 'Gov.', 'Minister', 'Speaker', 'Deputy Speaker', 'Justice', 'Chief Justice', 'Chairman', 'Dr.', 'Dr', 'Mr', 'Mrs', 'Ms', 'Prof.', 'Hon.']
 
 export interface MentionSpan {
@@ -119,9 +125,11 @@ function compile(labels: MentionLabel[]): Compiled[] {
 		const title = entry.titled
 			? `(?<=(?:${TITLES.flatMap((word) => [word, word.toUpperCase()]).map(escape).join('|')})\\s)`
 			: ''
+		// "Godswill Akpabio Stadium", "Nnamdi Azikiwe Airport": a place named after someone is not that person.
+		const notAPlace = entry.kind === 'person' ? `(?!\\s+(?:${PLACE_WORDS})\\b)` : ''
 		return {
 			entry,
-			pattern: new RegExp(`${title}(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])`, caseless ? 'giu' : 'gu'),
+			pattern: new RegExp(`${title}(?<![\\p{L}\\p{N}])${body}(?![\\p{L}\\p{N}])${notAPlace}`, caseless ? 'giu' : 'gu'),
 			probe: entry.label.toLowerCase(),
 		}
 	})

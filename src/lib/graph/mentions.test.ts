@@ -25,6 +25,12 @@ describe('news mentions', () => {
 		assert.equal(mentionedIds(`${surname} Ibrahim opened a shop.`, labels).includes('ng-ministry-of-defence'), false)
 	})
 
+	it('does not read a place named after someone as that person', () => {
+		const senatePresident = graph.nodes['ng-senate'].people[0]?.name ?? ''
+		assert.equal(mentionedIds(`The match is at the ${senatePresident} Stadium, Uyo.`, labels).includes('ng-senate'), false)
+		assert.ok(mentionedIds(`${senatePresident} presided over plenary.`, labels).includes('ng-senate'))
+	})
+
 	it('prefers the longest label and never overlaps spans', () => {
 		const spans = findMentions('The Ministry of Finance met the Federal Inland Revenue Service.', labels)
 		assert.deepEqual(spans.map((span) => span.id), ['ng-ministry-of-finance', 'ng-firs'])

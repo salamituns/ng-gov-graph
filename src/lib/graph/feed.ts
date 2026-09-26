@@ -118,7 +118,7 @@ function rssField(block: string, tag: string) {
 
 /** A site's logo or stand-in used as the share image when an article has no picture of its own. */
 export function usableImage(url: string | undefined) {
-	return url && /^https:\/\//.test(url) && !/logo|default|placeholder|favicon|blank|no-image|gravatar/i.test(url) ? url : undefined
+	return url && /^https:\/\//.test(url) && !/logo|default|placeholder|favicon|blank|no-image|gravatar|youtube\.com|youtu\.be|vimeo\.com|\/embed\//i.test(url) ? url : undefined
 }
 
 /** The lead image of a feed item: media tags, an image enclosure, or the first real image in the body. */

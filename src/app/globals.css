@@ -131,9 +131,9 @@
 
 /* ---------- Govgraph tokens: light by default, dark via .dark (system or toggle) ---------- */
 :root {
-  --gg-surface: #ebeae5;
+  --gg-surface: #e9ebe6;
   --gg-panel: #ffffff;
-  --gg-panel-2: #f4f3ef;
+  --gg-panel-2: #f2f4f0;
   --gg-line: #e6e4de;
   --gg-text: #1b1a17;
   --gg-muted: #6f6b64;
@@ -141,31 +141,38 @@
   --gg-executive: #8484dc;
   --gg-legislative: #dd4e35;
   --gg-judicial: #c89c15;
-  --gg-hub: #e0773a;
-  --gg-hub-fill: #f9dcc6;
+  /* Nigeria's flag green (#008751) marks the country and its people: the core, the elects links, the countdown. */
+  --gg-green: #008751;
+  --gg-hub: var(--gg-green);
+  --gg-hub-fill: #d5ede0;
+  --gg-hub-ink: #006b40;
   --gg-wedge-executive: #f3f2fb;
   --gg-wedge-legislative: #fcede9;
   --gg-wedge-judicial: #f7f2e3;
   --gg-band-executive: #e5e4f7;
-  --gg-disc: #e3e1db;
+  --gg-disc: #e0e5de;
   --gg-glyph: #fbfaf8;
   --gg-ring: #b8b5c9;
   --gg-shadow: 0 1px 2px #0000000d;
 }
 .dark {
-  --gg-surface: #1a1816;
-  --gg-panel: #262320;
-  --gg-panel-2: #1f1d1a;
+  --gg-surface: #151916;
+  --gg-panel: #222623;
+  --gg-panel-2: #1b1f1c;
   --gg-line: #37332e;
   --gg-text: #ece8e2;
   --gg-muted: #a8a29a;
   --gg-faint: #7d776f;
-  --gg-hub-fill: #945029;
+  /* The flag green is too dark to read on the dark theme; this is the same hue, lifted. */
+  --gg-green: #3dbb82;
+  --gg-hub: var(--gg-green);
+  --gg-hub-fill: #0f4a31;
+  --gg-hub-ink: #c6f0da;
   --gg-wedge-executive: #2f2b33;
   --gg-wedge-legislative: #3a241e;
   --gg-wedge-judicial: #38301d;
   --gg-band-executive: #373248;
-  --gg-disc: #1a1816;
+  --gg-disc: #151916;
   --gg-glyph: #2b2730;
   --gg-ring: #57536a;
   --gg-shadow: none;
@@ -224,7 +231,7 @@
 .node.is-selected .dot, .node.is-lit .dot, .node.is-hover .dot { opacity:1; }
 .node-hub .hub-seal { fill:var(--gg-hub-fill); stroke:var(--gg-hub); stroke-width:1.3; }
 .hub-text { fill:var(--gg-hub); font-size:12.5px; font-weight:600; text-anchor:middle; }
-.dark .hub-text { fill:#f6cfb0; }
+.hub-text { fill:var(--gg-hub-ink); }
 .fan-line { stroke:var(--tone); stroke-width:.6; stroke-dasharray:2 2.5; opacity:.7; }
 .chain-link { fill:none; stroke:var(--tone); stroke-width:1.3; }
 .chain-link.link-oversees, .chain-link.link-contains { stroke-dasharray:4 3; stroke-width:1.1; }
@@ -282,7 +289,7 @@
 /* ---------- Panel ---------- */
 .brand-bar { position:relative; z-index:30; min-height:44px; min-width:0; display:flex; align-items:center; gap:7px; padding:0 18px; border-radius:11px; background:var(--gg-panel); box-shadow:var(--gg-shadow); font-size:15px; white-space:nowrap; }
 .brand-home { display:flex; align-items:center; gap:7px; }
-.brand-mark { color:var(--gg-legislative); font-size:22px; line-height:1; }
+.brand-mark { color:var(--gg-green); font-size:22px; line-height:1; }
 .brand-slash { color:var(--gg-faint); }
 .brand-crumb { display:flex; align-items:center; gap:7px; min-width:0; overflow:hidden; }
 .brand-crumb > a, .brand-crumb > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -485,8 +492,10 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .nigeria-core .core-state:hover { fill:color-mix(in srgb, var(--gg-hub) 55%, var(--gg-hub-fill)); }
 .nigeria-core .core-state.is-selected { fill:var(--gg-hub); }
 .nigeria-core .core-capital { fill:var(--gg-hub); stroke:var(--gg-hub-fill); stroke-width:.6; }
-.dark .nigeria-core .core-state { fill:color-mix(in srgb, var(--gg-hub-fill) 70%, var(--gg-disc)); stroke:#f0b48c; }
-.dark .nigeria-core .core-capital { fill:#fbe3cf; stroke:var(--gg-hub-fill); }
+.dark .nigeria-core .core-state { fill:var(--gg-hub-fill); stroke:#7fd7ad; }
+.dark .nigeria-core .core-capital { fill:#ffffff; stroke:var(--gg-hub-fill); }
+/* Abuja's star is white on the green, as on the flag. */
+.nigeria-core .core-capital { fill:#ffffff; stroke:var(--gg-hub); }
 .panel-footer span { display:block; margin-top:4px; }
 .panel-footer a { text-decoration:underline; text-underline-offset:2px; }
 
@@ -530,3 +539,13 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .power-map.is-narrow .power-name { font-size:13px; }
 .power-map.is-narrow .power-job, .power-map.is-narrow .power-count, .power-map.is-narrow .power-recent { font-size:11px; }
 .power-map.is-narrow .power-heading { padding:0 12px 6px; }
+
+/* The House of Representatives is the Green Chamber and the Senate the Red Chamber, after their carpets. */
+.node.chamber-green { --tone: var(--gg-green); --wedge: var(--gg-wedge-legislative); }
+
+/* Green-white-green: the flag beside "Nigeria" in the header. */
+.flag-chip { display:inline-flex; width:18px; height:12px; border-radius:2px; overflow:hidden; box-shadow:0 0 0 1px color-mix(in srgb, var(--gg-text) 18%, transparent); flex:none; }
+.flag-chip span { flex:1; background:var(--gg-green); }
+.flag-chip span:nth-child(2) { background:#ffffff; }
+.dark .flag-chip span:not(:nth-child(2)) { background:#008751; }
+.layer-menu button { gap:6px; }
