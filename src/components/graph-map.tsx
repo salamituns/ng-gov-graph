@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useZoom } from '@/components/use-zoom'
 import { authorityChain, descendantsOf, organizationOf, type AuthorityLink } from '@/lib/graph/authority'
 import { NIGERIA_MAP } from '@/data/nigeria/map-shapes'
 import { glyphPath, sealPath, seatOffset } from '@/lib/graph/glyph'
@@ -105,6 +106,11 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 		})
 		return opened
 	}, [focus, fan, at])
+	const zoom = useZoom(svgRef, layout.viewBox, `${layer}|${focusId ?? ''}`)
+	// A drag or pinch that ends over a node is navigation of the map, not a choice of that node.
+	const choose = (id: string) => {
+		if (!zoom.wasDrag()) onSelect(id)
+	}
 	const place = (id: string) => expanded.get(id) ?? at.get(id)
 	const hub = layout.nodes.find((item) => item.kind === 'hub')
 	const rotation = useTurn(focus && focus.kind !== 'hub' ? Math.PI / 2 - focus.angle : 0)
@@ -118,6 +124,14 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 			setEdgeHover({ text, tone, x: point.x, y: point.y })
 		},
 		onMouseLeave: () => setEdgeHover(null),
+		// Touch has no hover: a tap names the relationship for a moment.
+		onClick: (event: React.MouseEvent) => {
+			const matrix = svgRef.current?.getScreenCTM()
+			if (!matrix) return
+			const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse())
+			setEdgeHover({ text, tone, x: point.x, y: point.y })
+			window.setTimeout(() => setEdgeHover((current) => (current?.text === text ? null : current)), 2500)
+		},
 	})
 	const visible = (item: PlacedNode) => !hiddenTypes.has(item.node.type) && !(item.kind === 'dot' && hiddenTypes.has('sub'))
 
@@ -132,7 +146,14 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 
 	return (
 		<div className="graph-map">
-			<svg ref={svgRef} viewBox={layout.viewBox} role="group" aria-label="Map of the Nigerian government" className="graph-svg">
+			<svg
+				ref={svgRef}
+				viewBox={zoom.viewBox}
+				role="group"
+				aria-label="Map of the Nigerian government. Pinch or double-tap to zoom."
+				className={`graph-svg${zoom.zoomed ? ' is-zoomed' : ''}`}
+				{...zoom.handlers}
+			>
 				<Markers />
 				<g transform={`rotate(${(rotation * 180) / Math.PI} ${MAP.cx} ${MAP.cy})`}>
 				{layout.wedges.map((wedge) => <path key={wedge.key} d={wedge.d} className={`wedge wedge-${wedge.tone}`} />)}
@@ -194,7 +215,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 						seatUnrecorded={Boolean(item.node.head && graph.nodes[item.node.head]?.unrecorded)}
 						seatSelected={Boolean(selectedId && item.node.head === selectedId)}
 						state={item.id === focusId ? 'selected' : lit.has(item.id) || fan.includes(item.id) ? 'lit' : item.id === hoverId ? 'hover' : 'idle'}
-						onSelect={onSelect}
+						onSelect={choose}
 						onHover={setHoverId}
 					/>
 				))}
@@ -212,7 +233,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 						</g>
 					)
 				})}
-				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} onSelect={onSelect} />}
+				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} onSelect={choose} />}
 				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} />}
 				{edgeHover && !hover && (
 					<g className={`edge-pill tone-${edgeHover.tone}`} pointerEvents="none">
@@ -222,8 +243,20 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 				)}
 			</svg>
 			{focus && focus.kind !== 'hub' ? (
-				<p className={`map-caption tone-${focus.tone}`}>{focus.node.name}</p>
+				<button
+					type="button"
+					className={`map-caption tone-${focus.tone}`}
+					onClick={() => document.querySelector('.shell-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+				>
+					{focus.node.name}
+					<span className="map-caption-cta" aria-hidden="true"> · Details ↓</span>
+				</button>
 			) : null}
+			<div className="zoom-controls" role="group" aria-label="Zoom">
+				<button type="button" aria-label="Zoom in" onClick={zoom.zoomIn}>+</button>
+				<button type="button" aria-label="Zoom out" onClick={zoom.zoomOut} disabled={!zoom.zoomed}>−</button>
+				{zoom.zoomed ? <button type="button" aria-label="Show the whole map" onClick={zoom.reset}>⤢</button> : null}
+			</div>
 			<details className="graph-legend">
 				<summary>Legend</summary>
 				<div className="graph-legend-content">
