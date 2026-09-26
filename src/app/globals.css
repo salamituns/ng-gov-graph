@@ -289,7 +289,7 @@
 /* ---------- Panel ---------- */
 .brand-bar { position:relative; z-index:30; min-height:44px; min-width:0; display:flex; align-items:center; gap:7px; padding:0 18px; border-radius:11px; background:var(--gg-panel); box-shadow:var(--gg-shadow); font-size:15px; white-space:nowrap; }
 .brand-home { display:flex; align-items:center; gap:7px; }
-.brand-mark { color:var(--gg-green); font-size:22px; line-height:1; }
+.brand-mark { color:var(--gg-green); display:inline-flex; line-height:1; }
 .brand-slash { color:var(--gg-faint); }
 .brand-crumb { display:flex; align-items:center; gap:7px; min-width:0; overflow:hidden; }
 .brand-crumb > a, .brand-crumb > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

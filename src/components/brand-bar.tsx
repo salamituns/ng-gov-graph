@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LayerMenu } from '@/components/layer-menu'
+import { NigeriaMark } from '@/components/nigeria-mark'
 
 export interface Crumb {
 	label: string
@@ -11,7 +12,7 @@ export function BrandBar({ crumbs = [], layer = 'federal' }: { crumbs?: Crumb[];
 	return (
 		<header className="brand-bar">
 			<Link href="/ng" className="brand-home">
-				<span className="brand-mark" aria-hidden="true">✳</span>
+				<span className="brand-mark"><NigeriaMark /></span>
 				<strong>Govgraph</strong>
 			</Link>
 			<span className="brand-slash">/</span>
