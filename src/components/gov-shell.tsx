@@ -7,7 +7,7 @@ import { GraphMap } from '@/components/graph-map'
 import { GraphSearch } from '@/components/graph-search'
 import { PowerMap } from '@/components/power-map'
 import { filterGraph } from '@/lib/graph/filter'
-import { nodePath } from '@/lib/graph/paths'
+import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 import type { CompiledGraph } from '@/lib/graph/types'
 
@@ -27,7 +27,9 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 	const router = useRouter()
 	const pathname = usePathname()
 	const params = useSearchParams()
-	const selectedId = pathname.split('/').filter(Boolean)[2]
+	const [, section, slug] = pathname.split('/').filter(Boolean)
+	// /ng/represent/lagos selects Lagos State; every other section's third segment is a node id.
+	const selectedId = section === 'represent' && slug ? stateIdFromSlug(slug) : slug
 	const selected = selectedId ? graph.nodes[selectedId] : undefined
 	const selectedLayer = selected?.layer ?? (selected?.parentId ? graph.nodes[selected.parentId]?.layer : undefined)
 	const layer = params.get('layer') === 'states' || params.get('layer') === 'state' || selectedLayer === 'state' ? 'state' : 'federal'
