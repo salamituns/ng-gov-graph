@@ -54,6 +54,7 @@ const VERIFIED_HEADS: Record<string, { name: string; sourceUrl: string; replaces
 	'ng-itf': { name: 'Afiz Ogun Oluwatoyin', sourceUrl: 'https://www.itf.gov.ng/' },
 	'ng-mco': { name: 'Obadiah Simon Nkom', sourceUrl: 'https://miningcadastre.gov.ng/news' },
 	'ng-nan': { name: 'Ali Muhammad Ali', sourceUrl: 'https://statehouse.gov.ng/president-tinubu-congratulates-nan-managing-director-ali-m-ali-on-his-60th-birthday/' },
+	'ng-ohcsf': { name: 'Abel Olumuyiwa Enitan', sourceUrl: 'https://ohcsf.gov.ng/' },
 	'ng-nbc': { name: 'Charles Ebuebu', sourceUrl: 'https://fmino.gov.ng/homeland-security-fg-committed-to-strengthening-coordination-for-peace-national-development-information-minister/' },
 	'ng-nln': { name: 'Chinwe Veronica Anunobi', sourceUrl: 'https://www.nln.gov.ng/officeofnl.php' },
 	'ng-nmc': { name: 'Benjamin Oyediran Oyelami', acting: true, sourceUrl: 'https://nmc.edu.ng/2026/04/23/approval-of-new-acting-nmc-director/' },
