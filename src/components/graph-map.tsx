@@ -7,6 +7,7 @@ import { NIGERIA_MAP } from '@/data/nigeria/map-shapes'
 import { glyphPath, sealPath, seatOffset } from '@/lib/graph/glyph'
 import { layoutGovernment, MAP, readableArc, RING, type PlacedNode, type Tone } from '@/lib/graph/layout'
 import type { CompiledGraph, NodeType } from '@/lib/graph/types'
+import { constitutionalBasis } from '@/lib/graph/constitution'
 
 export const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
 	elected: 'Elected offices',
@@ -133,6 +134,15 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 			window.setTimeout(() => setEdgeHover((current) => (current?.text === text ? null : current)), 2500)
 		},
 	})
+	// Constitutional links carry their section, e.g. "appoints · s.147(2)".
+	const linkText = (link: AuthorityLink) => {
+		const provision = constitutionalBasis(graph, link)
+		return provision ? `${LINK_VERB[link.type]} · ${provision.cite}` : LINK_VERB[link.type]
+	}
+	const linkTitle = (link: AuthorityLink, from: PlacedNode, to: PlacedNode) => {
+		const provision = constitutionalBasis(graph, link)
+		return `${from.node.name} ${LINK_VERB[link.type]} ${to.node.name}${provision ? `. ${provision.cite}: ${provision.text}` : ''}`
+	}
 	const visible = (item: PlacedNode) => !hiddenTypes.has(item.node.type) && !(item.kind === 'dot' && hiddenTypes.has('sub'))
 
 	const toggle = (key: string) =>
@@ -180,8 +190,8 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 						const to = at.get(link.toId)!
 						const tone = link.type === 'confirms' ? 'legislative' : link.type === 'elects' ? 'hub' : from.tone
 						return (
-							<g key={`${link.toId}-${link.type}`} className="link-group" {...edgeProps(LINK_VERB[link.type], tone)}>
-								<title>{`${from.node.name} ${LINK_VERB[link.type]} ${to.node.name}`}</title>
+							<g key={`${link.toId}-${link.type}`} className="link-group" {...edgeProps(linkText(link), tone)}>
+								<title>{linkTitle(link, from, to)}</title>
 								<line x1={from.x} y1={from.y} x2={to.x} y2={to.y} className="link-hit" />
 								<path d={`M ${from.x} ${from.y} L ${(from.x + to.x) / 2} ${(from.y + to.y) / 2} L ${to.x} ${to.y}`} className={`reach-link link-${link.type} tone-${tone}`} markerMid={link.type === 'elects' ? 'url(#m-elects)' : `url(#m-${link.type}-${tone})`} />
 							</g>
@@ -195,8 +205,8 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 						const tone = link.type === 'elects' ? 'hub' : link.type === 'confirms' ? 'legislative' : from.tone
 						const d = linkPath(from, to)
 						return (
-							<g key={`${link.fromId}-${link.toId}-${link.type}`} className="link-group" {...edgeProps(LINK_VERB[link.type], tone)}>
-								<title>{`${from.node.name} ${LINK_VERB[link.type]} ${to.node.name}`}</title>
+							<g key={`${link.fromId}-${link.toId}-${link.type}`} className="link-group" {...edgeProps(linkText(link), tone)}>
+								<title>{linkTitle(link, from, to)}</title>
 								<path d={d} className="link-hit" />
 								<path
 									d={d}
