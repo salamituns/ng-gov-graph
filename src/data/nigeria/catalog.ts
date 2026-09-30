@@ -184,6 +184,17 @@ const ministries: EntitySpec[] = [
 		}),
 	}),
 	ministry({
+		id: 'ng-ministry-of-police-affairs',
+		name: 'Ministry of Police Affairs',
+		description: 'Policy for the Nigeria Police Force, its welfare, equipment and funding.',
+		officialUrl: 'https://policeaffairs.gov.ng/',
+		head: seat('ng-minister-of-police-affairs', 'Honourable Minister', {
+			name: 'Ibrahim Gaidam',
+			appointedYear: 2023,
+			sourceUrl: 'http://policeaffairs.gov.ng/rt-team/senator-ibrahim-gaidam-con-fcna-fcpa-fimcn/',
+		}),
+	}),
+	ministry({
 		id: 'ng-ministry-of-foreign-affairs',
 		name: 'Ministry of Foreign Affairs',
 		description: 'Nigeria’s diplomatic service and foreign policy.',
@@ -212,7 +223,7 @@ const ministries: EntitySpec[] = [
 		}),
 		extraSeats: [
 			seat('ng-minister-of-state-fct', 'Honourable Minister of State', {
-				name: 'Mahmoud Mairiga',
+				name: 'Mariya Mahmoud',
 				appointedYear: 2023,
 			}),
 		],
@@ -725,7 +736,7 @@ const core: EntitySpec[] = [
 		legalSourceUrl: `${CONSTITUTION}#s214`,
 		officialUrl: 'https://www.npf.gov.ng/',
 		aliases: ['NPF', 'IGP'],
-		parentId: 'ng-ministry-of-interior',
+		parentId: 'ng-ministry-of-police-affairs',
 		head: seat('ng-inspector-general-of-police', 'Inspector-General of Police', {
 			name: 'Olatunji Disu',
 			appointedYear: 2026,
@@ -824,7 +835,7 @@ export const nigeriaCatalog: Catalog = {
 		{ fromId: 'ng-president', toId: 'ng-ministry-of-justice' },
 		{ fromId: 'ng-president', toId: 'ng-ministry-of-petroleum' },
 		{ fromId: 'ng-ministry-of-defence', toId: 'ng-armed-forces' },
-		{ fromId: 'ng-ministry-of-interior', toId: 'ng-police' },
+		{ fromId: 'ng-ministry-of-police-affairs', toId: 'ng-police' },
 		{ fromId: 'ng-ministry-of-petroleum', toId: 'ng-nnpc' },
 		{ fromId: 'ng-national-assembly', toId: 'ng-senate' },
 		{ fromId: 'ng-national-assembly', toId: 'ng-house-of-representatives' },

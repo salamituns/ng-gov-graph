@@ -15,6 +15,7 @@ import { summarizeOverview } from '@/lib/graph/overview'
 import { nodePath } from '@/lib/graph/paths'
 import { powerPeople } from '@/lib/graph/power'
 import type { CompiledGraph, PersonnelChange } from '@/lib/graph/types'
+import { federalCharacter } from '@/lib/graph/federal-character'
 
 interface PageProps {
 	searchParams: Promise<{ layer?: string; days?: string }>
@@ -75,6 +76,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 				gov={data.gov}
 				states={Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name }))}
 			/>
+			{layer === 'federal' ? <FederalCharacterCard gov={data.gov} graph={data.graph} /> : null}
 			<section className="panel-card">
 				<h1 className="sr-only">Nigeria government graph</h1>
 				<h2>Government in the news</h2>
@@ -229,3 +231,21 @@ function CountList({ title, items }: { title: string; items: Record<string, numb
 		</div>
 	)
 }
+
+/** The cabinet's spread across the states, measured against section 147(3). */
+function FederalCharacterCard({ gov, graph }: { gov: string; graph: CompiledGraph }) {
+	const report = federalCharacter(graph)
+	const covered = report.states.length - report.uncovered.length
+	return (
+		<Link href={`/${gov}/federal-character`} className="panel-card fc-card">
+			<div>
+				<h2>Federal character</h2>
+				<p className="muted-copy">
+					{covered} of {report.states.length} states and the FCT have a minister in the cabinet of {report.members.length}. See where each one comes from.
+				</p>
+			</div>
+			<span aria-hidden="true" className="fc-card-arrow">→</span>
+		</Link>
+	)
+}
+
