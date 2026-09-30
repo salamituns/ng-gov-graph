@@ -1,11 +1,14 @@
 import type { Metadata } from 'next'
-import { Bricolage_Grotesque, Geist_Mono, Instrument_Sans } from 'next/font/google'
+import { Bricolage_Grotesque, Geist_Mono, Hanken_Grotesk } from 'next/font/google'
 import './globals.css'
+import { getLang } from '@/lib/i18n-server'
 
-// Body text: Instrument Sans. Headings and the wordmark: Bricolage Grotesque. Data labels stay in Geist Mono.
-const body = Instrument_Sans({
+// Body text: Hanken Grotesk. Headings and the wordmark: Bricolage Grotesque. Data labels stay in Geist Mono.
+// Both need the "vietnamese" subset: it is where Google Fonts keeps the dot-below letters
+// (ọ, ẹ, ị, ụ) that Yorùbá and Igbo are written with.
+const body = Hanken_Grotesk({
 	variable: '--font-body',
-	subsets: ['latin', 'latin-ext'],
+	subsets: ['latin', 'latin-ext', 'vietnamese'],
 })
 
 const geistMono = Geist_Mono({
@@ -15,7 +18,7 @@ const geistMono = Geist_Mono({
 
 const display = Bricolage_Grotesque({
 	variable: '--font-display',
-	subsets: ['latin', 'latin-ext'],
+	subsets: ['latin', 'latin-ext', 'vietnamese'],
 })
 
 export const metadata: Metadata = {
@@ -28,10 +31,10 @@ export const metadata: Metadata = {
 
 const THEME_SCRIPT = `try{var t=localStorage.getItem('theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}`
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
 	return (
 		<html
-			lang="en"
+			lang={await getLang()}
 			className={`${body.variable} ${display.variable} ${geistMono.variable} h-full antialiased`}
 			suppressHydrationWarning
 		>

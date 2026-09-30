@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useSyncExternalStore } from 'react'
 import { GENERAL_ELECTION, nextPoll } from '@/data/nigeria/elections'
+import { useT } from '@/components/lang'
 
 function subscribeMinute(onTick: () => void) {
 	const timer = setInterval(onTick, 15000)
@@ -28,6 +29,7 @@ function pollDate(iso: string) {
  */
 export function ElectionCountdown({ serverNow, inecHref }: { serverNow: string; inecHref: string }) {
 	// Minute-resolution clock: the server's time during hydration, the browser's afterwards.
+	const { t } = useT()
 	const nowMs = useSyncExternalStore(subscribeMinute, currentMinute, () => Date.parse(serverNow))
 	const now = new Date(nowMs)
 	const poll = nextPoll(now)
@@ -42,16 +44,16 @@ export function ElectionCountdown({ serverNow, inecHref }: { serverNow: string; 
 			</header>
 			<p className="election-poll">{poll.label}</p>
 			<p className="election-count" role="timer" aria-live="off">
-				<span><strong>{left.days}</strong> days</span>
-				<span><strong>{left.hours}</strong> hrs</span>
-				<span><strong>{left.minutes}</strong> min</span>
+				<span><strong>{left.days}</strong> {t('days')}</span>
+				<span><strong>{left.hours}</strong> {t('hours')}</span>
+				<span><strong>{left.minutes}</strong> {t('minutes')}</span>
 			</p>
 			<p className="election-meta">
-				{pollDate(poll.opensAt)} · polls open 8:30 a.m. WAT · {poll.offices}
+				{pollDate(poll.opensAt)} · {t('pollsOpen')} · {poll.offices}
 			</p>
 			{later.map((other) => (
 				<p key={other.id} className="election-next">
-					Then {other.label}: <strong>{pollDate(other.opensAt)}</strong>
+					{t('then')} {other.label}: <strong>{pollDate(other.opensAt)}</strong>
 				</p>
 			))}
 			<a className="election-source" href={GENERAL_ELECTION.sourceUrl} target="_blank" rel="noreferrer">{GENERAL_ELECTION.sourceLabel} ↗</a>

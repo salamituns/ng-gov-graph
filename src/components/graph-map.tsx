@@ -8,6 +8,7 @@ import { glyphPath, sealPath, seatOffset } from '@/lib/graph/glyph'
 import { layoutGovernment, MAP, readableArc, RING, type PlacedNode, type Tone } from '@/lib/graph/layout'
 import type { CompiledGraph, NodeType } from '@/lib/graph/types'
 import { constitutionalBasis } from '@/lib/graph/constitution'
+import { useT } from '@/components/lang'
 
 export const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
 	elected: 'Elected offices',
@@ -427,6 +428,7 @@ function turn(item: PlacedNode, angle: number): PlacedNode {
  */
 function NigeriaCore({ x, y, names, selectedId, onSelect }: { x: number; y: number; names: Record<string, string>; selectedId?: string; onSelect: (id: string) => void }) {
 	const [hoverState, setHoverState] = useState<string | null>(null)
+	const peopleLabel = useT().t('peopleOfNigeria')
 	const scale = 1.08
 	const top = y - 14
 	const named = hoverState ? names[hoverState] : undefined
@@ -451,7 +453,7 @@ function NigeriaCore({ x, y, names, selectedId, onSelect }: { x: number; y: numb
 				</path>
 			</g>
 			<text x={x} y={top + (NIGERIA_MAP.height * scale) / 2 + 17} className="hub-text" pointerEvents="none">
-				{named ?? 'People of Nigeria'}
+				{named ?? peopleLabel}
 			</text>
 		</g>
 	)

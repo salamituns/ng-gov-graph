@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/graph/*.test.ts",
+    "test": "tsx --test src/lib/*.test.ts src/lib/graph/*.test.ts",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
     "db:seed": "dotenv -e .env.local -- tsx scripts/seed.ts",
     "nass:refresh": "python3 scripts/refresh-nass.py"

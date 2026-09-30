@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BrandTagline } from '@/components/brand-tagline'
 import { LayerMenu } from '@/components/layer-menu'
 import { NigeriaMark } from '@/components/nigeria-mark'
 
@@ -23,7 +24,7 @@ export function BrandBar({ crumbs = [], layer = 'federal', tagline = false }: { 
 					{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : <span>{crumb.label}</span>}
 				</span>
 			))}
-			{tagline && !crumbs.length ? <span className="brand-tagline">Nigeria’s government, mapped and sourced.</span> : null}
+			{tagline && !crumbs.length ? <BrandTagline /> : null}
 		</header>
 	)
 }
