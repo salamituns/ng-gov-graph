@@ -27,7 +27,7 @@ function pollDate(iso: string) {
  * Days, hours and minutes to the next general election poll. The first render uses the server's clock so
  * the markup matches; it then ticks every minute and moves to the next poll once one opens.
  */
-export function ElectionCountdown({ serverNow, inecHref }: { serverNow: string; inecHref: string }) {
+export function ElectionCountdown({ serverNow, inecHref, guideHref }: { serverNow: string; inecHref: string; guideHref?: string }) {
 	// Minute-resolution clock: the server's time during hydration, the browser's afterwards.
 	const { t } = useT()
 	const nowMs = useSyncExternalStore(subscribeMinute, currentMinute, () => Date.parse(serverNow))
@@ -56,7 +56,10 @@ export function ElectionCountdown({ serverNow, inecHref }: { serverNow: string; 
 					{t('then')} {other.label}: <strong>{pollDate(other.opensAt)}</strong>
 				</p>
 			))}
-			<a className="election-source" href={GENERAL_ELECTION.sourceUrl} target="_blank" rel="noreferrer">{GENERAL_ELECTION.sourceLabel} ↗</a>
+			<p className="election-foot">
+				<a className="election-source" href={GENERAL_ELECTION.sourceUrl} target="_blank" rel="noreferrer">{GENERAL_ELECTION.sourceLabel} ↗</a>
+				{guideHref ? <Link href={guideHref} className="election-guide">{t('electionGuide')} →</Link> : null}
+			</p>
 		</section>
 	)
 }

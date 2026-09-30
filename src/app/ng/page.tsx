@@ -73,7 +73,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	return (
 		<>
 			<BrandBar layer={layer} tagline />
-			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} />
+			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} guideHref={`/${data.gov}/elections`} />
 			<RepresentPicker
 				gov={data.gov}
 				states={Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name }))}
