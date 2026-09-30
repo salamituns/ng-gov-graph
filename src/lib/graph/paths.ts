@@ -18,3 +18,13 @@ export function nodePath(gov: string, node: GraphNode): string {
 	const segment = TYPE_PATH[node.type] ?? 'departments'
 	return `/${gov}/${segment}/${node.id}`
 }
+
+/** "/ng/represent/lagos" for Lagos State, "/ng/represent/fct" for the Federal Capital Territory. */
+export function representPath(gov: string, stateId: string) {
+	const slug = stateId === 'ng-fct' ? 'fct' : stateId.replace(/^ng-/, '').replace(/-state$/, '')
+	return `/${gov}/represent/${slug}`
+}
+
+export function stateIdFromSlug(slug: string) {
+	return slug === 'fct' ? 'ng-fct' : `ng-${slug}-state`
+}

@@ -549,3 +549,17 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .flag-chip span:nth-child(2) { background:#ffffff; }
 .dark .flag-chip span:not(:nth-child(2)) { background:#008751; }
 .layer-menu button { gap:6px; }
+
+/* ---------- Who represents me? ---------- */
+.represent-card h2 { font-size:15px; font-weight:600; }
+.represent-card .muted-copy { margin-top:6px; }
+.represent-card.is-compact { padding:14px 16px; }
+.represent-select { display:block; margin-top:12px; }
+.represent-card.is-compact .represent-select { margin-top:0; }
+.represent-select select { width:100%; appearance:none; padding:10px 36px 10px 12px; border-radius:9px; border:1px solid var(--gg-line); background:var(--gg-panel-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; color:var(--gg-text); font-size:14px; }
+.represent-select select:focus-visible { outline:2px solid var(--gg-green); outline-offset:1px; }
+.represent-mine { display:inline-block; margin-top:10px; font-size:13px; color:var(--gg-hub-ink); }
+.represent-mine:hover { text-decoration:underline; }
+.represent-zone { font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--gg-hub-ink); font-family:var(--font-geist-mono),monospace; margin-bottom:6px; }
+.represent-initials { display:grid; place-items:center; font-size:11px; color:var(--gg-muted); }
+.entity-link { color:var(--gg-text); text-decoration:underline; text-underline-offset:2px; }
