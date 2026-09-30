@@ -332,7 +332,7 @@ function layoutFederal(graph: CompiledGraph): GovernmentLayout {
 				const start = Math.min(...cabinet) - 0.05
 				const end = Math.max(...cabinet) + 0.05
 				bands.push({ key: 'cabinet', tone, d: bandPath(RING.administration - 21, RING.administration + 21, start, end) })
-				labels.push({ key: 'cabinet', text: 'CABINET', tone, size: 'band', arc: { r: RING.administration + 26, start: 0.25, end: 0.75 } })
+				labels.push({ key: 'cabinet', text: 'FEC', tone, size: 'band', arc: { r: RING.administration + 26, start: 0.25, end: 0.75 } })
 			}
 		} else if (tone === 'legislative') {
 			const mid = (arc.start + arc.end) / 2
@@ -391,9 +391,9 @@ function layoutFederal(graph: CompiledGraph): GovernmentLayout {
 		}
 	}
 	labels.push(
-		{ key: 'authority', text: 'HIGHEST AUTHORITY', tone: 'executive', size: 'ring', arc: { r: RING.authority - 12, start: 0.3, end: 1.25 } },
-		{ key: 'oversight', text: 'OVERSIGHT', tone: 'executive', size: 'ring', arc: { r: RING.oversight - 11, start: 1.36, end: 1.78 } },
-		{ key: 'administration', text: 'ADMINISTRATION', tone: 'executive', size: 'ring', arc: { r: RING.administration - 30, start: 1.2, end: 1.94 } },
+		{ key: 'authority', text: 'PRESIDENCY', tone: 'executive', size: 'ring', arc: { r: RING.authority - 12, start: 0.3, end: 1.25 } },
+		{ key: 'oversight', text: 'FEDERAL BODIES', tone: 'executive', size: 'ring', arc: { r: RING.oversight - 11, start: 1.22, end: 1.92 } },
+		{ key: 'administration', text: 'MINISTRIES', tone: 'executive', size: 'ring', arc: { r: RING.administration - 30, start: 1.2, end: 1.94 } },
 	)
 
 	return finish({ nodes, wedges, rings, bands, labels })

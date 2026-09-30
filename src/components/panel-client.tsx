@@ -54,7 +54,7 @@ export function NewsProse({ items, collapsedCount = 4 }: { items: ProseItem[]; c
 			</p>
 			{items.length > collapsedCount && (
 				<button type="button" className="text-action" onClick={() => setOpen(!open)}>
-					{open ? 'Show less' : 'Read more'}
+					{open ? 'Fewer stories' : 'More stories'}
 				</button>
 			)}
 		</>

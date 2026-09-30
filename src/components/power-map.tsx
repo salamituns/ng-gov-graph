@@ -74,10 +74,10 @@ export function PowerMap({ people, links, articles, sources, days, asOf, selecte
 	return (
 		<div className={`power-map${narrow ? ' is-narrow' : ''}`} ref={rootRef}>
 			<header className="power-heading">
-				<h2>Power map: who is in the news</h2>
+				<h2>Newsmakers</h2>
 				<p>
 					{people.length
-						? `The ${people.length} ${people.length === 1 ? 'person' : 'people'} named most across ${articles.toLocaleString('en')} ${articles === 1 ? 'article' : 'articles'} from ${sources.length} ${sources.length === 1 ? 'source' : 'sources'} in the last ${days} days`
+						? `Who the Nigerian press named most in the last ${days} days: ${articles.toLocaleString('en')} ${articles === 1 ? 'story' : 'stories'} across ${sources.length} ${sources.length === 1 ? 'newsroom' : 'newsrooms'}`
 						: `No officeholders are named in sourced news from the last ${days} days.`}
 				</p>
 			</header>
@@ -114,7 +114,7 @@ export function PowerMap({ people, links, articles, sources, days, asOf, selecte
 							role="button"
 							tabIndex={0}
 							aria-pressed={person === selected}
-							aria-label={`${person.name}, ${person.job}, ${person.total} articles`}
+							aria-label={`${person.name}, ${person.job}, ${person.total} stories`}
 							className={`power-person tone-${toneOf(person.sector)} ${recent ? 'is-recent' : ''} ${dim ? 'is-dim' : ''} ${person === selected ? 'is-selected' : ''}`}
 							onClick={() => onSelect(person)}
 							onKeyDown={(event) => {
@@ -135,10 +135,10 @@ export function PowerMap({ people, links, articles, sources, days, asOf, selecte
 								{jobLine(person, narrow ? 24 : 38)}
 							</text>
 							<text x={person.x} y={person.y + person.r + 40} className="power-count">
-								{person.total} {person.total === 1 ? 'article' : 'articles'}
+								{person.total} {person.total === 1 ? 'story' : 'stories'}
 							</text>
 							{recent && person.latest ? (
-								<text x={person.x} y={person.y + person.r + 52} className="power-recent">In the news {relative(person.latest.date, asOf)}</text>
+								<text x={person.x} y={person.y + person.r + 52} className="power-recent">Named {relative(person.latest.date, asOf)}</text>
 							) : null}
 						</g>
 					)
@@ -170,19 +170,19 @@ function PersonCard({ person, asOf, days, style, onSeeOnGraph, onClose }: { pers
 				</span>
 			</header>
 			<p className="person-card-stats">
-				{person.total} {person.total === 1 ? 'article' : 'articles'} in {days} days · {person.thisWeek} this week · #{person.rank}
+				{person.total} {person.total === 1 ? 'story' : 'stories'} in {days} days · {person.thisWeek} this week · ranked #{person.rank}
 			</p>
 			<svg viewBox="0 0 120 28" className="person-card-spark" aria-label={`Mentions per week over the last 12 weeks: ${person.weeks.join(', ')}`}>
 				<polyline points={points} />
 			</svg>
-			<p className="person-card-caption">last 12 weeks</p>
+			<p className="person-card-caption">weekly mentions, last 12 weeks</p>
 			{person.latest ? (
 				<a href={person.latest.url} target="_blank" rel="noreferrer" className="person-card-latest">
 					<span>{person.latest.headline}</span>
 					<small>{person.latest.source} · {relative(person.latest.date, asOf)}</small>
 				</a>
 			) : null}
-			<button type="button" className="person-card-cta" onClick={onSeeOnGraph}>See on the graph</button>
+			<button type="button" className="person-card-cta" onClick={onSeeOnGraph}>Show in government</button>
 		</div>
 	)
 }
