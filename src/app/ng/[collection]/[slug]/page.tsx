@@ -15,6 +15,9 @@ import { getNode, loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath } from '@/lib/graph/paths'
 import { chamberRoster } from '@/lib/graph/roster'
 import type { CompiledGraph, GraphNode, NodeType } from '@/lib/graph/types'
+import { MINISTER_ORIGINS } from '@/data/nigeria/origins'
+import { STATE_ZONES } from '@/data/nigeria/states'
+import { isCabinetSeat } from '@/lib/graph/federal-character'
 
 const COLLECTIONS: Record<string, NodeType[]> = {
 	departments: ['department'],
@@ -109,6 +112,7 @@ export default async function EntityPage({ params }: PageProps) {
 	const stories = newsForEntity(news, [orgId, ...descendantsOf(graph, orgId)]).sort((a, b) =>
 		(b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''),
 	)
+	const origin = seat && holder && isCabinetSeat(seat) ? MINISTER_ORIGINS[holder.name] : undefined
 	const crumbs: Crumb[] = []
 	if (node.sector) crumbs.push({ label: SECTOR_LABEL[node.sector] ?? node.sector })
 	if (parent && parent.type !== 'constituency') crumbs.push({ label: parent.name, href: nodePath(gov, parent) })
@@ -149,6 +153,13 @@ export default async function EntityPage({ params }: PageProps) {
 							</p>
 						) : null}
 						{holder.handoverSourceUrl ? <p className="entity-sources"><a href={holder.handoverSourceUrl} target="_blank" rel="noreferrer">Handover report</a></p> : null}
+						{origin ? (
+							<p className="entity-origin">
+								{origin.basis === 'nominated' ? 'Nominated from' : 'From'} {graph.nodes[origin.stateId]?.name ?? origin.stateId}, {STATE_ZONES[origin.stateId]}
+								{' · '}
+								<Link href={`/${gov}/federal-character`}>Federal character</Link>
+							</p>
+						) : null}
 					</>
 				) : seat ? (
 					<div className="holder-card is-vacant">
