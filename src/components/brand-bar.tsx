@@ -7,13 +7,13 @@ export interface Crumb {
 	href?: string
 }
 
-/** "Govgraph / Nigeria ⌄ / Executive": the Nigeria menu switches between the federal and state maps. */
-export function BrandBar({ crumbs = [], layer = 'federal' }: { crumbs?: Crumb[]; layer?: 'federal' | 'state' }) {
+/** "Who Runs Naija / Nigeria ⌄ / Executive": the Nigeria menu switches between the federal and state maps. */
+export function BrandBar({ crumbs = [], layer = 'federal', tagline = false }: { crumbs?: Crumb[]; layer?: 'federal' | 'state'; tagline?: boolean }) {
 	return (
 		<header className="brand-bar">
 			<Link href="/ng" className="brand-home">
 				<span className="brand-mark"><NigeriaMark /></span>
-				<strong>Govgraph</strong>
+				<strong className="brand-name">Who Runs Naija</strong>
 			</Link>
 			<span className="brand-slash">/</span>
 			<LayerMenu layer={layer} />
@@ -23,6 +23,7 @@ export function BrandBar({ crumbs = [], layer = 'federal' }: { crumbs?: Crumb[];
 					{crumb.href ? <Link href={crumb.href}>{crumb.label}</Link> : <span>{crumb.label}</span>}
 				</span>
 			))}
+			{tagline && !crumbs.length ? <span className="brand-tagline">Nigeria’s government, mapped and sourced.</span> : null}
 		</header>
 	)
 }

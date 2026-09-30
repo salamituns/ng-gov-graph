@@ -5,7 +5,7 @@ import { federalCharacter, type CabinetMember, type StateTally } from '@/lib/gra
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, representPath } from '@/lib/graph/paths'
 
-export const metadata = { title: 'Govgraph · Federal character' }
+export const metadata = { title: 'Federal character · Who Runs Naija' }
 
 const CONSTITUTION = 'https://www.constituteproject.org/constitution/Nigeria_2011'
 

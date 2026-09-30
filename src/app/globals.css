@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-body);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-fraunces);
+  --font-heading: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -129,7 +129,7 @@
   }
 }
 
-/* ---------- Govgraph tokens: light by default, dark via .dark (system or toggle) ---------- */
+/* ---------- Who Runs Naija tokens: light by default, dark via .dark (system or toggle) ---------- */
 :root {
   --gg-surface: #e9ebe6;
   --gg-panel: #ffffff;
@@ -154,6 +154,8 @@
   --gg-glyph: #fbfaf8;
   --gg-ring: #b8b5c9;
   --gg-shadow: 0 1px 2px #0000000d;
+  /* Adire eleko: the indigo resist-dyed circles and dots of Yoruba cloth, barely there behind the map. */
+  --gg-adire: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%232b3f8f' stroke-opacity='.07'%3E%3Ccircle cx='20' cy='20' r='6.5'/%3E%3Ccircle cx='20' cy='20' r='11' stroke-dasharray='1.4 2.6'/%3E%3Cpath d='M0 20h3M37 20h3M20 0v3M20 37v3'/%3E%3C/g%3E%3Cg fill='%232b3f8f' fill-opacity='.08'%3E%3Ccircle cx='20' cy='20' r='1.7'/%3E%3Ccircle cx='0' cy='0' r='1.3'/%3E%3Ccircle cx='40' cy='0' r='1.3'/%3E%3Ccircle cx='0' cy='40' r='1.3'/%3E%3Ccircle cx='40' cy='40' r='1.3'/%3E%3C/g%3E%3C/svg%3E");
 }
 .dark {
   --gg-surface: #151916;
@@ -176,12 +178,13 @@
   --gg-glyph: #2b2730;
   --gg-ring: #57536a;
   --gg-shadow: none;
+  --gg-adire: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%238ea2ee' stroke-opacity='.08'%3E%3Ccircle cx='20' cy='20' r='6.5'/%3E%3Ccircle cx='20' cy='20' r='11' stroke-dasharray='1.4 2.6'/%3E%3Cpath d='M0 20h3M37 20h3M20 0v3M20 37v3'/%3E%3C/g%3E%3Cg fill='%238ea2ee' fill-opacity='.09'%3E%3Ccircle cx='20' cy='20' r='1.7'/%3E%3Ccircle cx='0' cy='0' r='1.3'/%3E%3Ccircle cx='40' cy='0' r='1.3'/%3E%3Ccircle cx='0' cy='40' r='1.3'/%3E%3Ccircle cx='40' cy='40' r='1.3'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* ---------- Shell ---------- */
-.shell { display:grid; grid-template-columns:minmax(360px,40%) minmax(0,1fr); min-height:100vh; background:var(--gg-surface); color:var(--gg-text); font-family:var(--font-geist-sans),system-ui,sans-serif; }
+.shell { display:grid; grid-template-columns:minmax(360px,40%) minmax(0,1fr); min-height:100vh; background:var(--gg-surface); color:var(--gg-text); font-family:var(--font-body),system-ui,sans-serif; }
 .shell-panel { height:100vh; overflow-y:auto; padding:14px; scrollbar-width:thin; display:flex; flex-direction:column; gap:12px; }
-.shell-map { position:sticky; top:0; height:100vh; min-width:0; overflow:hidden; }
+.shell-map { position:sticky; top:0; height:100vh; min-width:0; overflow:hidden; background-image:var(--gg-adire); background-size:40px 40px; background-position:center; }
 .map-toolbar { position:absolute; z-index:5; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; align-items:center; pointer-events:none; }
 .map-toolbar > * { pointer-events:auto; }
 .map-toolbar-right { display:flex; gap:8px; }
@@ -615,3 +618,12 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .constitution-cite { padding:2px 7px; border-radius:6px; background:color-mix(in srgb, var(--gg-green) 12%, transparent); color:var(--gg-hub-ink); font-family:var(--font-geist-mono),monospace; font-size:11.5px; white-space:nowrap; }
 .constitution-cite:hover { text-decoration:underline; }
 @media (max-width: 520px) { .constitution-card li { grid-template-columns:1fr; } .constitution-cite { justify-self:start; } }
+
+/* ---------- Visual signature ---------- */
+.brand-name, .panel-card h2, .entity-card h1, .detail-roster-heading h2, .fc-headline strong, .election-count strong { font-family:var(--font-display),var(--font-body),sans-serif; }
+.brand-name { font-weight:700; letter-spacing:-.015em; }
+.entity-card h1 { font-weight:650; letter-spacing:-.025em; }
+.brand-tagline { min-width:0; overflow:hidden; text-overflow:ellipsis; margin-left:auto; padding-left:10px; color:var(--gg-muted); font-size:12px; }
+/* Aso-oke: a hand-woven strip, flag green with a metallic gold thread, along the foot of the brand bar. */
+.brand-bar::after { content:''; position:absolute; left:14px; right:14px; bottom:0; height:2px; border-radius:2px; background:repeating-linear-gradient(90deg, var(--gg-green) 0 14px, transparent 14px 16px, var(--gg-judicial) 16px 18px, transparent 18px 20px); opacity:.75; pointer-events:none; }
+@media (max-width: 640px) { .brand-tagline { display:none; } }
