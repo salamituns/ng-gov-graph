@@ -36,15 +36,3 @@ export function LangSelect() {
 		</label>
 	)
 }
-
-/** Shown whenever a language other than English is chosen: these translations are drafts. */
-export function DraftNotice() {
-	const { lang, t: tr } = useT()
-	if (lang === 'en') return null
-	return (
-		<p className="draft-notice" role="note">
-			<span lang={lang}>{tr('draftNotice')}</span>
-			<span lang="en"> · {t('en', 'draftNotice')}</span>
-		</p>
-	)
-}

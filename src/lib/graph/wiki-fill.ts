@@ -515,7 +515,7 @@ async function fetchWikitext(page: string) {
 	url.searchParams.set('prop', 'wikitext')
 	url.searchParams.set('format', 'json')
 	const res = await fetch(url, {
-		headers: { 'user-agent': 'Govgraph/0.1 (https://ng-gov-graph.vercel.app)' },
+		headers: { 'user-agent': 'Govgraph/0.1 (https://whoruns9ja.com)' },
 		cache: 'no-store',
 	})
 	if (!res.ok) {

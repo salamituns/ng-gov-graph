@@ -52,7 +52,7 @@ async function fetchWikitext(page: string) {
 	url.searchParams.set('format', 'json')
 	try {
 		const res = await fetch(url, {
-			headers: { 'user-agent': 'Govgraph/0.1 (https://ng-gov-graph.vercel.app)' },
+			headers: { 'user-agent': 'Govgraph/0.1 (https://whoruns9ja.com)' },
 			cache: 'no-store',
 			signal: AbortSignal.timeout(8000),
 		})

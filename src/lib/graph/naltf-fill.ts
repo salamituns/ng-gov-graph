@@ -84,7 +84,7 @@ export async function overlayNaltfOccupancy(
 ): Promise<CompiledGraph> {
 	const res = await fetch(NALTF_MEMBERS_URL, {
 		headers: {
-			'user-agent': 'Govgraph/0.1 (https://ng-gov-graph.vercel.app)',
+			'user-agent': 'Govgraph/0.1 (https://whoruns9ja.com)',
 		},
 		cache: 'no-store',
 	})

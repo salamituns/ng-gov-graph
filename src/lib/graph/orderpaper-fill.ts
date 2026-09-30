@@ -189,7 +189,7 @@ export async function overlayOrderpaperOccupancy(
 	graph: CompiledGraph,
 ): Promise<CompiledGraph> {
 	const headers = {
-		'user-agent': 'Govgraph/0.1 (https://ng-gov-graph.vercel.app)',
+		'user-agent': 'Govgraph/0.1 (https://whoruns9ja.com)',
 	}
 	const pages = await Promise.all(
 		[ORDERPAPER_MEMBERS_URL, ...ORDERPAPER_HOUSE_URLS].map((url) =>

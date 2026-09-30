@@ -87,3 +87,16 @@ describe('personnel change detection', () => {
 		assert.equal(checked.nodes['ng-ngsa'].people[0]?.sourceUrl, base.sourceUrl)
 	})
 })
+
+describe('name corrections', () => {
+	it('are not changes of officeholder, and old cards for them are dropped', async () => {
+		const { diffOfficeholders, mergeChanges } = await import('./changes')
+		const { compileNigeriaGraph } = await import('./nigeria')
+		const next = compileNigeriaGraph()
+		const previous = structuredClone(next)
+		previous.nodes['ng-minister-of-state-fct'].people = [{ name: 'Mahmoud Mairiga' }]
+		assert.deepEqual(diffOfficeholders(previous, next, '2026-09-30'), [])
+		const stale = { kind: 'personnel' as const, id: 'diff-x', date: '2026-09-30', positionId: 'ng-minister-of-state-fct', positionName: 'Minister of State', groupId: 'ng-ministry-of-fct', entryMode: 'appointed' as const, personName: 'Mariya Mahmoud', departure: false, predecessorName: 'Mahmoud Mairiga' }
+		assert.deepEqual(mergeChanges([stale], []), [])
+	})
+})
