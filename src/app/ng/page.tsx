@@ -158,6 +158,9 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 					<CountList title="By type" items={overview.byType} />
 					<CountList title="By branch" items={Object.fromEntries(Object.entries(overview.byBranch).filter(([, value]) => value > 0))} />
 				</div>
+				{layer === 'federal' ? (
+					<Link href={`/${data.gov}/budget`} className="overview-budget">Where the 2026 budget goes →</Link>
+				) : null}
 				<p className="overview-total">
 					<strong>{overview.organizationCount}</strong> organizations in total, <strong>{overview.subAgencyCount}</strong> of them sub-agencies.
 				</p>

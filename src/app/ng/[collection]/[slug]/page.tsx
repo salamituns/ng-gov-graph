@@ -20,6 +20,7 @@ import { STATE_ZONES } from '@/data/nigeria/states'
 import { isCabinetSeat } from '@/lib/graph/cabinet'
 import { CONSTITUTION_URL, provisionUrl, type Provision } from '@/data/nigeria/constitution'
 import { provisionsFor } from '@/lib/graph/constitution'
+import { BudgetCard } from '@/components/budget-card'
 
 const COLLECTIONS: Record<string, NodeType[]> = {
 	departments: ['department'],
@@ -210,6 +211,7 @@ export default async function EntityPage({ params }: PageProps) {
 				) : null}
 			</article>
 			<ConstitutionCard node={node} provisions={provisionsFor(graph, node.id)} />
+			<BudgetCard id={orgId} gov={gov} graph={graph} />
 			{node.id === GENERAL_ELECTION.authorityId ? <ElectionCountdown serverNow={new Date().toISOString()} inecHref={nodePath(gov, node)} /> : null}
 
 			<Tabs defaultValue="news" className="entity-tabs">

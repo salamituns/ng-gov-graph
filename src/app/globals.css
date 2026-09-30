@@ -662,3 +662,38 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .next-elections li:last-child { border-bottom:0; }
 .next-elections span:last-child { color:var(--gg-muted); text-align:right; }
 @media (max-width: 520px) { .voter-links, .offcycle-list { grid-template-columns:1fr; } }
+
+/* ---------- Budget ---------- */
+.budget-card header { display:flex; justify-content:space-between; align-items:baseline; }
+.budget-card header a, .overview-budget { color:var(--gg-hub-ink); font-size:12.5px; font-weight:600; }
+.budget-card header a:hover, .overview-budget:hover { text-decoration:underline; }
+.overview-budget { display:inline-block; margin-top:14px; }
+.budget-total { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px; margin-top:10px; }
+.budget-total strong { font-family:var(--font-display),var(--font-body),sans-serif; font-size:28px; font-weight:600; letter-spacing:-.02em; color:var(--gg-hub-ink); font-variant-numeric:tabular-nums; }
+.budget-total span { color:var(--gg-muted); font-size:12px; }
+.spend-bar { display:flex; height:10px; margin-top:12px; border-radius:5px; overflow:hidden; background:var(--gg-panel-2); }
+.spend-personnel { background:var(--gg-executive); }
+.spend-overhead { background:var(--gg-judicial); }
+.spend-capital { background:var(--gg-green); }
+.spend-key { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:8px; color:var(--gg-muted); font-size:11.5px; }
+.spend-key li { display:flex; align-items:center; gap:5px; }
+.spend-key i { width:9px; height:9px; border-radius:2px; }
+.budget-note { margin-top:10px; padding:8px 10px; border-radius:8px; background:var(--gg-panel-2); font-size:12px; line-height:1.45; }
+.budget-card h3 { margin-top:16px; color:var(--gg-muted); font-size:12px; font-weight:600; }
+.budget-lines { display:grid; gap:6px; margin-top:8px; }
+.budget-lines li { display:flex; justify-content:space-between; gap:12px; font-size:12.5px; }
+.budget-lines li > span:last-child { flex:none; color:var(--gg-muted); font-variant-numeric:tabular-nums; }
+.budget-lines a[target] { text-decoration:underline; }
+.budget-source { margin-top:12px; color:var(--gg-faint); font-size:11px; }
+.budget-source a { text-decoration:underline; }
+.budget-parts { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-top:14px; }
+.budget-parts li { padding:10px 12px; border-radius:9px; background:var(--gg-panel-2); }
+.budget-parts strong { display:block; font-family:var(--font-display),var(--font-body),sans-serif; font-size:18px; font-weight:600; color:var(--gg-hub-ink); }
+.budget-parts span { color:var(--gg-muted); font-size:11.5px; }
+.budget-ranking { display:grid; gap:9px; padding-top:14px; }
+.budget-ranking li { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 128px; align-items:center; gap:10px; font-size:12.5px; }
+.budget-rank-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.budget-rank-name:hover { text-decoration:underline; }
+.budget-rank-total { text-align:right; font-variant-numeric:tabular-nums; }
+.budget-rank-total a { margin-left:4px; color:var(--gg-faint); font-size:10.5px; text-decoration:underline; }
+@media (max-width: 520px) { .budget-ranking li { grid-template-columns:1fr 104px; } .budget-ranking .fc-bar { display:none; } }
