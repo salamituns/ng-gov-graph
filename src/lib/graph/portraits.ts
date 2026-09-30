@@ -23,7 +23,7 @@ export function applyPortraitUrls(
 	return graph
 }
 
-const WIKI_HEADERS = { 'user-agent': 'Govgraph/0.1 (https://ng-gov-graph.vercel.app)' }
+const WIKI_HEADERS = { 'user-agent': 'Govgraph/0.1 (https://whoruns9ja.com)' }
 
 function nameTokens(name: string) {
 	return name
