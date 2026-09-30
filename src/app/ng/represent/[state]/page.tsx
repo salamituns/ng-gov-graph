@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BrandBar } from '@/components/brand-bar'
 import { RepresentPicker } from '@/components/represent-picker'
+import { GENERAL_ELECTION, governorshipFor } from '@/data/nigeria/elections'
 import { STATE_ZONES } from '@/data/nigeria/states'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
@@ -44,6 +45,41 @@ function SeatCard({ gov, seat }: { gov: string; seat: RosterSeat }) {
 	)
 }
 
+function electionDay(iso: string) {
+	return new Date(iso).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Lagos' })
+}
+
+/** When this state's voters next go to the polls, and for what. */
+function NextElections({ gov, stateId, stateName }: { gov: string; stateId: string; stateName: string }) {
+	const [federal, state] = GENERAL_ELECTION.polls
+	const governor = governorshipFor(stateId)
+	const isFct = stateId === 'ng-fct'
+	const rows = [
+		{ what: isFct ? 'President, your senator and House members' : 'President, your senators and House members', when: electionDay(federal.opensAt) },
+		...(governor
+			? [{
+					what: 'Governor',
+					when: governor.offCycle
+						? `Off-cycle: expected ${new Date(`${governor.nextExpected}-15T12:00:00+01:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}`
+						: electionDay(governor.opensAt),
+				}]
+			: []),
+		...(isFct ? [] : [{ what: `${stateName} House of Assembly`, when: electionDay(state.opensAt) }]),
+	]
+	return (
+		<section className="panel-card">
+			<h2>Your next elections</h2>
+			<ul className="next-elections">
+				{rows.map((row) => (
+					<li key={row.what}><span>{row.what}</span><span>{row.when}</span></li>
+				))}
+			</ul>
+			{isFct ? <p className="muted-copy">The FCT has no governor or state assembly; its six area councils hold their own elections.</p> : null}
+			<p className="muted-copy"><Link href={`/${gov}/elections`} className="entity-link">Your 2027 election guide</Link>: check your registration, collect your PVC, find your polling unit.</p>
+		</section>
+	)
+}
+
 /** Everyone who represents or governs one state, with the map turned to it. */
 export default async function RepresentPage({ params }: PageProps) {
 	const { state: slug } = await params
@@ -82,6 +118,8 @@ export default async function RepresentPage({ params }: PageProps) {
 					</Link>
 				) : null}
 			</article>
+
+			<NextElections gov={gov} stateId={state.id} stateName={state.name} />
 
 			<section className="detail-roster">
 				<div className="detail-roster-heading">
