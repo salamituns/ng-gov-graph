@@ -3,8 +3,7 @@
  *
  * Only the interface is translated. Official names of offices and bodies, and the plain-language
  * constitutional provisions, stay in English, where a draft translation could mislead.
- * The Pidgin, Hausa, Yorùbá and Igbo text is a first draft awaiting review by native speakers;
- * the site says so whenever one of them is chosen.
+ * The Pidgin, Hausa, Yorùbá and Igbo text was reviewed by the project's owner in September 2026.
  */
 export const LANGS = [
 	{ code: 'en', name: 'English' },
@@ -25,7 +24,6 @@ export function parseLang(value: string | undefined | null): Lang {
 const en = {
 	language: 'Language',
 	tagline: 'Nigeria’s government, mapped and sourced.',
-	draftNotice: 'Draft translation, awaiting review by a native speaker.',
 	peopleOfNigeria: 'People of Nigeria',
 	viewGovernment: 'Government',
 	viewNewsmakers: 'Newsmakers',
@@ -56,7 +54,6 @@ export type MessageKey = keyof typeof en
 const pcm: Record<MessageKey, string> = {
 	language: 'Language',
 	tagline: 'Naija government: we don map am, we get proof.',
-	draftNotice: 'Na draft translation be this. Person wey sabi Pidgin go check am.',
 	peopleOfNigeria: 'Naija People',
 	viewGovernment: 'Government',
 	viewNewsmakers: 'Who dey news',
@@ -85,7 +82,6 @@ const pcm: Record<MessageKey, string> = {
 const ha: Record<MessageKey, string> = {
 	language: 'Harshe',
 	tagline: 'Gwamnatin Najeriya, a taswira tare da hujjoji.',
-	draftNotice: 'Wannan fassara ce ta farko; mai jin Hausa zai duba ta.',
 	peopleOfNigeria: 'Al’ummar Najeriya',
 	viewGovernment: 'Gwamnati',
 	viewNewsmakers: 'Masu labarai',
@@ -114,7 +110,6 @@ const ha: Record<MessageKey, string> = {
 const yo: Record<MessageKey, string> = {
 	language: 'Èdè',
 	tagline: 'Ìjọba Nàìjíríà, lórí àwòrán-ilẹ̀ pẹ̀lú ẹ̀rí.',
-	draftNotice: 'Ìtúmọ̀ àkọ́kọ́ ni èyí; ẹni tí ó gbọ́ Yorùbá dáadáa yóò ṣàyẹ̀wò rẹ̀.',
 	peopleOfNigeria: 'Àwọn ará Nàìjíríà',
 	viewGovernment: 'Ìjọba',
 	viewNewsmakers: 'Nínú ìròyìn',
@@ -143,7 +138,6 @@ const yo: Record<MessageKey, string> = {
 const ig: Record<MessageKey, string> = {
 	language: 'Asụsụ',
 	tagline: 'Ọchịchị Naịjirịa, n’eserese na ihe akaebe.',
-	draftNotice: 'Nke a bụ ntụgharị mbụ; onye maara Igbo nke ọma ga-enyocha ya.',
 	peopleOfNigeria: 'Ndị Naịjirịa',
 	viewGovernment: 'Ọchịchị',
 	viewNewsmakers: 'Ndị nọ n’akụkọ',

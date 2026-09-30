@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useMemo, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react'
 import { GraphMap } from '@/components/graph-map'
 import { GraphSearch } from '@/components/graph-search'
 import { PowerMap } from '@/components/power-map'
@@ -10,7 +10,7 @@ import { filterGraph } from '@/lib/graph/filter'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 import type { CompiledGraph } from '@/lib/graph/types'
-import { DraftNotice, LangSelect, useT } from '@/components/lang'
+import { LangSelect, useT } from '@/components/lang'
 
 interface GovShellProps {
 	gov: string
@@ -60,7 +60,6 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 	return (
 		<main className="shell">
 			<aside className="shell-panel">
-				<DraftNotice />
 				{children}
 			</aside>
 			<section className="shell-map" aria-label="Government map">
@@ -105,7 +104,26 @@ function subscribeTheme(callback: () => void) {
 	return () => window.removeEventListener(THEME_EVENT, callback)
 }
 
+/**
+ * The inline script in the root layout sets the theme before first paint. When React renders <html> on
+ * the client instead of hydrating it (a 404 does), that class is lost, so the shell puts it back.
+ */
+function useThemeRestore() {
+	useEffect(() => {
+		let dark = matchMedia('(prefers-color-scheme: dark)').matches
+		try {
+			const saved = localStorage.getItem('theme')
+			if (saved) dark = saved === 'dark'
+		} catch {}
+		if (document.documentElement.classList.contains('dark') !== dark) {
+			document.documentElement.classList.toggle('dark', dark)
+			window.dispatchEvent(new Event(THEME_EVENT))
+		}
+	}, [])
+}
+
 function ThemeToggle() {
+	useThemeRestore()
 	const dark = useSyncExternalStore(
 		subscribeTheme,
 		() => document.documentElement.classList.contains('dark'),

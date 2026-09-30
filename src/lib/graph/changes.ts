@@ -20,6 +20,19 @@ function entryMode(graph: CompiledGraph, seat: GraphNode): PersonnelChange['entr
 }
 
 /**
+ * Names we corrected in the catalogue, as [old, new]. A correction is not a change of officeholder, so the
+ * diff skips it and any card it already produced is dropped when history is merged.
+ */
+export const NAME_CORRECTIONS: ReadonlyArray<readonly [string, string]> = [
+	['Mahmoud Mairiga', 'Mariya Mahmoud'],
+]
+
+function isCorrection(before: string | null | undefined, after: string | null | undefined) {
+	if (!before || !after) return false
+	return NAME_CORRECTIONS.some(([old, fixed]) => slug(old) === slug(before) && slug(fixed) === slug(after))
+}
+
+/**
  * Compares officeholders between the stored snapshot and a fresh one. A seat whose holder changed is an
  * appointment with a known predecessor; a seat that lost its holder is a departure. A seat filled for the
  * first time is only data coming in, not news, so it is not reported.
@@ -30,7 +43,7 @@ export function diffOfficeholders(previous: CompiledGraph | null, next: Compiled
 	for (const seat of seats(next)) {
 		const before = previous.nodes[seat.id]?.people[0]?.name
 		const after = seat.people[0]?.name
-		if (!before || (after && slug(before) === slug(after)) || seat.people[0]?.sourceCheckedAt) continue
+		if (!before || (after && slug(before) === slug(after)) || isCorrection(before, after) || seat.people[0]?.sourceCheckedAt) continue
 		const base = {
 			kind: 'personnel' as const,
 			date,
@@ -254,7 +267,10 @@ export function mergeChanges(existing: PersonnelChange[], incoming: PersonnelCha
 		else if (change.date < kept.date) byKey.set(key, { ...change, personName: longer(change.personName, kept.personName), sourceUrl: change.sourceUrl ?? kept.sourceUrl })
 		else byKey.set(key, { ...kept, personName: longer(kept.personName, change.personName), predecessorName: kept.predecessorName ?? change.predecessorName })
 	}
-	return [...byKey.values()].sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id)).slice(0, limit)
+	return [...byKey.values()]
+		.filter((change) => !isCorrection(change.predecessorName, change.personName))
+		.sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id))
+		.slice(0, limit)
 }
 
 /** News accumulates too, so the power map sees the whole 90-day window rather than the latest page of a feed. */

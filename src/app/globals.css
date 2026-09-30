@@ -351,7 +351,8 @@
 .change-card h3 { margin:10px 0; font-size:14px; line-height:1.35; font-weight:500; }
 .change-card h3 a:hover { text-decoration:underline; }
 .change-people { display:grid; gap:4px; padding:9px 11px; border-radius:7px; background:var(--gg-panel-2); }
-.change-people > div { display:grid; grid-template-columns:36px 1fr; align-items:baseline; }
+.change-people > div { display:grid; grid-template-columns:max-content 1fr; column-gap:12px; align-items:baseline; }
+.change-people dt { min-width:64px; }
 .change-people dt { font-size:9.5px; color:var(--gg-faint); text-transform:uppercase; font-family:var(--font-geist-mono),monospace; }
 .change-people dd { font-size:13px; }
 .change-people dd.is-empty { color:var(--gg-muted); font-style:italic; }
@@ -631,8 +632,6 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 /* ---------- Languages ---------- */
 .lang-select select { height:34px; max-width:140px; padding:0 26px 0 10px; border-radius:9px; border:0; box-shadow:var(--gg-shadow); appearance:none; background:var(--gg-panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center; color:var(--gg-text); font-size:12.5px; }
 .lang-select select:focus-visible { outline:2px solid var(--gg-green); outline-offset:1px; }
-.draft-notice { padding:9px 12px; border-radius:9px; background:color-mix(in srgb, var(--gg-judicial) 14%, var(--gg-panel)); color:var(--gg-text); font-size:12px; line-height:1.45; }
-.draft-notice span[lang="en"] { color:var(--gg-muted); }
 
 /* ---------- Election guide ---------- */
 .election-foot { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
@@ -697,3 +696,4 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .budget-rank-total { text-align:right; font-variant-numeric:tabular-nums; }
 .budget-rank-total a { margin-left:4px; color:var(--gg-faint); font-size:10.5px; text-decoration:underline; }
 @media (max-width: 520px) { .budget-ranking li { grid-template-columns:1fr 104px; } .budget-ranking .fc-bar { display:none; } }
+.not-found-links { display:grid; gap:8px; margin-top:14px; font-size:14px; }
