@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PageProps) {
 	const { slug } = await params
 	const node = getNode((await loadNigeriaGraph()).graph, slug)
 	return {
-		title: node ? `Govgraph · ${node.name}` : 'Govgraph · Nigeria',
+		title: node ? `${node.name} · Who Runs Naija` : 'Who Runs Naija',
 		description: node?.description,
 	}
 }

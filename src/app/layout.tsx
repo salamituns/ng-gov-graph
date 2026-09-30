@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { Fraunces, Geist, Geist_Mono } from 'next/font/google'
+import { Bricolage_Grotesque, Geist_Mono, Instrument_Sans } from 'next/font/google'
 import './globals.css'
 
-const geistSans = Geist({
-	variable: '--font-geist-sans',
-	subsets: ['latin'],
+// Body text: Instrument Sans. Headings and the wordmark: Bricolage Grotesque. Data labels stay in Geist Mono.
+const body = Instrument_Sans({
+	variable: '--font-body',
+	subsets: ['latin', 'latin-ext'],
 })
 
 const geistMono = Geist_Mono({
@@ -12,15 +13,17 @@ const geistMono = Geist_Mono({
 	subsets: ['latin'],
 })
 
-const fraunces = Fraunces({
-	variable: '--font-fraunces',
-	subsets: ['latin'],
+const display = Bricolage_Grotesque({
+	variable: '--font-display',
+	subsets: ['latin', 'latin-ext'],
 })
 
 export const metadata: Metadata = {
-	title: 'Govgraph · Nigeria',
+	title: 'Who Runs Naija · Nigeria’s government, mapped and sourced',
+	applicationName: 'Who Runs Naija',
+	appleWebApp: { title: 'Who Runs Naija' },
 	description:
-		'A public data model of the Federal Republic of Nigeria: branches, ministries, courts, commissions, and the legal relationships between them.',
+		'Who holds power in Nigeria, and who gave it to them: the Presidency, ministries, the National Assembly, the courts and the states, with every officeholder and every link sourced.',
 }
 
 const THEME_SCRIPT = `try{var t=localStorage.getItem('theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}`
@@ -29,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 	return (
 		<html
 			lang="en"
-			className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
+			className={`${body.variable} ${display.variable} ${geistMono.variable} h-full antialiased`}
 			suppressHydrationWarning
 		>
 			<head>

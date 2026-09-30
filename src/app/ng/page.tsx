@@ -70,7 +70,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 
 	return (
 		<>
-			<BrandBar layer={layer} />
+			<BrandBar layer={layer} tagline />
 			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} />
 			<RepresentPicker
 				gov={data.gov}
@@ -78,7 +78,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 			/>
 			{layer === 'federal' ? <FederalCharacterCard gov={data.gov} graph={data.graph} /> : null}
 			<section className="panel-card">
-				<h1 className="sr-only">Nigeria government graph</h1>
+				<h1 className="sr-only">Who Runs Naija: Nigeria’s government, mapped and sourced</h1>
 				<h2>Government in the news</h2>
 				{prose.length ? <NewsProse items={prose} /> : <p className="muted-copy">No sourced news is available yet.</p>}
 				<Link href="/ng?view=newsmakers" className="news-people" scroll={false}>
@@ -161,7 +161,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 				</p>
 			</section>
 			<footer className="panel-footer">
-				Govgraph is an independent Nigerian civic project. It maps the country’s institutions, the offices inside them, and the constitutional and statutory links between them, and every entity links to its legal basis.
+				Who Runs Naija is an independent Nigerian civic project. It maps the country’s institutions, the offices inside them, and the constitutional and statutory links between them, and every entity links to its legal basis.
 				<span>
 					Inspired by <a href="https://graph.civlab.org/us" target="_blank" rel="noreferrer">CivLab’s US Gov Graph</a>, and built for Nigeria.
 				</span>{' '}

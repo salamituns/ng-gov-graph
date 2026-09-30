@@ -16,7 +16,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps) {
 	const { state } = await params
 	const node = (await loadNigeriaGraph()).graph.nodes[stateIdFromSlug(state)]
-	return { title: node ? `Govgraph · Who represents ${node.name}` : 'Govgraph · Who represents me?' }
+	return { title: node ? `Who represents ${node.name} · Who Runs Naija` : 'Who represents me? · Who Runs Naija' }
 }
 
 function initials(name: string) {
