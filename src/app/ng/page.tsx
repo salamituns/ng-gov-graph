@@ -16,6 +16,8 @@ import { nodePath } from '@/lib/graph/paths'
 import { powerPeople } from '@/lib/graph/power'
 import type { CompiledGraph, PersonnelChange } from '@/lib/graph/types'
 import { federalCharacter } from '@/lib/graph/federal-character'
+import { t, type Lang } from '@/lib/i18n'
+import { getLang } from '@/lib/i18n-server'
 
 interface PageProps {
 	searchParams: Promise<{ layer?: string; days?: string }>
@@ -35,7 +37,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	const params = await searchParams
 	const layer = parseLayer(params.layer) === 'state' ? 'state' : 'federal'
 	const days = WINDOWS.find((value) => String(value) === params.days) ?? 30
-	const data = await loadNigeriaGraph()
+	const [data, lang] = await Promise.all([loadNigeriaGraph(), getLang()])
 	const now = new Date()
 	const today = now.toISOString().slice(0, 10)
 	const graph = filterGraph(data.graph, layer)
@@ -76,10 +78,10 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 				gov={data.gov}
 				states={Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name }))}
 			/>
-			{layer === 'federal' ? <FederalCharacterCard gov={data.gov} graph={data.graph} /> : null}
+			{layer === 'federal' ? <FederalCharacterCard gov={data.gov} graph={data.graph} lang={lang} /> : null}
 			<section className="panel-card">
 				<h1 className="sr-only">Who Runs Naija: Nigeria’s government, mapped and sourced</h1>
-				<h2>Government in the news</h2>
+				<h2>{t(lang, 'newsHeading')}</h2>
 				{prose.length ? <NewsProse items={prose} /> : <p className="muted-copy">No sourced news is available yet.</p>}
 				<Link href="/ng?view=newsmakers" className="news-people" scroll={false}>
 					<span className="avatar-stack">
@@ -98,7 +100,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 
 			<section className="panel-card">
 				<div className="section-heading">
-					<h2>Appointments &amp; exits</h2>
+					<h2>{t(lang, 'appointmentsHeading')}</h2>
 					<nav className="segmented" aria-label="Change window">
 						{WINDOWS.map((value) => (
 							<Link key={value} href={`/ng?${new URLSearchParams({ ...(layer === 'state' ? { layer: 'states' } : {}), days: String(value) })}`} aria-current={days === value ? 'page' : undefined} scroll={false}>
@@ -150,7 +152,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 			</section>
 
 			<section className="panel-card">
-				<h2>By the numbers</h2>
+				<h2>{t(lang, 'numbersHeading')}</h2>
 				<p className="muted-copy">What the {layer === 'state' ? 'state governments' : 'Federal Government of Nigeria'} is made of, as mapped here.</p>
 				<div className="overview-columns">
 					<CountList title="By type" items={overview.byType} />
@@ -233,15 +235,15 @@ function CountList({ title, items }: { title: string; items: Record<string, numb
 }
 
 /** The cabinet's spread across the states, measured against section 147(3). */
-function FederalCharacterCard({ gov, graph }: { gov: string; graph: CompiledGraph }) {
+function FederalCharacterCard({ gov, graph, lang }: { gov: string; graph: CompiledGraph; lang: Lang }) {
 	const report = federalCharacter(graph)
 	const covered = report.states.length - report.uncovered.length
 	return (
 		<Link href={`/${gov}/federal-character`} className="panel-card fc-card">
 			<div>
-				<h2>Federal character</h2>
+				<h2>{t(lang, 'federalCharacter')}</h2>
 				<p className="muted-copy">
-					{covered} of {report.states.length} states and the FCT have a minister in the cabinet of {report.members.length}. See where each one comes from.
+					{t(lang, 'federalCharacterCard', { covered, states: report.states.length, members: report.members.length })}
 				</p>
 			</div>
 			<span aria-hidden="true" className="fc-card-arrow">→</span>

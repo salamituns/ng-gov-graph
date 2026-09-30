@@ -10,6 +10,7 @@ import { filterGraph } from '@/lib/graph/filter'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 import type { CompiledGraph } from '@/lib/graph/types'
+import { DraftNotice, LangSelect, useT } from '@/components/lang'
 
 interface GovShellProps {
 	gov: string
@@ -24,6 +25,7 @@ interface GovShellProps {
  * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
 export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
+	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
 	const params = useSearchParams()
@@ -57,11 +59,15 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 
 	return (
 		<main className="shell">
-			<aside className="shell-panel">{children}</aside>
+			<aside className="shell-panel">
+				<DraftNotice />
+				{children}
+			</aside>
 			<section className="shell-map" aria-label="Government map">
 				<div className="map-toolbar">
 					<GraphSearch gov={gov} graph={graph} />
 					<div className="map-toolbar-right">
+						<LangSelect />
 						<ThemeToggle />
 						<div className="history-buttons">
 							<button type="button" aria-label="Back" onClick={() => router.back()}><ChevronLeft size={17} /></button>
@@ -84,8 +90,8 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 					)}
 				</div>
 				<nav className="map-views" aria-label="Map view">
-					<button type="button" aria-pressed={view === 'graph'} onClick={() => router.push(href({ view: 'graph' }), { scroll: false })}>Government</button>
-					<button type="button" aria-pressed={view === 'power'} onClick={() => router.push(href({ view: 'power' }), { scroll: false })}>Newsmakers</button>
+					<button type="button" aria-pressed={view === 'graph'} onClick={() => router.push(href({ view: 'graph' }), { scroll: false })}>{t('viewGovernment')}</button>
+					<button type="button" aria-pressed={view === 'power'} onClick={() => router.push(href({ view: 'power' }), { scroll: false })}>{t('viewNewsmakers')}</button>
 				</nav>
 			</section>
 		</main>

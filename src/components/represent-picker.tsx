@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useSyncExternalStore } from 'react'
 import { STATE_ZONES, ZONE_ORDER } from '@/data/nigeria/states'
 import { representPath } from '@/lib/graph/paths'
+import { useT } from '@/components/lang'
 
 const KEY = 'govgraph:my-state'
 const EVENT = 'govgraph-my-state'
@@ -38,6 +39,7 @@ export function rememberState(stateId: string) {
 /** "Who represents me?": pick a state, grouped by geopolitical zone, and see everyone who serves it. */
 export function RepresentPicker({ gov, states, compact = false }: { gov: string; states: Array<{ id: string; name: string }>; compact?: boolean }) {
 	const router = useRouter()
+	const { t } = useT()
 	const mine = useSyncExternalStore(subscribe, readState, () => null)
 	const known = mine ? states.find((state) => state.id === mine) : undefined
 	const choose = (stateId: string) => {
@@ -49,14 +51,14 @@ export function RepresentPicker({ gov, states, compact = false }: { gov: string;
 		<section className={`panel-card represent-card${compact ? ' is-compact' : ''}`}>
 			{compact ? null : (
 				<>
-					<h2>Who represents me?</h2>
-					<p className="muted-copy">Your governor, senators, members of the House of Representatives and state assembly.</p>
+					<h2>{t('whoRepresents')}</h2>
+					<p className="muted-copy">{t('whoRepresentsHint')}</p>
 				</>
 			)}
 			<label className="represent-select">
 				<span className="sr-only">Your state</span>
 				<select value="" onChange={(event) => choose(event.target.value)}>
-					<option value="">{compact ? 'Another state…' : 'Choose your state…'}</option>
+					<option value="">{compact ? t('anotherState') : t('chooseState')}</option>
 					{ZONE_ORDER.map((zone) => (
 						<optgroup key={zone} label={zone}>
 							{states
@@ -71,7 +73,7 @@ export function RepresentPicker({ gov, states, compact = false }: { gov: string;
 			</label>
 			{known && !compact ? (
 				<Link className="represent-mine" href={representPath(gov, known.id)} scroll={false}>
-					Your state: <strong>{known.name}</strong> →
+					{t('yourState')} <strong>{known.name}</strong> →
 				</Link>
 			) : null}
 		</section>

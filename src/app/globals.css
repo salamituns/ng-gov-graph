@@ -627,3 +627,9 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 /* Aso-oke: a hand-woven strip, flag green with a metallic gold thread, along the foot of the brand bar. */
 .brand-bar::after { content:''; position:absolute; left:14px; right:14px; bottom:0; height:2px; border-radius:2px; background:repeating-linear-gradient(90deg, var(--gg-green) 0 14px, transparent 14px 16px, var(--gg-judicial) 16px 18px, transparent 18px 20px); opacity:.75; pointer-events:none; }
 @media (max-width: 640px) { .brand-tagline { display:none; } }
+
+/* ---------- Languages ---------- */
+.lang-select select { height:34px; max-width:140px; padding:0 26px 0 10px; border-radius:9px; border:0; box-shadow:var(--gg-shadow); appearance:none; background:var(--gg-panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 9px center; color:var(--gg-text); font-size:12.5px; }
+.lang-select select:focus-visible { outline:2px solid var(--gg-green); outline-offset:1px; }
+.draft-notice { padding:9px 12px; border-radius:9px; background:color-mix(in srgb, var(--gg-judicial) 14%, var(--gg-panel)); color:var(--gg-text); font-size:12px; line-height:1.45; }
+.draft-notice span[lang="en"] { color:var(--gg-muted); }
