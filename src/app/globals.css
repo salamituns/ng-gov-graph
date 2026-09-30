@@ -606,3 +606,12 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .fc-card .muted-copy { margin-top:4px; }
 .fc-card-arrow { margin-left:auto; color:var(--gg-hub-ink); font-size:18px; }
 .fc-card:hover h2 { text-decoration:underline; }
+
+/* ---------- Constitution layer ---------- */
+.constitution-card h2 { font-size:15px; font-weight:600; }
+.constitution-card ul { display:grid; gap:12px; margin-top:12px; }
+.constitution-card li { display:grid; grid-template-columns:max-content 1fr; gap:4px 12px; align-items:baseline; }
+.constitution-card p { font-size:13px; line-height:1.5; }
+.constitution-cite { padding:2px 7px; border-radius:6px; background:color-mix(in srgb, var(--gg-green) 12%, transparent); color:var(--gg-hub-ink); font-family:var(--font-geist-mono),monospace; font-size:11.5px; white-space:nowrap; }
+.constitution-cite:hover { text-decoration:underline; }
+@media (max-width: 520px) { .constitution-card li { grid-template-columns:1fr; } .constitution-cite { justify-self:start; } }

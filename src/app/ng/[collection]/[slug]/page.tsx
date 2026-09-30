@@ -17,7 +17,9 @@ import { chamberRoster } from '@/lib/graph/roster'
 import type { CompiledGraph, GraphNode, NodeType } from '@/lib/graph/types'
 import { MINISTER_ORIGINS } from '@/data/nigeria/origins'
 import { STATE_ZONES } from '@/data/nigeria/states'
-import { isCabinetSeat } from '@/lib/graph/federal-character'
+import { isCabinetSeat } from '@/lib/graph/cabinet'
+import { CONSTITUTION_URL, provisionUrl, type Provision } from '@/data/nigeria/constitution'
+import { provisionsFor } from '@/lib/graph/constitution'
 
 const COLLECTIONS: Record<string, NodeType[]> = {
 	departments: ['department'],
@@ -89,6 +91,33 @@ function connectionGroups(gov: string, graph: CompiledGraph, node: GraphNode) {
 		{ title: 'Oversees', cards: outgoing('oversees') },
 		{ title: 'Chairs', cards: outgoing('ex_officio') },
 	]
+}
+
+/** Bodies the Constitution does not create rest on an Act of the National Assembly. */
+const STATUTORY_TYPES = new Set<NodeType>(['department', 'corporation', 'commission'])
+
+function ConstitutionCard({ node, provisions }: { node: GraphNode; provisions: Provision[] }) {
+	const constitutional = node.legalSourceUrl?.startsWith(CONSTITUTION_URL)
+	if (!provisions.length && (constitutional || !STATUTORY_TYPES.has(node.type))) return null
+	return (
+		<section className="panel-card constitution-card">
+			<h2>What the Constitution says</h2>
+			{provisions.length ? (
+				<ul>
+					{provisions.map((provision) => (
+						<li key={provision.cite}>
+							<a href={provisionUrl(provision)} target="_blank" rel="noreferrer" className="constitution-cite">{provision.cite}</a>
+							<p>{provision.text}</p>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="muted-copy">
+					The Constitution does not create this body. It is set up by an Act of the National Assembly, so its powers and how its head is chosen are set by that law, which the Assembly can amend.
+				</p>
+			)}
+		</section>
+	)
 }
 
 export default async function EntityPage({ params }: PageProps) {
@@ -180,6 +209,7 @@ export default async function EntityPage({ params }: PageProps) {
 					</>
 				) : null}
 			</article>
+			<ConstitutionCard node={node} provisions={provisionsFor(graph, node.id)} />
 			{node.id === GENERAL_ELECTION.authorityId ? <ElectionCountdown serverNow={new Date().toISOString()} inecHref={nodePath(gov, node)} /> : null}
 
 			<Tabs defaultValue="news" className="entity-tabs">
