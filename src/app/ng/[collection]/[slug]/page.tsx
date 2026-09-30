@@ -75,7 +75,7 @@ function connectionGroups(gov: string, graph: CompiledGraph, node: GraphNode) {
 	const nested = descendantsOf(graph, orgId).length
 	const parent = org?.parentId ? graph.nodes[org.parentId] : undefined
 	return [
-		{ title: nested > children.length ? `Sub-agencies (${nested} including nested)` : 'Sub-agencies', cards: children.map((item) => card(gov, item, item.people[0]?.name)) },
+		{ title: nested > children.length ? `Agencies under it (${nested} in all)` : 'Agencies under it', cards: children.map((item) => card(gov, item, item.people[0]?.name)) },
 		{ title: 'Chaired by', cards: from('ex_officio') },
 		{ title: 'Elected by', cards: from('elects') },
 		{ title: 'Appointed by', cards: from('appoints') },
@@ -120,8 +120,8 @@ export default async function EntityPage({ params }: PageProps) {
 				<h1>{node.name}</h1>
 				<p className="entity-description">{node.description}</p>
 				<p className="entity-sources">
-					{node.legalSourceUrl ? <a href={node.legalSourceUrl} target="_blank" rel="noreferrer">Legal Source</a> : null}
-					{node.officialUrl ? <a href={node.officialUrl} target="_blank" rel="noreferrer">Official Website</a> : null}
+					{node.legalSourceUrl ? <a href={node.legalSourceUrl} target="_blank" rel="noreferrer">Legal basis</a> : null}
+					{node.officialUrl ? <a href={node.officialUrl} target="_blank" rel="noreferrer">Website</a> : null}
 				</p>
 				{seat && node.type !== 'dept_head' ? <p className="entity-seat-title">{seat.name}</p> : null}
 				{holder ? (
@@ -161,7 +161,7 @@ export default async function EntityPage({ params }: PageProps) {
 				) : null}
 				{parent && parent.type !== 'constituency' && node.type !== 'dept_head' ? (
 					<>
-						<p className="entity-seat-title">Part of</p>
+						<p className="entity-seat-title">Sits under</p>
 						<Link href={nodePath(gov, parent)} className="holder-card part-of-card">
 							<Glyph type={parent.type} tone={toneOf(parent)} size={12} />
 							<span><strong>{parent.name}</strong></span>
@@ -173,13 +173,13 @@ export default async function EntityPage({ params }: PageProps) {
 
 			<Tabs defaultValue="news" className="entity-tabs">
 				<TabsList aria-label="About this entity">
-					<TabsTrigger value="news">News{stories.length ? ` (${stories.length})` : ''}</TabsTrigger>
-					<TabsTrigger value="connections">Who’s connected?</TabsTrigger>
+					<TabsTrigger value="news">Stories{stories.length ? ` (${stories.length})` : ''}</TabsTrigger>
+					<TabsTrigger value="connections">Relationships</TabsTrigger>
 				</TabsList>
 				<TabsContent value="news" className="entity-tab">
-					<h2>Media</h2>
+					<h2>Where it appears in the news</h2>
 					{stories.length === 0 ? (
-						<p className="empty-box">No recent news</p>
+						<p className="empty-box">No story names this body yet</p>
 					) : (
 						<ul className="story-list">
 							{stories.map((item) => (

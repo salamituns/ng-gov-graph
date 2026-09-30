@@ -21,7 +21,7 @@ interface GovShellProps {
 
 /**
  * The map lives in the /ng layout, so it stays mounted while the left panel changes.
- * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=power swaps the map.
+ * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
 export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 	const router = useRouter()
@@ -31,7 +31,8 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 	const selected = selectedId ? graph.nodes[selectedId] : undefined
 	const selectedLayer = selected?.layer ?? (selected?.parentId ? graph.nodes[selected.parentId]?.layer : undefined)
 	const layer = params.get('layer') === 'states' || params.get('layer') === 'state' || selectedLayer === 'state' ? 'state' : 'federal'
-	const view = params.get('view') === 'power' ? 'power' : 'graph'
+	// ?view=newsmakers; the older ?view=power links still open the same view.
+	const view = params.get('view') === 'newsmakers' || params.get('view') === 'power' ? 'power' : 'graph'
 	const visible = useMemo(() => filterGraph(graph, layer), [graph, layer])
 	const stateNames = useMemo(
 		() => Object.fromEntries(Object.values(graph.nodes).filter((node) => node.type === 'state').map((node) => [node.id, node.name])),
@@ -41,7 +42,7 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 	const href = (next: { id?: string; view?: 'graph' | 'power' }) => {
 		const query = new URLSearchParams(params.toString())
 		query.delete('view')
-		if ((next.view ?? view) === 'power') query.set('view', 'power')
+		if ((next.view ?? view) === 'power') query.set('view', 'newsmakers')
 		const node = next.id ? graph.nodes[next.id] : selected
 		const base = node ? nodePath(gov, node) : pathname
 		return `${base}${query.size ? `?${query}` : ''}`
@@ -74,15 +75,15 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 							selectedId={selectedId}
 							onSelect={(person) => router.push(href({ id: person.seatId ?? person.nodeId, view: 'power' }), { scroll: false })}
 							onSeeOnGraph={(person) => router.push(href({ id: person.seatId ?? person.nodeId, view: 'graph' }), { scroll: false })}
-							onClear={() => router.push(`/${gov}?view=power`, { scroll: false })}
+							onClear={() => router.push(`/${gov}?view=newsmakers`, { scroll: false })}
 						/>
 					) : (
 						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} stateNames={stateNames} />
 					)}
 				</div>
 				<nav className="map-views" aria-label="Map view">
-					<button type="button" aria-pressed={view === 'graph'} onClick={() => router.push(href({ view: 'graph' }), { scroll: false })}>Graph</button>
-					<button type="button" aria-pressed={view === 'power'} onClick={() => router.push(href({ view: 'power' }), { scroll: false })}>Power map</button>
+					<button type="button" aria-pressed={view === 'graph'} onClick={() => router.push(href({ view: 'graph' }), { scroll: false })}>Government</button>
+					<button type="button" aria-pressed={view === 'power'} onClick={() => router.push(href({ view: 'power' }), { scroll: false })}>Newsmakers</button>
 				</nav>
 			</section>
 		</main>

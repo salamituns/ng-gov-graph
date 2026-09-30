@@ -59,10 +59,10 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	const month = today.slice(0, 7)
 	const groups: Array<{ label: string; items: PersonnelChange[] }> = windowed.length
 		? [
-				{ label: 'This month', items: windowed.filter((change) => change.date.startsWith(month)) },
-				{ label: 'Earlier in window', items: windowed.filter((change) => !change.date.startsWith(month)) },
+				{ label: new Date(`${today}T12:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' }), items: windowed.filter((change) => change.date.startsWith(month)) },
+				{ label: 'Before this month', items: windowed.filter((change) => !change.date.startsWith(month)) },
 			]
-		: [{ label: 'Earlier', items: changes.slice(0, 8) }]
+		: [{ label: 'Most recent on record', items: changes.slice(0, 8) }]
 	const byDate = new Map<string, number>()
 	for (const change of windowed) byDate.set(change.date, (byDate.get(change.date) ?? 0) + 1)
 
@@ -72,9 +72,9 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} />
 			<section className="panel-card">
 				<h1 className="sr-only">Nigeria government graph</h1>
-				<h2>Latest News</h2>
+				<h2>Government in the news</h2>
 				{prose.length ? <NewsProse items={prose} /> : <p className="muted-copy">No sourced news is available yet.</p>}
-				<Link href="/ng?view=power" className="news-people" scroll={false}>
+				<Link href="/ng?view=newsmakers" className="news-people" scroll={false}>
 					<span className="avatar-stack">
 						{inNews.map((person) =>
 							person.imageUrl ? (
@@ -84,14 +84,14 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 							),
 						)}
 					</span>
-					<span>Who’s in the news</span>
-					<small>Power map <ChevronRight size={14} /></small>
+					<span>The people behind the headlines</span>
+					<small>Newsmakers <ChevronRight size={14} /></small>
 				</Link>
 			</section>
 
 			<section className="panel-card">
 				<div className="section-heading">
-					<h2>Latest Changes</h2>
+					<h2>Appointments &amp; exits</h2>
 					<nav className="segmented" aria-label="Change window">
 						{WINDOWS.map((value) => (
 							<Link key={value} href={`/ng?${new URLSearchParams({ ...(layer === 'state' ? { layer: 'states' } : {}), days: String(value) })}`} aria-current={days === value ? 'page' : undefined} scroll={false}>
@@ -101,20 +101,20 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 					</nav>
 				</div>
 				<p className="section-intro">
-					Govgraph tracks appointments, departures and structural changes from official sources: the State House, the National Assembly and ministry notices.
+					Every appointment, reappointment and exit we can source, read from State House releases, the National Assembly and agency notices, with a link to each.
 				</p>
 				<div className="stats">
-					<Stat label="Seats vacant" value={overview.vacantSeats} note="no current officeholder" />
-					<Stat label="Acting officials" value={overview.actingOfficials} note="serving unconfirmed" />
+					<Stat label="Empty seats" value={overview.vacantSeats} note="no one in post" />
+					<Stat label="Acting" value={overview.actingOfficials} note="not yet substantive" />
 					<Stat
-						label="Last change"
+						label="Most recent"
 						value={latest ? `${ageInDays(latest.date, today)}d` : '—'}
 						note={latest ? `ago, on ${displayDate(latest.date)}` : 'none recorded'}
 					/>
 				</div>
 				<div className="timeline-heading">
-					<span>Timeline</span>
-					<span>{windowed.length} {windowed.length === 1 ? 'change' : 'changes'} in window</span>
+					<span>Activity</span>
+					<span>{windowed.length ? `${windowed.length} in the last ${days} days` : `none in the last ${days} days`}</span>
 				</div>
 				<div className="timeline" aria-label={`${windowed.length} changes over the last ${days} days`}>
 					{[...byDate.entries()].map(([date, count]) => (
@@ -143,8 +143,8 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 			</section>
 
 			<section className="panel-card">
-				<h2>Overview</h2>
-				<p className="muted-copy">Top-level counts for the {layer === 'state' ? 'state governments' : 'Federal Government of Nigeria'}.</p>
+				<h2>By the numbers</h2>
+				<p className="muted-copy">What the {layer === 'state' ? 'state governments' : 'Federal Government of Nigeria'} is made of, as mapped here.</p>
 				<div className="overview-columns">
 					<CountList title="By type" items={overview.byType} />
 					<CountList title="By branch" items={Object.fromEntries(Object.entries(overview.byBranch).filter(([, value]) => value > 0))} />
@@ -154,7 +154,10 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 				</p>
 			</section>
 			<footer className="panel-footer">
-				Govgraph maps Nigeria’s institutions, the offices inside them, and the constitutional and statutory links between them. Every entity links to its legal source.{' '}
+				Govgraph is an independent Nigerian civic project. It maps the country’s institutions, the offices inside them, and the constitutional and statutory links between them, and every entity links to its legal basis.
+				<span>
+					Inspired by <a href="https://graph.civlab.org/us" target="_blank" rel="noreferrer">CivLab’s US Gov Graph</a>, and built for Nigeria.
+				</span>{' '}
 				<span>
 					Map of Nigeria: <a href="https://www.geoboundaries.org/" target="_blank" rel="noreferrer">geoBoundaries</a> (GRID3, 2022), CC BY 4.0.
 				</span>
@@ -180,15 +183,15 @@ function ChangeCard({ change, graph, gov }: { change: PersonnelChange; graph: Co
 			<h3>{group ? <Link href={nodePath(gov, group)}>{change.positionName}</Link> : change.positionName}</h3>
 			<dl className="change-people">
 				<div>
-					<dt>Out</dt>
+					<dt>Outgoing</dt>
 					<dd className={change.departure || change.predecessorName ? '' : 'is-empty'}>
 						{change.departure
 							? change.personName
-							: change.predecessorName ?? (change.entryMode === 'reappointed' ? 'Same officeholder · tenure renewed' : 'Predecessor not on record')}
+							: change.predecessorName ?? (change.entryMode === 'reappointed' ? 'Same officeholder · tenure renewed' : 'Previous holder not recorded')}
 					</dd>
 				</div>
 				<div>
-					<dt>In</dt>
+					<dt>Incoming</dt>
 					<dd className={change.departure ? 'is-empty' : ''}>{change.departure ? 'Successor not yet named' : change.personName}</dd>
 				</div>
 			</dl>

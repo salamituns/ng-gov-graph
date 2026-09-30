@@ -35,7 +35,7 @@ const LINK_LABEL: Record<AuthorityLink['type'], string> = {
 	confirms: 'Confirms',
 	oversees: 'Oversees',
 	ex_officio: 'Chairs',
-	contains: 'Part of',
+	contains: 'Sits under',
 }
 
 interface GraphMapProps {
@@ -258,7 +258,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 				{zoom.zoomed ? <button type="button" aria-label="Show the whole map" onClick={zoom.reset}>⤢</button> : null}
 			</div>
 			<details className="graph-legend">
-				<summary>Legend</summary>
+				<summary>Key</summary>
 				<div className="graph-legend-content">
 					<p>Entities</p>
 					{nodeTypes.map((type) => (
@@ -274,7 +274,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 							<svg viewBox="0 0 24 24" aria-hidden="true" className="legend-dots">
 								<circle cx="7" cy="9" r="2.6" /><circle cx="15" cy="9" r="2.6" /><circle cx="11" cy="16" r="2.6" />
 							</svg>
-							Sub-agencies
+							Agencies under a ministry
 						</label>
 					)}
 					<p>Relationships</p>
