@@ -44,11 +44,12 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	const overview = summarizeOverview(graph)
 	const labels = mentionLabels(data.graph)
 
-	const stories = data.news.filter((item) => item.entityIds?.length).sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
+	// Only http(s) links reach the page: a malformed or javascript: URL from a feed is dropped, not rendered.
+	const stories = data.news.filter((item) => item.entityIds?.length && hostOf(item.url)).sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
 	const prose: ProseItem[] = stories.slice(0, 12).map((item) => ({
 		id: item.id,
 		url: item.url,
-		source: new URL(item.url).hostname.replace(/^www\./, ''),
+		source: hostOf(item.url),
 		when: item.publishedAt ? storyTime(item.publishedAt, now) : undefined,
 		segments: newsSegments(newsLead(item), labels).map((segment) => {
 			const node = segment.id ? data.graph.nodes[segment.id] : undefined
@@ -264,4 +265,14 @@ function storyTime(published: string, now: Date) {
 	if (day === lagos(now)) return 'Today'
 	if (day === lagos(new Date(now.getTime() - 86_400_000))) return 'Yesterday'
 	return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+}
+
+/** "punchng.com" for an http(s) link; empty for anything malformed or with another scheme. */
+function hostOf(url: string) {
+	try {
+		const parsed = new URL(url)
+		return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.hostname.replace(/^www\./, '') : ''
+	} catch {
+		return ''
+	}
 }
