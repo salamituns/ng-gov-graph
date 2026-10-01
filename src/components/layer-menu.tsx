@@ -41,8 +41,11 @@ export function LayerMenu({ layer }: { layer: 'federal' | 'state' }) {
 				<span className="flag-chip" aria-hidden="true"><span /><span /><span /></span>
 				{layer === 'state' ? 'Nigeria · States' : 'Nigeria'} <ChevronDown size={14} />
 			</button>
+			{/* On phones the menu is a bottom sheet over a dimmed map; tapping the backdrop closes it. */}
+			{open && <div className="layer-menu-backdrop" aria-hidden="true" onClick={() => setOpen(false)} />}
 			{open && (
 				<nav aria-label="Government layer" role="menu">
+					<p className="layer-menu-title" role="presentation">Nigeria</p>
 					{LAYERS.map((item) => (
 						<Link key={item.id} href={item.href} role="menuitem" aria-current={layer === item.id ? 'page' : undefined} onClick={() => setOpen(false)}>
 							<strong>{t(item.label)}</strong>
