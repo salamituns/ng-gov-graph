@@ -2,25 +2,14 @@ import Link from 'next/link'
 import { BrandBar } from '@/components/brand-bar'
 import { CabinetExplorer, type ExplorerState } from '@/components/cabinet-explorer'
 import { NIGERIA_MAP } from '@/data/nigeria/map-shapes'
-import { federalCharacter, type CabinetMember } from '@/lib/graph/federal-character'
+import { ministriesOf, ministriesTotal } from '@/lib/graph/cabinet-budget'
+import { federalCharacter, portfolioOf, type CabinetMember } from '@/lib/graph/federal-character'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, representPath } from '@/lib/graph/paths'
 
 export const metadata = { title: 'Federal character · Who Runs Naija' }
 
 const CONSTITUTION = 'https://www.constituteproject.org/constitution/Nigeria_2011'
-
-/** Ministry name, without the "Federal Ministry of" preamble, for a short portfolio line. */
-function portfolio(member: CabinetMember, graph: Awaited<ReturnType<typeof loadNigeriaGraph>>['graph']) {
-	return member.seats
-		.map((seat) => {
-			const ministry = seat.parentId ? graph.nodes[seat.parentId] : undefined
-			const area = (ministry?.name ?? seat.name).replace(/^(Federal )?Ministry of (the )?/, '')
-			if (seat.id === 'ng-attorney-general') return 'Attorney-General and Justice'
-			return seat.id.startsWith('ng-minister-of-state-') ? `${area} (State)` : area
-		})
-		.join(' · ')
-}
 
 export default async function FederalCharacterPage() {
 	const { gov, graph } = await loadNigeriaGraph()
@@ -29,6 +18,10 @@ export default async function FederalCharacterPage() {
 	const covered = report.states.length - report.uncovered.length
 	const hometownOnly = report.members.filter((member) => member.origin?.basis === 'hometown').length
 	// The explorer gets only what it shows: the graph stays on the server.
+	const money = (members: CabinetMember[]) => {
+		const { total, uncounted } = ministriesTotal(members.flatMap((member) => ministriesOf(graph, member)))
+		return { total, uncounted }
+	}
 	const states: ExplorerState[] = report.states.map((tally) => ({
 		id: tally.state.id,
 		slug: representPath(gov, tally.state.id).split('/').pop()!,
@@ -38,13 +31,15 @@ export default async function FederalCharacterPage() {
 		ministers: tally.members.map((member) => ({
 			name: member.person.name,
 			href: nodePath(gov, member.seats[0]),
-			portfolio: portfolio(member, graph),
+			portfolio: portfolioOf(graph, member),
 			imageUrl: member.person.imageUrl,
 			hometown: member.origin?.basis === 'hometown',
 			nodeIds: member.seats.flatMap((seat) => [seat.id, ...(seat.parentId ? [seat.parentId] : [])]),
+			budget: ministriesTotal(ministriesOf(graph, member)).total || undefined,
 		})),
+		money: money(tally.members),
 	}))
-	const zones = report.zones.map((zone) => ({ zone: zone.zone, slug: zone.zone.toLowerCase().replace(/\s+/g, '-'), states: zone.states, ministers: zone.members.length }))
+	const zones = report.zones.map((zone) => ({ zone: zone.zone, slug: zone.zone.toLowerCase().replace(/\s+/g, '-'), states: zone.states, ministers: zone.members.length, money: money(zone.members) }))
 
 	return (
 		<>
@@ -100,7 +95,7 @@ export default async function FederalCharacterPage() {
 															<Link href={nodePath(gov, member.seats[0])} className="entity-link">{member.person.name}</Link>
 															{member.origin?.basis === 'hometown' ? <sup title="State taken from the minister’s hometown, not a nomination report">†</sup> : null}
 															<small>
-																{portfolio(member, graph)}
+																{portfolioOf(graph, member)}
 																{member.origin ? <> · <a href={member.origin.sourceUrl} target="_blank" rel="noreferrer">source</a></> : null}
 															</small>
 														</li>

@@ -21,6 +21,8 @@ interface GovShellProps {
 	power: { people: PowerPerson[]; links: PowerLink[]; articles: number; sources: string[]; days: number }
 	/** The 2026 budget as a flow, for the Budget view. */
 	budget: BudgetFlowData
+	/** Each funded body's 2026 total, for search results. */
+	budgets: Record<string, number>
 	asOf: string
 	children: ReactNode
 }
@@ -29,7 +31,7 @@ interface GovShellProps {
  * The map lives in the /ng layout, so it stays mounted while the left panel changes.
  * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
-export function GovShell({ gov, graph, power, budget, asOf, children }: GovShellProps) {
+export function GovShell({ gov, graph, power, budget, budgets, asOf, children }: GovShellProps) {
 	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -87,7 +89,7 @@ export function GovShell({ gov, graph, power, budget, asOf, children }: GovShell
 			</PanelSheet>
 			<section className="shell-map" aria-label="Government map">
 				<div className="map-toolbar">
-					<GraphSearch gov={gov} graph={graph} />
+					<GraphSearch gov={gov} graph={graph} budgets={budgets} />
 					<div className="map-toolbar-right">
 						<LangSelect />
 						<ThemeToggle />

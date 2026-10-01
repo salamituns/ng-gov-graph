@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { Search, X } from 'lucide-react'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Glyph } from '@/components/panel-client'
+import { naira } from '@/data/nigeria/budget'
 import { toneOf } from '@/lib/graph/layout'
 import { nodePath } from '@/lib/graph/paths'
 import { searchGraph } from '@/lib/graph/search'
@@ -29,7 +30,7 @@ function kind(node: GraphNode) {
 	return node.type.replaceAll('_', ' ')
 }
 
-export function GraphSearch({ gov, graph }: { gov: string; graph: CompiledGraph }) {
+export function GraphSearch({ gov, graph, budgets = {} }: { gov: string; graph: CompiledGraph; budgets?: Record<string, number> }) {
 	const dialog = useRef<HTMLDialogElement>(null)
 	const [query, setQuery] = useState('')
 	const hits = searchGraph(graph, query).slice(0, 16)
@@ -52,7 +53,11 @@ export function GraphSearch({ gov, graph }: { gov: string; graph: CompiledGraph 
 				<Glyph type={node.type} tone={toneOf(node)} size={14} />
 				<span>
 					<strong>{node.name}</strong>
-					<small>{kind(node)}{node.people[0] ? ` · ${node.people[0].name}` : ''}</small>
+					<small>
+						{kind(node)}
+						{node.people[0] ? ` · ${node.people[0].name}` : ''}
+						{budgets[node.id] ? <span className="search-budget"> · {naira(budgets[node.id])}</span> : null}
+					</small>
 				</span>
 			</Link>
 		</li>

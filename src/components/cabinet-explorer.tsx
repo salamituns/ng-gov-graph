@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { SeeOnMap } from '@/components/see-on-map'
+import { naira, perNigerian } from '@/data/nigeria/budget'
 import { spotlight } from '@/lib/spotlight'
 
 export interface ExplorerMinister {
@@ -15,6 +16,15 @@ export interface ExplorerMinister {
 	hometown?: boolean
 	/** The minister's seats and the bodies they sit in, for the spotlight on the government map. */
 	nodeIds: string[]
+	/** The 2026 budget of the ministry they serve in, when the Act gives it a line. */
+	budget?: number
+}
+
+/** The ministries a group of ministers serve in, each counted once (worked out on the server). */
+export interface ExplorerMoney {
+	total: number
+	/** Ministries without a line of their own in the Act, named rather than counted as nothing. */
+	uncounted: string[]
 }
 
 export interface ExplorerState {
@@ -24,6 +34,7 @@ export interface ExplorerState {
 	zone: string
 	representHref: string
 	ministers: ExplorerMinister[]
+	money: ExplorerMoney
 }
 
 export interface ExplorerZone {
@@ -31,6 +42,7 @@ export interface ExplorerZone {
 	slug: string
 	states: number
 	ministers: number
+	money: ExplorerMoney
 }
 
 /** A pick is one state or one zone; the URL carries it, so a pick can be shared and survives Back. */
@@ -55,6 +67,18 @@ function initials(name: string) {
 		.join('')
 }
 
+/** "Its ministers serve in ministries with ₦4.27 trillion of the 2026 budget, about ₦17,600 for every Nigerian." */
+function MoneyLine({ money, who }: { money: ExplorerMoney; who: string }) {
+	if (!money.total && !money.uncounted.length) return null
+	if (!money.total) return <p className="fc-money">{who} in {money.uncounted.join(' and ')}, which the Act funds outside a ministry line, so there is no ministry budget to show.</p>
+	return (
+		<p className="fc-money">
+			{who} in ministries with <strong>{naira(money.total)}</strong> of the 2026 budget, about {perNigerian(money.total)} for every Nigerian
+			{money.uncounted.length ? `, not counting ${money.uncounted.join(' and ')}, which the Act funds outside a ministry line` : ''}.
+		</p>
+	)
+}
+
 function MinisterRow({ minister }: { minister: ExplorerMinister }) {
 	// Some official sites refuse to serve their portraits to other domains; show initials instead.
 	const [broken, setBroken] = useState(false)
@@ -72,7 +96,7 @@ function MinisterRow({ minister }: { minister: ExplorerMinister }) {
 						{minister.name}
 						{minister.hometown ? <sup title="State taken from the minister’s hometown, not a nomination report">†</sup> : null}
 					</strong>
-					<small>{minister.portfolio}</small>
+					<small>{minister.portfolio}{minister.budget ? ` · ${naira(minister.budget)} budget` : ''}</small>
 				</span>
 			</Link>
 		</li>
@@ -199,6 +223,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 								</div>
 								<button type="button" className="fc-pick-clear" aria-label="Clear" onClick={() => choose(null)}>×</button>
 							</header>
+							<MoneyLine money={pickedState.money} who={pickedState.ministers.length === 1 ? 'Its minister serves' : 'Its ministers serve'} />
 							{pickedState.ministers.length ? (
 								<ul className="fc-ministers">{pickedState.ministers.map((minister) => <MinisterRow key={minister.name} minister={minister} />)}</ul>
 							) : (
@@ -216,6 +241,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 								</div>
 								<button type="button" className="fc-pick-clear" aria-label="Clear" onClick={() => choose(null)}>×</button>
 							</header>
+							<MoneyLine money={pickedZone.money} who="Its ministers serve" />
 							{states
 								.filter((state) => zoneSlug(state.zone) === pickedZone.slug)
 								.map((state) => (
