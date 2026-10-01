@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { BrandBar } from '@/components/brand-bar'
+import { CabinetExplorer, type ExplorerState } from '@/components/cabinet-explorer'
 import { NIGERIA_MAP } from '@/data/nigeria/map-shapes'
-import { federalCharacter, type CabinetMember, type StateTally } from '@/lib/graph/federal-character'
+import { federalCharacter, type CabinetMember } from '@/lib/graph/federal-character'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, representPath } from '@/lib/graph/paths'
 
@@ -21,36 +22,28 @@ function portfolio(member: CabinetMember, graph: Awaited<ReturnType<typeof loadN
 		.join(' · ')
 }
 
-function shade(count: number) {
-	return count === 0 ? 'fc-none' : count === 1 ? 'fc-one' : count === 2 ? 'fc-two' : 'fc-many'
-}
-
-function CabinetMap({ states }: { states: StateTally[] }) {
-	const byId = new Map(states.map((tally) => [tally.state.id, tally]))
-	const pad = 2
-	const { width, height } = NIGERIA_MAP
-	return (
-		<svg viewBox={`${-width / 2 - pad} ${-height / 2 - pad} ${width + pad * 2} ${height + pad * 2}`} className="fc-map" role="img" aria-label="Map of Nigeria shaded by the number of ministers from each state">
-			{Object.entries(NIGERIA_MAP.states).map(([id, d]) => {
-				const tally = byId.get(id)
-				const count = tally?.members.length ?? 0
-				return (
-					<path key={id} d={d} className={`fc-state ${shade(count)}`}>
-						<title>{`${tally?.state.name ?? id}: ${count} ${count === 1 ? 'minister' : 'ministers'}`}</title>
-					</path>
-				)
-			})}
-		</svg>
-	)
-}
-
 export default async function FederalCharacterPage() {
 	const { gov, graph } = await loadNigeriaGraph()
 	const report = federalCharacter(graph)
 	const total = report.members.length
 	const covered = report.states.length - report.uncovered.length
-	const most = Math.max(...report.zones.map((zone) => zone.members.length), 1)
 	const hometownOnly = report.members.filter((member) => member.origin?.basis === 'hometown').length
+	// The explorer gets only what it shows: the graph stays on the server.
+	const states: ExplorerState[] = report.states.map((tally) => ({
+		id: tally.state.id,
+		slug: representPath(gov, tally.state.id).split('/').pop()!,
+		name: tally.state.name,
+		zone: tally.zone,
+		representHref: representPath(gov, tally.state.id),
+		ministers: tally.members.map((member) => ({
+			name: member.person.name,
+			href: nodePath(gov, member.seats[0]),
+			portfolio: portfolio(member, graph),
+			imageUrl: member.person.imageUrl,
+			hometown: member.origin?.basis === 'hometown',
+		})),
+	}))
+	const zones = report.zones.map((zone) => ({ zone: zone.zone, slug: zone.zone.toLowerCase().replace(/\s+/g, '-'), states: zone.states, ministers: zone.members.length }))
 
 	return (
 		<>
@@ -82,32 +75,7 @@ export default async function FederalCharacterPage() {
 				</p>
 			</article>
 
-			<section className="panel-card">
-				<h2>Ministers by state</h2>
-				<CabinetMap states={report.states} />
-				<ul className="fc-key" aria-label="Key">
-					<li><i className="fc-none" />None</li>
-					<li><i className="fc-one" />1</li>
-					<li><i className="fc-two" />2</li>
-					<li><i className="fc-many" />3 or more</li>
-				</ul>
-			</section>
-
-			<section className="panel-card">
-				<h2>Across the six zones</h2>
-				<p className="muted-copy">The zones are not in the Constitution, but appointments are weighed by them in practice.</p>
-				<ul className="fc-zones">
-					{report.zones.map((zone) => (
-						<li key={zone.zone}>
-							<span className="fc-zone-name">{zone.zone}</span>
-							<span className="fc-bar" aria-hidden="true"><span style={{ width: `${(zone.members.length / most) * 100}%` }} /></span>
-							<span className="fc-zone-count">
-								{zone.members.length} <small>/ {zone.states} states</small>
-							</span>
-						</li>
-					))}
-				</ul>
-			</section>
+			<CabinetExplorer states={states} zones={zones} shapes={NIGERIA_MAP.states} width={NIGERIA_MAP.width} height={NIGERIA_MAP.height} />
 
 			<section className="detail-roster">
 				<div className="detail-roster-heading">
