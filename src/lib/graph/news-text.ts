@@ -55,12 +55,20 @@ export function newsHeadline(item: NewsItem) {
 	return titleCase(decodeHtml(item.summary.replace(/<gov_entities='[^']*'>|<\/gov_entities>/g, '')))
 }
 
+/**
+ * Sentence breaks: a full stop, question or exclamation mark followed by a capital. Not after an initial
+ * ("produced J. Smith") or a title ("Gen. Musa", "Sen. Akpabio"), which would end the lead mid-name.
+ */
+const SENTENCE_END = /(?<=[.!?])(?<!(?:^|[\s(])[A-Z]\.)(?<!\b(?:Mr|Mrs|Ms|Dr|Prof|Gen|Sen|Hon|Rt|St|No|Engr|Arc|Barr|Col|Lt|Maj|Capt|Gov|Rev|Jr|Sr|Amb|Esq|Ltd|Plc|Inc|Co)\.)\s+(?=[A-Z“"])/
+
 /** The line shown for a story: the tagged summary if it has one, otherwise the lead sentence. */
 export function newsLead(item: NewsItem) {
 	if (/<gov_entities=/.test(item.summary)) return item.summary
-	const excerpt = item.excerpt ? decodeHtml(item.excerpt) : ''
-	const lead = excerpt.split(/(?<=[.!?])\s+(?=[A-Z“"])/)[0] ?? ''
-	if (lead.length >= 40) return lead.length > 280 ? `${lead.slice(0, 277).replace(/\s+\S*$/, '')}…` : lead
+	const excerpt = item.excerpt ? decodeHtml(item.excerpt).trim() : ''
+	const lead = excerpt.split(SENTENCE_END)[0]?.trim() ?? ''
+	// A lead must be a whole sentence. Feeds often cut excerpts mid-word ("domestic and sexual vio"), so a
+	// lead without a closing full stop falls back to the headline, which is always complete.
+	if (lead.length >= 40 && lead.length <= 300 && /[.!?]["”’)]?$/.test(lead)) return lead
 	return newsHeadline(item)
 }
 

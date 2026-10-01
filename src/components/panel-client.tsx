@@ -17,6 +17,10 @@ export interface ProseItem {
 	id: string
 	url: string
 	segments: ProseSegment[]
+	/** The publication's domain, e.g. "punchng.com". */
+	source: string
+	/** When it was published, already formatted in Lagos time. */
+	when?: string
 }
 
 export function Glyph({ type, tone, size = 11 }: { type: NodeType; tone?: string; size?: number }) {
@@ -27,34 +31,37 @@ export function Glyph({ type, tone, size = 11 }: { type: NodeType; tone?: string
 	)
 }
 
-/** Latest news as one running paragraph: entity names become links and each story gets a footnote. */
-export function NewsProse({ items, collapsedCount = 4 }: { items: ProseItem[]; collapsedCount?: number }) {
+/** Latest news, one story per line: entity names link into the map, and each story names its source. */
+export function NewsProse({ items, collapsedCount = 5 }: { items: ProseItem[]; collapsedCount?: number }) {
 	const [open, setOpen] = useState(false)
 	const shown = open ? items : items.slice(0, collapsedCount)
 	return (
 		<>
-			<p className={`news-prose ${open ? 'is-open' : ''}`}>
-				{shown.map((item, index) => (
-					<span key={item.id}>
-						{item.segments.map((segment, part) =>
-							segment.href ? (
-								<Link key={part} href={segment.href} className="entity-chip">
-									<Glyph type={segment.type ?? 'department'} tone={segment.tone} />
-									<span>{segment.text}</span>
-								</Link>
-							) : (
-								<span key={part}>{segment.text}</span>
-							),
-						)}
-						<sup>
-							<a href={item.url} target="_blank" rel="noreferrer" aria-label={`Source ${index + 1}`}>{index + 1}</a>
-						</sup>{' '}
-					</span>
+			<ol className="news-list">
+				{shown.map((item) => (
+					<li key={item.id}>
+						<p>
+							{item.segments.map((segment, part) =>
+								segment.href ? (
+									<Link key={part} href={segment.href} className="entity-chip">
+										<Glyph type={segment.type ?? 'department'} tone={segment.tone} />
+										<span>{segment.text}</span>
+									</Link>
+								) : (
+									<span key={part}>{segment.text}</span>
+								),
+							)}
+						</p>
+						<span className="news-meta">
+							<a href={item.url} target="_blank" rel="noreferrer">{item.source} ↗</a>
+							{item.when ? <> · {item.when}</> : null}
+						</span>
+					</li>
 				))}
-			</p>
+			</ol>
 			{items.length > collapsedCount && (
 				<button type="button" className="text-action" onClick={() => setOpen(!open)}>
-					{open ? 'Fewer stories' : 'More stories'}
+					{open ? 'Fewer stories' : `${items.length - collapsedCount} more stories`}
 				</button>
 			)}
 		</>
