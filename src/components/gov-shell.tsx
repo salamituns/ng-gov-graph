@@ -62,6 +62,14 @@ export function GovShell({ gov, graph, power, budget, asOf, children }: GovShell
 		const base = node ? nodePath(gov, node) : pathname
 		return `${base}${query.size ? `?${query}` : ''}`
 	}
+	// The phone sheet's header names the page it holds; home has no header.
+	const sheetTitle =
+		section === 'represent' ? (selected ? `Who represents ${selected.name}` : t('whoRepresents'))
+		: section === 'elections' ? 'Nigeria Decides 2027'
+		: section === 'budget' ? t('budgetTitle')
+		: section === 'federal-character' ? t('federalCharacter')
+		: section ? (selected?.name ?? 'Not found')
+		: undefined
 	const select = (id: string) => {
 		const node = graph.nodes[id]
 		if (!node) return
@@ -70,7 +78,13 @@ export function GovShell({ gov, graph, power, budget, asOf, children }: GovShell
 
 	return (
 		<main className="shell">
-			<PanelSheet>{children}</PanelSheet>
+			<PanelSheet
+				title={sheetTitle}
+				onBack={() => router.back()}
+				onClose={() => router.push(`/${gov}${view === 'power' ? '?view=newsmakers' : view === 'budget' ? '?view=budget' : ''}`, { scroll: false })}
+			>
+				{children}
+			</PanelSheet>
 			<section className="shell-map" aria-label="Government map">
 				<div className="map-toolbar">
 					<GraphSearch gov={gov} graph={graph} />
