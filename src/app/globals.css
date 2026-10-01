@@ -782,8 +782,9 @@
 /* ---------- Budget flow ---------- */
 .budget-flow { position:relative; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; }
 .budget-flow-scroll { width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
-/* One finger swipes the flow horizontally while it fits; a pinch zooms it (the two-finger gesture is not
-   handed to the browser, so the hook owns it), and once zoomed that same finger pans the diagram. */
+/* A pinch zooms the flow (the two-finger gesture is not handed to the browser, so the hook owns it);
+   once zoomed, one finger pans the diagram. On touch laptops, a one-finger swipe still scrolls a flow
+   drawn wider than its column, as on a laptop with a narrow map. */
 .budget-flow svg { display:block; width:100%; min-width:860px; height:auto; max-height:calc(100vh - 150px); touch-action:pan-x pan-y; -webkit-tap-highlight-color:transparent; }
 .budget-flow svg.is-zoomed { touch-action:none; cursor:grab; }
 .budget-flow svg.is-zoomed:active { cursor:grabbing; }
@@ -864,15 +865,15 @@
 .flow-open { display:inline-flex; align-items:center; min-height:40px; padding:0 12px; border-radius:8px; background:color-mix(in srgb, var(--gg-green) 14%, transparent); color:var(--gg-hub-ink); font-size:13.5px; font-weight:600; }
 
 /* ---------- Budget flow on portrait phones ---------- */
-/* The Sankey is the budget view, on the phone too: drawn to the height of the map area so its text stays
-   readable, and read by swiping right through the flow, the way it reads left to right on a laptop. The
-   detail card stays fixed while the diagram scrolls under it. */
+/* The Sankey opens as a whole, fitted to the phone's width, so the shape of the money is the first thing
+   the reader takes in — not a full page of it. Pinching in (or double-tapping) brings the labels to
+   reading size, and one finger pans the flow. The detail card stays fixed while the diagram moves. */
 @media (max-width: 820px) and (orientation: portrait) {
   .budget-flow { display:flex; overflow:visible; }
   .budget-flow-wide { display:flex; flex-direction:column; flex:1 1 0; min-height:0; }
   .flow-list { display:none; }
-  .budget-flow-scroll { flex:1 1 0; min-height:0; overflow-y:hidden; }
-  .budget-flow svg { width:auto; min-width:0; height:100%; max-height:none; }
+  .budget-flow-scroll { flex:1 1 0; min-height:0; display:grid; place-items:center; overflow:hidden; }
+  .budget-flow svg { width:100%; min-width:0; height:auto; max-height:none; }
   /* Bigger touch targets, sitting just above the view switcher, clear of the sheet's peek. */
   .flow-zoom { right:10px; bottom:44px; }
   .flow-zoom button { width:40px; height:40px; font-size:18px; }

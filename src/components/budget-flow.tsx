@@ -144,8 +144,7 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 	const hoverProps = (id: string) => ({ onMouseEnter: () => setHover(id), onMouseLeave: () => setHover(null), onFocus: () => setHover(id), onBlur: () => setHover(null) })
 
 	// Pinch, drag and double-tap zoom, after the graph map: the viewBox moves, so labels stay sharp.
-	// While the whole flow is in view, touch-action still lets one finger swipe the flow horizontally;
-	// once zoomed, that finger pans the diagram instead.
+	// The flow opens as a whole fitted to the width; once zoomed, one finger pans the diagram.
 	const svgRef = useRef<SVGSVGElement>(null)
 	const zoom = useZoom(svgRef, `0 0 ${W} ${H}`)
 
@@ -239,8 +238,8 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 				<button type="button" aria-label="Zoom out" onClick={zoom.zoomOut} disabled={!zoom.zoomed}>−</button>
 				{zoom.zoomed ? <button type="button" aria-label="Show the whole flow" onClick={zoom.reset}>⤢</button> : null}
 			</div>
-			{/* Portrait phones read the flow by swiping through it and pinch to inspect it; the chip teaches the gestures once. */}
-			<p className="flow-swipe" aria-hidden="true">Swipe to follow, pinch to zoom →</p>
+			{/* The flow opens as an overview; the chip teaches the pinch that brings it to reading size. */}
+			<p className="flow-swipe" aria-hidden="true">Pinch to zoom into the money →</p>
 			</div>
 		</div>
 	)
