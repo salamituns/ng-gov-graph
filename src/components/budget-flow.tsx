@@ -160,10 +160,13 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 	// The flow opens as a whole fitted to the width; once zoomed, one finger pans the diagram.
 	const svgRef = useRef<SVGSVGElement>(null)
 	const zoom = useZoom(svgRef, `0 0 ${W} ${H}`)
+	// Portrait phones open on the step-by-step flow; the whole Sankey is one tap away for the overview.
+	const [mode, setMode] = useState<'steps' | 'whole'>('steps')
 
 	return (
-		<div className="budget-flow">
+		<div className="budget-flow" data-mode={mode}>
 			<BudgetFlowList flow={flow} selectedId={selectedId} onSelect={onSelect} />
+			<BudgetFlowSteps flow={flow} selectedId={selectedId} onSelect={onSelect} onWhole={() => setMode('whole')} />
 			<div className="budget-flow-wide">
 			<div className="budget-flow-scroll">
 				<svg
@@ -251,6 +254,7 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 					{' '}Select a ministry to open it.
 				</p>
 			)}
+			<button type="button" className="flow-steps-back" onClick={() => setMode('steps')}>← Step by step</button>
 			<div className="flow-zoom" role="group" aria-label="Zoom the budget flow">
 				<button type="button" aria-label="Zoom in" onClick={zoom.zoomIn}>+</button>
 				<button type="button" aria-label="Zoom out" onClick={zoom.zoomOut} disabled={!zoom.zoomed}>−</button>
@@ -372,6 +376,159 @@ function BudgetFlowList({ flow, selectedId, onSelect }: { flow: Flow; selectedId
 					))}
 				</ul>
 			</section>
+		</div>
+	)
+}
+
+type Level = 'split' | 'ministries' | string
+
+interface StepRow {
+	id: string
+	label: string
+	value: number
+	tone: string
+	/** Tapping the row goes one level deeper. */
+	drill?: Level
+	note?: string
+}
+
+const SW = 390
+/** Fits between the step header and the view switcher on a 390×844 phone; taller steps scroll. */
+const SH = 450
+const S_TOP = 12
+const S_LEFT = 14
+const S_RIGHT = 150
+const S_NODE = 10
+/** Two lines of label (name, then amount and share) need this much height each. */
+const ROW = 36
+
+/**
+ * Portrait phones: the flow one step at a time, two columns that fill the tall screen with labels at
+ * reading size. The whole budget splits; tap Ministries and offices to see where their share goes; tap a
+ * ministry to see what it spends on (and its page opens in the sheet). A breadcrumb walks back.
+ */
+function BudgetFlowSteps({ flow, selectedId, onSelect, onWhole }: { flow: Flow; selectedId?: string; onSelect: (id: string) => void; onWhole: () => void }) {
+	const { t } = useT()
+	const bodies: FlowMinistry[] = [...flow.ministries, flow.others]
+	const selected = bodies.find((b) => b.id === selectedId && b.id !== 'others')
+	const [level, setLevel] = useState<Level>(selected ? selected.id : 'split')
+	const [note, setNote] = useState<string | null>(null)
+	// A ministry picked elsewhere (its page, or the whole flow) opens at its own step.
+	const [prevSelected, setPrevSelected] = useState(selectedId)
+	if (prevSelected !== selectedId) {
+		setPrevSelected(selectedId)
+		if (selected) setLevel(selected.id)
+	}
+
+	const own = flow.parts.find((p) => p.id === 'ministries')?.value ?? 0
+	const body = bodies.find((b) => b.id === level)
+	const source = level === 'split'
+		? { label: t('budgetTitle'), value: flow.total, tone: 'total' }
+		: level === 'ministries'
+			? { label: 'Ministries and offices', value: own, tone: 'own' }
+			: { label: body?.label ?? '', value: body?.total ?? 0, tone: 'own' }
+	const rows: StepRow[] = level === 'split'
+		? flow.parts.map((p) => ({ id: p.id, label: p.label, value: p.value, tone: PART_TONE[p.id], drill: p.id === 'ministries' ? 'ministries' : undefined, note: p.note }))
+		: level === 'ministries'
+			? bodies.map((b) => ({ id: b.id, label: b.label, value: b.total, tone: 'own', drill: b.id === 'others' ? undefined : b.id, note: b.id === 'others' ? `${flow.others.count} smaller bodies share ${short(b.total)}. The budget page lists every one.` : undefined }))
+			: body
+				? TYPES.map((type) => ({ id: type.key, label: type.label, value: body[type.key], tone: type.tone }))
+				: []
+
+	// Layout: the source fills the left; the rows stack on the right, each at least ROW tall for its label.
+	const usable = SH - S_TOP * 2
+	const gaps = 6 * Math.max(0, rows.length - 1)
+	const k = (usable - gaps) / Math.max(1, source.value)
+	const sourceH = source.value * k
+	const sourceY = S_TOP + (usable - sourceH) / 2
+	// Each row gets a slot at least ROW tall with its bar centred in it, so a label always sits beside its
+	// own bar; the bands fan out from the source to meet them. A step taller than the screen scrolls.
+	const placed = rows.reduce<(StepRow & { y: number; h: number; from: number; slot: number })[]>((acc, row) => {
+		const prev = acc.at(-1)
+		const h = Math.max(2, row.value * k)
+		const slot = prev ? prev.slot + Math.max(prev.h, ROW) + 6 : S_TOP
+		const y = slot + (Math.max(h, ROW) - h) / 2
+		// from: where this row's band leaves the source bar, stacked in order.
+		const from = prev ? prev.from + prev.value * k : sourceY
+		return [...acc, { ...row, y, h, from, slot }]
+	}, [])
+	const labelYs = placed.map((box) => box.y + box.h / 2 - 17)
+	const height = Math.max(SH, (placed.at(-1)?.slot ?? 0) + Math.max(placed.at(-1)?.h ?? 0, ROW) + S_TOP)
+
+	const choose = (row: StepRow) => {
+		if (row.drill) {
+			setNote(null)
+			setLevel(row.drill)
+			if (row.drill !== 'ministries') onSelect(row.drill)
+		} else {
+			setNote((current) => (current === row.id ? null : row.id))
+		}
+	}
+	const noteRow = rows.find((r) => r.id === note)
+	const crumbs: { level: Level; label: string }[] = [{ level: 'split', label: short(flow.total) }]
+	if (level !== 'split') crumbs.push({ level: 'ministries', label: 'Ministries' })
+	if (body) crumbs.push({ level: body.id, label: body.label })
+
+	return (
+		<div className="flow-steps">
+			<header className="flow-steps-head">
+				<nav aria-label="Budget steps" className="flow-crumbs">
+					{crumbs.map((crumb, i) => (
+						<span key={crumb.level}>
+							{i > 0 ? <span aria-hidden="true" className="flow-crumb-sep">›</span> : null}
+							{i < crumbs.length - 1 ? (
+								<button type="button" onClick={() => { setNote(null); setLevel(crumb.level) }}>{crumb.label}</button>
+							) : (
+								<strong aria-current="step">{crumb.label}</strong>
+							)}
+						</span>
+					))}
+				</nav>
+				<button type="button" className="flow-whole" onClick={onWhole}>Whole flow ⤢</button>
+			</header>
+			<p className="flow-steps-sub">
+				{level === 'split' ? 'The 2026 budget, and where it splits first. Tap a part.' : level === 'ministries' ? 'Tap a ministry to see what it spends on.' : `What ${body?.label ?? 'it'} spends its ${short(source.value)} on.`}
+			</p>
+			{noteRow?.note ? (
+				<div className="flow-step-note" aria-live="polite">
+					<strong>{noteRow.label}</strong> {noteRow.note}
+					{noteRow.id === 'others' ? <Link href="/ng/budget" className="flow-open">See every body →</Link> : null}
+				</div>
+			) : body ? (
+				<div className="flow-step-note">
+					<button type="button" className="flow-open" onClick={() => window.dispatchEvent(new Event('govgraph:open-panel'))}>{body.label}: details ↑</button>
+				</div>
+			) : null}
+			<div className="flow-steps-scroll">
+				<svg viewBox={`0 0 ${SW} ${height}`} className="flow-steps-svg" role="img" aria-label={`${source.label}: ${naira(source.value)}`}>
+					{placed.map((row) => (
+						<path key={`band-${row.id}`} d={band(S_LEFT + S_NODE, row.from, S_RIGHT, row.y, row.value * k)} className={`flow-band tone-${row.tone}${note && note !== row.id ? ' is-faded' : ''}`} />
+					))}
+					<rect x={S_LEFT} y={sourceY} width={S_NODE} height={sourceH} className={`flow-node tone-${source.tone}`} />
+					{placed.map((row, i) => (
+						<g
+							key={row.id}
+							role="button"
+							tabIndex={0}
+							aria-label={`${row.label}, ${naira(row.value)}${row.drill ? ', open' : ''}`}
+							className="flow-step-row"
+							onClick={() => choose(row)}
+							onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(row) } }}
+						>
+							{/* The whole row, bar to edge, is the target: at least 44px tall for a thumb. */}
+							<rect x={S_RIGHT - 4} y={row.slot - 3} width={SW - S_RIGHT + 4} height={Math.max(row.h, ROW) + 6} className="flow-step-hit" />
+							<rect x={S_RIGHT} y={row.y} width={S_NODE} height={row.h} className={`flow-node tone-${row.tone}`} />
+							<text x={S_RIGHT + S_NODE + 8} y={labelYs[i] + 12} className="flow-step-name">
+								{row.label.length > 26 ? `${row.label.slice(0, 25).trimEnd()}…` : row.label}
+								{row.drill ? <tspan className="flow-step-more"> ›</tspan> : null}
+							</text>
+							<text x={S_RIGHT + S_NODE + 8} y={labelYs[i] + 28} className="flow-step-value">
+								{short(row.value)} · {pct(row.value, source.value)}
+							</text>
+						</g>
+					))}
+				</svg>
+			</div>
 		</div>
 	)
 }
