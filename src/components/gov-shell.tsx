@@ -11,13 +11,15 @@ import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 import type { CompiledGraph } from '@/lib/graph/types'
 import { LangSelect, useT } from '@/components/lang'
+import { BudgetFlow } from '@/components/budget-flow'
+import type { BudgetFlow as BudgetFlowData } from '@/lib/graph/budget-flow'
 
 interface GovShellProps {
 	gov: string
 	graph: CompiledGraph
 	power: { people: PowerPerson[]; links: PowerLink[]; articles: number; sources: string[]; days: number }
-	/** 2026 allocation by node id, for the Budget view. */
-	budgets: Record<string, number>
+	/** The 2026 budget as a flow, for the Budget view. */
+	budget: BudgetFlowData
 	asOf: string
 	children: ReactNode
 }
@@ -26,7 +28,7 @@ interface GovShellProps {
  * The map lives in the /ng layout, so it stays mounted while the left panel changes.
  * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
-export function GovShell({ gov, graph, power, budgets, asOf, children }: GovShellProps) {
+export function GovShell({ gov, graph, power, budget, asOf, children }: GovShellProps) {
 	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -83,7 +85,9 @@ export function GovShell({ gov, graph, power, budgets, asOf, children }: GovShel
 					</div>
 				</div>
 				<div className="map-canvas">
-					{view === 'power' ? (
+					{view === 'budget' ? (
+						<BudgetFlow flow={budget} selectedId={selectedId} onSelect={(id) => router.push(href({ id, view: 'budget' }), { scroll: false })} />
+					) : view === 'power' ? (
 						<PowerMap
 							{...power}
 							asOf={asOf}
@@ -93,7 +97,7 @@ export function GovShell({ gov, graph, power, budgets, asOf, children }: GovShel
 							onClear={() => router.push(`/${gov}?view=newsmakers`, { scroll: false })}
 						/>
 					) : (
-						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} stateNames={stateNames} budgets={view === 'budget' ? budgets : undefined} budgetHref={`/${gov}/budget`} />
+						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} stateNames={stateNames} />
 					)}
 				</div>
 				<nav className="map-views" aria-label="Map view">
