@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
 import { useT } from '@/components/lang'
 import { naira } from '@/data/nigeria/budget'
 import type { BudgetFlow as Flow, FlowMinistry } from '@/lib/graph/budget-flow'
@@ -143,6 +144,8 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 
 	return (
 		<div className="budget-flow">
+			<BudgetFlowList flow={flow} selectedId={selectedId} onSelect={onSelect} />
+			<div className="budget-flow-wide">
 			<div className="budget-flow-scroll">
 				<svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${t('budgetTitle')}: ${naira(flow.total)} in 2026`}>
 					<text x={X[0]} y={26} className="flow-title">{t('budgetTitle')}</text>
@@ -212,6 +215,112 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 			) : (
 				<p className="flow-detail flow-hint">Hover a band to see the amount. Select a ministry to open it.</p>
 			)}
+			</div>
+		</div>
+	)
+}
+
+function pct(value: number, total: number) {
+	const share = (value / total) * 100
+	return share >= 10 ? `${share.toFixed(0)}%` : `${share.toFixed(1)}%`
+}
+
+/** Phones: the same flow read top to bottom, as stacked bars and rows that expand on tap. */
+function BudgetFlowList({ flow, selectedId, onSelect }: { flow: Flow; selectedId?: string; onSelect: (id: string) => void }) {
+	const { t } = useT()
+	const bodies: FlowMinistry[] = [...flow.ministries, flow.others]
+	const [open, setOpen] = useState<string | null>(selectedId && bodies.some((b) => b.id === selectedId) ? selectedId : null)
+	const own = flow.parts.find((p) => p.id === 'ministries')?.value ?? 1
+	const largest = Math.max(...bodies.map((b) => b.total), 1)
+	const typeTotals = TYPES.map((type) => bodies.reduce((sum, b) => sum + b[type.key], 0))
+	const toggle = (id: string) => setOpen((current) => (current === id ? null : id))
+	const selectedRow = useRef<HTMLLIElement>(null)
+	// A ministry chosen elsewhere (its page, or the Sankey) opens scrolled into view, details showing.
+	useEffect(() => {
+		selectedRow.current?.scrollIntoView({ block: 'nearest' })
+	}, [selectedId])
+
+	return (
+		<div className="flow-list">
+			<header className="flow-list-head">
+				<h2>{t('budgetTitle')}</h2>
+				<p><strong>{naira(flow.total)}</strong> in the 2026 budget</p>
+			</header>
+
+			<section aria-label="First split">
+				<h3>Where it splits first</h3>
+				<div className="flow-stack" aria-hidden="true">
+					{flow.parts.map((part) => (
+						<span key={part.id} className={`tone-${PART_TONE[part.id]}`} style={{ width: `${(part.value / flow.total) * 100}%` }} />
+					))}
+				</div>
+				<ul className="flow-rows">
+					{flow.parts.map((part) => (
+						<li key={part.id}>
+							<button type="button" aria-expanded={open === part.id} onClick={() => toggle(part.id)}>
+								<i className={`tone-${PART_TONE[part.id]}`} />
+								<span className="flow-row-name">{part.label}</span>
+								<span className="flow-row-value">{short(part.value)} <small>{pct(part.value, flow.total)}</small></span>
+							</button>
+							{open === part.id ? <p className="flow-row-note">{part.note}</p> : null}
+						</li>
+					))}
+				</ul>
+			</section>
+
+			<section aria-label="Ministries and offices">
+				<h3>Ministries and offices <small>{short(own)}</small></h3>
+				<ul className="flow-rows">
+					{bodies.map((body) => {
+						const isOpen = open === body.id
+						return (
+							<li key={body.id} ref={body.id === selectedId ? selectedRow : undefined} className={body.id === selectedId ? 'is-selected' : undefined}>
+								<button type="button" aria-expanded={isOpen} onClick={() => toggle(body.id)}>
+									<span className="flow-row-name">{body.label}</span>
+									<span className="flow-row-value">{short(body.total)}</span>
+									<span className="flow-mini" aria-hidden="true" style={{ width: `${Math.max(2, (body.total / largest) * 100)}%` }}>
+										{TYPES.map((type) => (
+											<span key={type.key} className={`tone-${type.tone}`} style={{ width: `${(body[type.key] / body.total) * 100}%` }} />
+										))}
+									</span>
+								</button>
+								{isOpen ? (
+									<div className="flow-row-note">
+										<p>
+											Salaries {short(body.personnel)} · Running costs {short(body.overhead)} · Projects {short(body.capital)}
+										</p>
+										{body.id === 'others' ? (
+											<Link href="/ng/budget" className="flow-open">See all {flow.others.count} on the budget page →</Link>
+										) : (
+											<button type="button" className="flow-open" onClick={() => onSelect(body.id)}>Open {body.label} →</button>
+										)}
+									</div>
+								) : null}
+							</li>
+						)
+					})}
+				</ul>
+			</section>
+
+			<section aria-label="Spent on">
+				<h3>What ministries spend it on</h3>
+				<div className="flow-stack" aria-hidden="true">
+					{TYPES.map((type, i) => (
+						<span key={type.key} className={`tone-${type.tone}`} style={{ width: `${(typeTotals[i] / own) * 100}%` }} />
+					))}
+				</div>
+				<ul className="flow-rows is-static">
+					{TYPES.map((type, i) => (
+						<li key={type.key}>
+							<div>
+								<i className={`tone-${type.tone}`} />
+								<span className="flow-row-name">{type.label}</span>
+								<span className="flow-row-value">{short(typeTotals[i])} <small>{pct(typeTotals[i], own)}</small></span>
+							</div>
+						</li>
+					))}
+				</ul>
+			</section>
 		</div>
 	)
 }

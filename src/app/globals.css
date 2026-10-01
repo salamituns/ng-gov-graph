@@ -741,9 +741,42 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .flow-detail span { color:var(--gg-hub-ink); font-variant-numeric:tabular-nums; }
 .flow-detail small { color:var(--gg-muted); font-size:11.5px; line-height:1.4; }
 .flow-hint { color:var(--gg-muted); }
-@media (max-width: 760px) {
-  .budget-flow { justify-content:flex-start; padding-bottom:58px; }
-  .budget-flow-scroll { flex:1; min-height:0; overflow:auto; }
-  .budget-flow svg { max-height:none; }
-  .flow-detail { position:static; margin:8px 12px 0; max-width:none; }
+.flow-list { display:none; }
+@media (max-width: 820px) {
+  /* Phones get the list; the Sankey needs width to be read. */
+  .budget-flow-wide { display:none; }
+  .budget-flow { display:block; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; }
+  .flow-list { display:grid; gap:18px; padding:4px 14px 70px; }
 }
+.flow-list-head h2 { font-family:var(--font-display),var(--font-body),sans-serif; font-size:20px; font-weight:600; }
+.flow-list-head p { margin-top:2px; color:var(--gg-muted); font-size:13px; }
+.flow-list-head strong { color:var(--gg-hub-ink); font-size:15px; }
+.flow-list h3 { margin-bottom:8px; color:var(--gg-muted); font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+.flow-list h3 small { margin-left:4px; color:var(--gg-hub-ink); font-size:12px; text-transform:none; }
+.flow-stack { display:flex; height:14px; margin-bottom:6px; border-radius:7px; overflow:hidden; background:var(--gg-panel-2); }
+.flow-stack span { display:block; height:100%; }
+.flow-stack span + span { box-shadow:inset 2px 0 0 var(--gg-surface); }
+.flow-stack .tone-own, .flow-mini .tone-build, .flow-rows i.tone-own, .flow-rows i.tone-build { background:var(--gg-green); }
+.flow-stack .tone-debt, .flow-rows i.tone-debt { background:var(--gg-legislative); }
+.flow-stack .tone-swv, .flow-rows i.tone-swv { background:#7b8794; }
+.flow-stack .tone-statutory, .flow-rows i.tone-statutory { background:var(--gg-judicial); }
+.flow-stack .tone-rest, .flow-rows i.tone-rest { background:var(--gg-faint); }
+.flow-stack .tone-pay, .flow-mini .tone-pay, .flow-rows i.tone-pay { background:var(--gg-executive); }
+.flow-stack .tone-run, .flow-mini .tone-run, .flow-rows i.tone-run { background:#d08b3e; }
+.flow-stack .tone-build { background:var(--gg-green); }
+.flow-rows { display:grid; border-radius:10px; background:var(--gg-panel); box-shadow:var(--gg-shadow); overflow:hidden; }
+.flow-rows li + li { border-top:1px solid var(--gg-line); }
+.flow-rows button, .flow-rows.is-static li > div { width:100%; min-height:46px; display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:4px 10px; padding:9px 12px; text-align:left; font-size:14px; }
+.flow-rows button:active { background:var(--gg-panel-2); }
+.flow-rows i { width:10px; height:10px; border-radius:3px; }
+.flow-row-name { min-width:0; grid-column:1 / 3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.flow-rows i + .flow-row-name { grid-column:2; }
+.flow-row-value { font-variant-numeric:tabular-nums; font-weight:600; color:var(--gg-hub-ink); }
+.flow-row-value small { margin-left:4px; color:var(--gg-muted); font-weight:400; }
+.flow-mini { grid-column:1 / -1; display:flex; height:6px; border-radius:3px; overflow:hidden; }
+.flow-mini span { display:block; height:100%; }
+.flow-rows li.is-selected { box-shadow:inset 3px 0 0 var(--gg-green); }
+.flow-row-note { padding:0 12px 12px; color:var(--gg-muted); font-size:12.5px; line-height:1.45; }
+.flow-row-note p + .flow-open, .flow-row-note .flow-open { margin-top:8px; }
+.flow-open { display:inline-flex; align-items:center; min-height:40px; padding:0 12px; border-radius:8px; background:color-mix(in srgb, var(--gg-green) 14%, transparent); color:var(--gg-hub-ink); font-size:13.5px; font-weight:600; }
+
