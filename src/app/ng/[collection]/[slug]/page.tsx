@@ -18,9 +18,10 @@ import type { CompiledGraph, GraphNode, NodeType } from '@/lib/graph/types'
 import { MINISTER_ORIGINS } from '@/data/nigeria/origins'
 import { STATE_ZONES } from '@/data/nigeria/states'
 import { isCabinetSeat } from '@/lib/graph/cabinet'
-import { CONSTITUTION_URL, provisionUrl, type Provision } from '@/data/nigeria/constitution'
+import { CONSTITUTION_URL, type Provision } from '@/data/nigeria/constitution'
 import { provisionsFor } from '@/lib/graph/constitution'
 import { BudgetCard } from '@/components/budget-card'
+import { ProvisionList } from '@/components/provision-list'
 
 const COLLECTIONS: Record<string, NodeType[]> = {
 	departments: ['department'],
@@ -104,18 +105,7 @@ function ConstitutionCard({ node, provisions }: { node: GraphNode; provisions: P
 		<section className="panel-card constitution-card">
 			<h2>What the Constitution says</h2>
 			{provisions.length ? (
-				<ul>
-					{provisions.map((provision) => (
-						// The citation alone cannot key this list: two provisions can cite the same section
-						// (s.171 grounds both the Secretary to the Government of the Federation and the Head
-						// of the Civil Service, and three provisions cite s.153, Third Schedule). Each entry
-						// is deduplicated by object upstream, so its own words tell same-cited ones apart.
-						<li key={`${provision.cite} ${provision.text}`}>
-							<a href={provisionUrl(provision)} target="_blank" rel="noreferrer" className="constitution-cite">{provision.cite}</a>
-							<p>{provision.text}</p>
-						</li>
-					))}
-				</ul>
+				<ProvisionList provisions={provisions} />
 			) : (
 				<p className="muted-copy">
 					The Constitution does not create this body. It is set up by an Act of the National Assembly, so its powers and how its head is chosen are set by that law, which the Assembly can amend.
