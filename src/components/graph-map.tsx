@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { currentSpotlight, noSpotlight, subscribeSpotlight } from '@/lib/spotlight'
 import { useZoom } from '@/components/use-zoom'
 import { authorityChain, descendantsOf, organizationOf, type AuthorityLink } from '@/lib/graph/authority'
 import { NIGERIA_MAP } from '@/data/nigeria/map-shapes'
@@ -56,6 +57,14 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 	const svgRef = useRef<SVGSVGElement>(null)
 	const layout = useMemo(() => layoutGovernment(graph, { layer }), [graph, layer])
 	const at = useMemo(() => new Map(layout.nodes.map((item) => [item.id, item])), [layout])
+
+	// A spotlight from the panel (see lib/spotlight): light where, say, one state's ministers sit.
+	const spot = useSyncExternalStore(subscribeSpotlight, currentSpotlight, noSpotlight)
+	const spotIds = useMemo(
+		() => new Set((spot?.nodeIds ?? []).map((id) => (at.has(id) ? id : graph.nodes[id]?.parentId)).filter((id): id is string => Boolean(id && at.has(id)))),
+		[spot, at, graph],
+	)
+	const spotStates = useMemo(() => new Set(spot?.stateIds ?? []), [spot])
 
 	// A seat selects the organization it belongs to, so a minister's page lights up the ministry.
 	const focusId = selectedId && !at.has(selectedId) ? graph.nodes[selectedId]?.parentId : selectedId
@@ -162,7 +171,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 				viewBox={zoom.viewBox}
 				role="group"
 				aria-label="Map of the Nigerian government. Pinch or double-tap to zoom."
-				className={`graph-svg${zoom.zoomed ? ' is-zoomed' : ''}`}
+				className={`graph-svg${zoom.zoomed ? ' is-zoomed' : ''}${spot ? ' has-spotlight' : ''}`}
 				{...zoom.handlers}
 			>
 				<Markers />
@@ -225,7 +234,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 						item={expanded.get(item.id) ?? item}
 						seatUnrecorded={Boolean(item.node.head && graph.nodes[item.node.head]?.unrecorded)}
 						seatSelected={Boolean(selectedId && item.node.head === selectedId)}
-						state={item.id === focusId ? 'selected' : lit.has(item.id) || fan.includes(item.id) ? 'lit' : item.id === hoverId ? 'hover' : 'idle'}
+						state={item.id === focusId ? 'selected' : spotIds.has(item.id) || lit.has(item.id) || fan.includes(item.id) ? 'lit' : item.id === hoverId ? 'hover' : 'idle'}
 						onSelect={choose}
 						onHover={setHoverId}
 					/>
@@ -244,7 +253,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 						</g>
 					)
 				})}
-				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} onSelect={choose} />}
+				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} lit={spotStates} onSelect={choose} />}
 				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} />}
 				{edgeHover && !hover && (
 					<g className={`edge-pill tone-${edgeHover.tone}`} pointerEvents="none">
@@ -253,6 +262,11 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 					</g>
 				)}
 			</svg>
+			{spot && !(focus && focus.kind !== 'hub') ? (
+				<p key={spot.label} className="map-caption tone-executive map-spotlight-caption" aria-live="polite">
+					{spot.label}: {spotIds.size} {spotIds.size === 1 ? 'ministry' : 'ministries'}
+				</p>
+			) : null}
 			{focus && focus.kind !== 'hub' ? (
 				// Keyed to the node, so every new selection replays the caption's nudge on phones.
 				<button
@@ -432,7 +446,7 @@ function turn(item: PlacedNode, angle: number): PlacedNode {
  * The People of Nigeria at the centre of the map: the country's outline with its 36 states and the FCT,
  * always north-up. A state opens its page; Abuja is starred.
  */
-function NigeriaCore({ x, y, names, selectedId, onSelect }: { x: number; y: number; names: Record<string, string>; selectedId?: string; onSelect: (id: string) => void }) {
+function NigeriaCore({ x, y, names, selectedId, lit, onSelect }: { x: number; y: number; names: Record<string, string>; selectedId?: string; lit: Set<string>; onSelect: (id: string) => void }) {
 	const [hoverState, setHoverState] = useState<string | null>(null)
 	const peopleLabel = useT().t('peopleOfNigeria')
 	const scale = 1.08
@@ -448,7 +462,7 @@ function NigeriaCore({ x, y, names, selectedId, onSelect }: { x: number; y: numb
 						role="link"
 						tabIndex={-1}
 						aria-label={names[id] ?? id}
-						className={`core-state${id === selectedId ? ' is-selected' : ''}`}
+						className={`core-state${id === selectedId || lit.has(id) ? ' is-selected' : ''}`}
 						onClick={() => onSelect(id)}
 						onMouseEnter={() => setHoverState(id)}
 						onMouseLeave={() => setHoverState(null)}

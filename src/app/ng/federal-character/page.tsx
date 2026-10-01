@@ -41,6 +41,7 @@ export default async function FederalCharacterPage() {
 			portfolio: portfolio(member, graph),
 			imageUrl: member.person.imageUrl,
 			hometown: member.origin?.basis === 'hometown',
+			nodeIds: member.seats.flatMap((seat) => [seat.id, ...(seat.parentId ? [seat.parentId] : [])]),
 		})),
 	}))
 	const zones = report.zones.map((zone) => ({ zone: zone.zone, slug: zone.zone.toLowerCase().replace(/\s+/g, '-'), states: zone.states, ministers: zone.members.length }))
