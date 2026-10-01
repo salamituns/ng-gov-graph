@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import type { ChamberRoster } from '@/lib/graph/roster'
+import { Fold } from '@/components/fold'
 
 export function ChamberRosterList({
 	gov,
@@ -22,7 +23,8 @@ export function ChamberRosterList({
 	return (
 		<section className="detail-roster">
 			<div className="detail-roster-heading"><h2>{roster.kind === 'senate' ? 'Senators' : 'Representatives'}</h2><span>{roster.seats.length} seats · {vacant} without sourced officeholder</span></div>
-			<ul className="detail-roster-groups">
+			{/* On phones the first few states show; the rest of the 109 (or 360) wait behind a button. */}
+			<Fold className="detail-roster-groups" limit={4} showAll={`Show all ${roster.seats.length} ${roster.kind === 'senate' ? 'senators' : 'members'}`}>
 				{groups.map((group) => (
 					<li key={group.state}>
 						<h3>{group.state}</h3>
@@ -58,7 +60,7 @@ export function ChamberRosterList({
 						</ul>
 					</li>
 				))}
-			</ul>
+			</Fold>
 		</section>
 	)
 }

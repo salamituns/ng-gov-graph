@@ -21,6 +21,7 @@ import { BUDGET_2026, naira } from '@/data/nigeria/budget'
 import { MINISTRY_BUDGETS } from '@/data/nigeria/budget-2026'
 import { t, type Lang } from '@/lib/i18n'
 import { getLang } from '@/lib/i18n-server'
+import { Fold } from '@/components/fold'
 
 interface PageProps {
 	searchParams: Promise<{ layer?: string; days?: string }>
@@ -152,9 +153,9 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 							<span>{group.label}</span>
 							<span>{group.items.length}</span>
 						</div>
-						<ol className="change-list">
+						<Fold as="ol" className="change-list" limit={3} showAll={`Show all ${group.items.length}`}>
 							{group.items.map((change) => <ChangeCard key={change.id} change={change} graph={data.graph} gov={data.gov} />)}
-						</ol>
+						</Fold>
 					</div>
 				))}
 			</section>

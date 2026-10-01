@@ -22,6 +22,7 @@ import { CONSTITUTION_URL, type Provision } from '@/data/nigeria/constitution'
 import { provisionsFor } from '@/lib/graph/constitution'
 import { BudgetCard } from '@/components/budget-card'
 import { ProvisionList } from '@/components/provision-list'
+import { Fold } from '@/components/fold'
 
 const COLLECTIONS: Record<string, NodeType[]> = {
 	departments: ['department'],
@@ -219,7 +220,7 @@ export default async function EntityPage({ params }: PageProps) {
 					{stories.length === 0 ? (
 						<p className="empty-box">No story names this body yet</p>
 					) : (
-						<ul className="story-list">
+						<Fold className="story-list" limit={6} showAll={`Show all ${stories.length} stories`}>
 							{stories.map((item) => (
 								<li key={item.id}>
 									<div className="story-text">
@@ -235,7 +236,7 @@ export default async function EntityPage({ params }: PageProps) {
 									</a>
 								</li>
 							))}
-						</ul>
+						</Fold>
 					)}
 				</TabsContent>
 				<TabsContent value="connections" className="entity-tab">
