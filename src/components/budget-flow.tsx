@@ -141,6 +141,10 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 		return null
 	})()
 
+	// The selected ministry's page is in the sheet below the map: the caption names it, the card invites deeper.
+	const selectedBody = bodies.find((b) => b.id === selectedId && b.id !== 'others')
+	const focusedBody = bodies.find((b) => b.id === focus && b.id !== 'others')
+
 	const hoverProps = (id: string) => ({ onMouseEnter: () => setHover(id), onMouseLeave: () => setHover(null), onFocus: () => setHover(id), onBlur: () => setHover(null) })
 
 	// Pinch, drag and double-tap zoom, after the graph map: the viewBox moves, so labels stay sharp.
@@ -225,6 +229,10 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 					<strong>{detail.title}</strong>
 					<span>{naira(detail.value)} · {(detail.share * 100).toFixed(1)}% of the budget</span>
 					<small>{detail.note}</small>
+					{focusedBody ? (
+						// Only ministries have a page waiting in the sheet; parts and types are read right here.
+						<button type="button" className="flow-detail-open" onClick={() => window.dispatchEvent(new Event('govgraph:open-panel'))}>Details ↑</button>
+					) : null}
 				</div>
 			) : (
 				<p className="flow-detail flow-hint">
@@ -240,6 +248,18 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 			</div>
 			{/* The flow opens as an overview; the chip teaches the pinch that brings it to reading size. */}
 			<p className="flow-swipe" aria-hidden="true">Pinch to zoom into the money →</p>
+			{/* After the map's caption: names the ministry whose page is in the sheet, nudges on each new pick. */}
+			{selectedBody ? (
+				<button
+					type="button"
+					key={selectedBody.id}
+					className="flow-caption tone-own"
+					onClick={() => window.dispatchEvent(new Event('govgraph:open-panel'))}
+				>
+					{selectedBody.label}
+					<span className="map-caption-cta" aria-hidden="true"> · Details ↑</span>
+				</button>
+			) : null}
 			</div>
 		</div>
 	)
