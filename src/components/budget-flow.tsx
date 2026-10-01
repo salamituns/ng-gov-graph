@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { currentSpotlight, noSpotlight, subscribeSpotlight } from '@/lib/spotlight'
 import { useT } from '@/components/lang'
 import { useZoom } from '@/components/use-zoom'
 import { naira } from '@/data/nigeria/budget'
@@ -104,10 +105,18 @@ function layout(flow: Flow) {
 }
 
 /** The 2026 budget as a flow: the whole, where it splits, which ministries get it, and what they spend it on. */
-export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selectedId?: string; onSelect: (id: string) => void }) {
+export function BudgetFlow({ flow, selectedId: routeId, onSelect }: { flow: Flow; selectedId?: string; onSelect: (id: string) => void }) {
 	const { t } = useT()
 	const [hover, setHover] = useState<string | null>(null)
 	const { c0, c1, c2, c3, bands, bodies, typeTotals } = layout(flow)
+	// A page beside the flow can light ministries in it (lib/spotlight): the budget page's open row, or a
+	// state's ministers on the federal character page. A ministry folded into "others" lights that row.
+	const spot = useSyncExternalStore(subscribeSpotlight, currentSpotlight, noSpotlight)
+	const spotBodies = spotlitBodies(flow, spot?.nodeIds ?? [])
+	const spotOne = spotBodies.size === 1 ? [...spotBodies][0] : undefined
+	// One lit ministry reads as a selection; several light together, each with its route.
+	const selectedId = routeId ?? (spotOne && spotOne !== 'others' ? spotOne : undefined)
+	const spotMany = !routeId && spotBodies.size > 1
 	// Small ministries sit close together: push each label down until it clears the one above.
 	const labelYs = c2.reduce<number[]>((ys, box) => [...ys, Math.max(box.y + box.h / 2 + 4, (ys.at(-1) ?? -Infinity) + 15)], [])
 	const focus = hover ?? (selectedId && bodies.some((b) => b.id === selectedId) ? selectedId : null)
@@ -115,6 +124,7 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 	const typeKeys = new Set<string>(TYPES.map((ty) => ty.key))
 	// Light the whole route through the focus: back to the total, and on to where the money is spent.
 	const lit = (b: Band) => {
+		if (!focus && spotMany) return b.key === 'total-ministries' || spotBodies.has(b.from) || spotBodies.has(b.to)
 		if (!focus || focus === 'total') return true
 		if (b.from === focus || b.to === focus) return true
 		if (bodyIds.has(focus)) return b.key === 'total-ministries'
@@ -124,6 +134,13 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 	}
 
 	const detail = (() => {
+		if (!focus && spotMany && spot)
+			return {
+				title: spot.label,
+				value: spot.amount ?? 0,
+				share: (spot.amount ?? 0) / flow.total,
+				note: `${spotBodies.size} ministries and offices, lit in the flow`,
+			}
 		if (!focus) return null
 		const part = flow.parts.find((p) => p.id === focus)
 		if (part) return { title: part.label, value: part.value, share: part.value / flow.total, note: part.note }
@@ -166,7 +183,7 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 	return (
 		<div className="budget-flow" data-mode={mode}>
 			<BudgetFlowList flow={flow} selectedId={selectedId} onSelect={onSelect} />
-			<BudgetFlowSteps flow={flow} selectedId={selectedId} onSelect={onSelect} onWhole={() => setMode('whole')} />
+			<BudgetFlowSteps flow={flow} selectedId={selectedId} highlight={spotMany ? spotBodies : undefined} onSelect={onSelect} onWhole={() => setMode('whole')} />
 			<div className="budget-flow-wide">
 			<div className="budget-flow-scroll">
 				<svg
@@ -218,7 +235,7 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 								onClick={clickable ? () => { if (!zoom.wasDrag()) onSelect(body.id) } : undefined}
 								onKeyDown={clickable ? (e) => { if (e.key === 'Enter') onSelect(body.id) } : undefined}
 							>
-								<rect x={c2[i].x} y={c2[i].y} width={NODE} height={c2[i].h} className={`flow-node tone-own${body.id === selectedId ? ' is-selected' : ''}`} />
+								<rect x={c2[i].x} y={c2[i].y} width={NODE} height={c2[i].h} className={`flow-node tone-own${body.id === selectedId || (spotMany && spotBodies.has(body.id)) ? ' is-selected' : ''}`} />
 								<text x={c2[i].x + NODE + 6} y={labelY} className="flow-label">
 									{body.label} <tspan className="flow-amount">{short(body.total)}</tspan>
 								</text>
@@ -236,9 +253,9 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 					))}
 				</svg>
 			</div>
-			{detail && dismissedKey !== focus ? (
+			{detail && dismissedKey !== (focus ?? spot?.label ?? null) ? (
 				<div className="flow-detail" aria-live="polite">
-					<button type="button" className="flow-detail-x" aria-label="Hide these details" onClick={() => setDismissedKey(focus)}>×</button>
+					<button type="button" className="flow-detail-x" aria-label="Hide these details" onClick={() => setDismissedKey(focus ?? spot?.label ?? null)}>×</button>
 					<strong>{detail.title}</strong>
 					<span>{naira(detail.value)} · {(detail.share * 100).toFixed(1)}% of the budget</span>
 					<small>{detail.note}</small>
@@ -273,6 +290,13 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 			</div>
 		</div>
 	)
+}
+
+/** The flow's rows that a spotlight's nodes fall in: a shown ministry, or the folded "others" row. */
+function spotlitBodies(flow: Flow, nodeIds: string[]) {
+	const shown = new Set(flow.ministries.map((body) => body.id))
+	const folded = new Set(flow.others.ids)
+	return new Set(nodeIds.flatMap((id) => (shown.has(id) ? [id] : folded.has(id) ? ['others'] : [])))
 }
 
 function pct(value: number, total: number) {
@@ -407,17 +431,24 @@ const ROW = 36
  * reading size. The whole budget splits; tap Ministries and offices to see where their share goes; tap a
  * ministry to see what it spends on (and its page opens in the sheet). A breadcrumb walks back.
  */
-function BudgetFlowSteps({ flow, selectedId, onSelect, onWhole }: { flow: Flow; selectedId?: string; onSelect: (id: string) => void; onWhole: () => void }) {
+function BudgetFlowSteps({ flow, selectedId, highlight, onSelect, onWhole }: { flow: Flow; selectedId?: string; highlight?: Set<string>; onSelect: (id: string) => void; onWhole: () => void }) {
 	const { t } = useT()
 	const bodies: FlowMinistry[] = [...flow.ministries, flow.others]
 	const selected = bodies.find((b) => b.id === selectedId && b.id !== 'others')
-	const [level, setLevel] = useState<Level>(selected ? selected.id : 'split')
+	const [level, setLevel] = useState<Level>(selected ? selected.id : highlight?.size ? 'ministries' : 'split')
 	const [note, setNote] = useState<string | null>(null)
 	// A ministry picked elsewhere (its page, or the whole flow) opens at its own step.
 	const [prevSelected, setPrevSelected] = useState(selectedId)
 	if (prevSelected !== selectedId) {
 		setPrevSelected(selectedId)
 		if (selected) setLevel(selected.id)
+	}
+	// Several ministries lit from the page beside the flow: show them among the ministries.
+	const highlightKey = highlight ? [...highlight].sort().join('|') : ''
+	const [prevHighlight, setPrevHighlight] = useState(highlightKey)
+	if (prevHighlight !== highlightKey) {
+		setPrevHighlight(highlightKey)
+		if (highlightKey) setLevel('ministries')
 	}
 
 	const own = flow.parts.find((p) => p.id === 'ministries')?.value ?? 0
@@ -502,7 +533,7 @@ function BudgetFlowSteps({ flow, selectedId, onSelect, onWhole }: { flow: Flow; 
 			<div className="flow-steps-scroll">
 				<svg viewBox={`0 0 ${SW} ${height}`} className="flow-steps-svg" role="img" aria-label={`${source.label}: ${naira(source.value)}`}>
 					{placed.map((row) => (
-						<path key={`band-${row.id}`} d={band(S_LEFT + S_NODE, row.from, S_RIGHT, row.y, row.value * k)} className={`flow-band tone-${row.tone}${note && note !== row.id ? ' is-faded' : ''}`} />
+						<path key={`band-${row.id}`} d={band(S_LEFT + S_NODE, row.from, S_RIGHT, row.y, row.value * k)} className={`flow-band tone-${row.tone}${(note && note !== row.id) || (!note && level === 'ministries' && highlight && !highlight.has(row.id)) ? ' is-faded' : ''}`} />
 					))}
 					<rect x={S_LEFT} y={sourceY} width={S_NODE} height={sourceH} className={`flow-node tone-${source.tone}`} />
 					{placed.map((row, i) => (
@@ -511,7 +542,7 @@ function BudgetFlowSteps({ flow, selectedId, onSelect, onWhole }: { flow: Flow; 
 							role="button"
 							tabIndex={0}
 							aria-label={`${row.label}, ${naira(row.value)}${row.drill ? ', open' : ''}`}
-							className="flow-step-row"
+							className={`flow-step-row${!note && level === 'ministries' && highlight && !highlight.has(row.id) ? ' is-dim' : ''}`}
 							onClick={() => choose(row)}
 							onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(row) } }}
 						>

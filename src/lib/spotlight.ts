@@ -14,6 +14,8 @@ export interface Spotlight {
 	stateIds: string[]
 	/** The map's caption, when a count of ministries is not the point, e.g. "Works · ₦3.59 trillion". */
 	caption?: string
+	/** What the lit ministries were given, for the budget flow's card, counting each ministry once. */
+	amount?: number
 }
 
 // The last spotlight sent: a small external store, so a map that mounts after the panel (a direct load of

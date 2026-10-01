@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { SeeOnMap } from '@/components/see-on-map'
+import { SeeOn } from '@/components/see-on-map'
 import { SpendBar } from '@/components/spend-bar'
 import { naira, perNigerian } from '@/data/nigeria/budget'
 import { spotlight } from '@/lib/spotlight'
@@ -56,7 +56,7 @@ export function BudgetExplorer({ rows }: { rows: ExplorerBudget[] }) {
 	// The government map lights the row being read (or previewed).
 	const shown = rows.find((row) => row.id === (preview ?? open))
 	useEffect(() => {
-		spotlight(shown ? { label: shown.label, nodeIds: [shown.id], stateIds: [], caption: `${shown.label} · ${naira(shown.total)}` } : null)
+		spotlight(shown ? { label: shown.label, nodeIds: [shown.id], stateIds: [], caption: `${shown.label} · ${naira(shown.total)}`, amount: shown.total } : null)
 	}, [shown])
 	useEffect(() => () => spotlight(null), [])
 
@@ -118,7 +118,7 @@ export function BudgetExplorer({ rows }: { rows: ExplorerBudget[] }) {
 										<Link href={row.href} className="fc-pick-link">Open {row.label} →</Link>
 										<a href={row.actHref} target="_blank" rel="noreferrer">Act, p.{row.page}</a>
 									</p>
-									<SeeOnMap />
+									<SeeOn first="budget" />
 								</div>
 							) : null}
 						</li>

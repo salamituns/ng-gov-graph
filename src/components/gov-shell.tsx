@@ -43,7 +43,10 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 	const selectedLayer = selected?.layer ?? (selected?.parentId ? graph.nodes[selected.parentId]?.layer : undefined)
 	const layer = (params.get('layer') === 'states' || params.get('layer') === 'state' || selectedLayer === 'state') && params.get('view') !== 'budget' ? 'state' : 'federal'
 	// ?view=newsmakers (the older ?view=power still works) or ?view=budget.
-	const view = params.get('view') === 'newsmakers' || params.get('view') === 'power' ? 'power' : params.get('view') === 'budget' ? 'budget' : 'graph'
+	// The budget page reads best beside the budget flow, so there the flow is the default (?view=government
+	// asks for the map).
+	const asked = params.get('view')
+	const view = asked === 'newsmakers' || asked === 'power' ? 'power' : asked === 'budget' || (!asked && section === 'budget') ? 'budget' : 'graph'
 	const visible = useMemo(() => filterGraph(graph, layer), [graph, layer])
 	const stateNames = useMemo(
 		() => Object.fromEntries(Object.values(graph.nodes).filter((node) => node.type === 'state').map((node) => [node.id, node.name])),
@@ -55,6 +58,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 		query.delete('view')
 		const target = next.view ?? view
 		if (target === 'power') query.set('view', 'newsmakers')
+		if (target === 'graph' && section === 'budget' && !next.id) query.set('view', 'government')
 		// The budget is federal: the Budget view always shows the federal map.
 		if (target === 'budget') {
 			query.set('view', 'budget')

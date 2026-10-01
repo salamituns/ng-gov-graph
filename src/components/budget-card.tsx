@@ -59,6 +59,10 @@ export function BudgetCard({ id, gov, graph }: { id: string; gov: string; graph:
 					</ol>
 				</>
 			) : null}
+			{/* Ministries are rows of the budget flow: there their money can be followed from the total to what it buys. */}
+			{ministry && graph.nodes[id] ? (
+				<Link href={`${nodePath(gov, graph.nodes[id])}?view=budget`} className="fc-pick-link budget-flow-link">See it in the budget flow →</Link>
+			) : null}
 			<p className="budget-source">
 				{ministry?.basis === 'lines' ? 'Sum of the lines the Act lists under it. ' : ''}
 				Source: <a href={actPage(ministry?.page ?? agency!.page)} target="_blank" rel="noreferrer">2026 Appropriation Act, p.{ministry?.page ?? agency!.page}</a>

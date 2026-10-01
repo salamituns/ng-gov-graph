@@ -16,7 +16,8 @@ export interface BudgetFlow {
 	total: number
 	parts: { id: string; label: string; value: number; note: string }[]
 	ministries: FlowMinistry[]
-	others: FlowMinistry & { count: number }
+	/** The smaller bodies, folded into one row; ids so a highlight of one of them can light the row. */
+	others: FlowMinistry & { count: number; ids: string[] }
 }
 
 const SHOWN = 12
@@ -62,7 +63,7 @@ export function budgetFlow(graph: CompiledGraph): BudgetFlow {
 			{ id: 'rest', label: 'Other, not tied to a ministry', value: rest, note: 'The rest of the ₦68.32 trillion, which the Act does not list under any ministry' },
 		],
 		ministries: shown,
-		others: { id: 'others', label: `${tail.length} other bodies`, count: tail.length, personnel: sum('personnel'), overhead: sum('overhead'), capital: sum('capital'), total: sum('total') },
+		others: { id: 'others', label: `${tail.length} other bodies`, count: tail.length, ids: tail.map((b) => b.id), personnel: sum('personnel'), overhead: sum('overhead'), capital: sum('capital'), total: sum('total') },
 	}
 }
 

@@ -43,16 +43,29 @@ export function PanelSheet({
 	const params = useSearchParams()
 	const view = params.get('view')
 	const routeKey = `${pathname}?${view ?? ''}`
-	// The first render ignores the #hash: the server never sees it, and a snap that differs from the server's
-	// would not be patched up on hydration. A jump to a section is raised by the scroll effect below.
-	const [snap, setSnap] = useState<Snap>(() => snapFor(pathname, view))
-	// The sheet answers navigation: each new place sets the sheet where that place reads best.
+	// The sheet answers navigation: each place has the snap it reads best at (snapFor), and the reader's own
+	// moves (a drag, the handle, "Details ↑") are kept with the route they were made on. The snap is derived,
+	// not copied into state on each route change: a copy can be reverted by a navigation's re-render (Back
+	// restores a cached page) while the route stays new, and the sheet would sit where the last page left it.
+	// snapFor ignores the #hash: the server never sees it, and a snap that differs from the server's would not be
+	// patched up on hydration. A jump to a section is raised by the scroll effect below.
+	const routeSnap = snapFor(pathname, view)
+	const [chosen, setChosen] = useState<{ route: string; snap: Snap } | null>(null)
+	const snap = chosen?.route === routeKey ? chosen.snap : routeSnap
+	const setSnap = useCallback(
+		(next: Snap | ((current: Snap) => Snap)) =>
+			setChosen((last) => {
+				const current = last?.route === routeKey ? last.snap : routeSnap
+				return { route: routeKey, snap: typeof next === 'function' ? next(current) : next }
+			}),
+		[routeKey, routeSnap],
+	)
+	// How many places the reader has been, for the header's Back button.
 	const [lastRoute, setLastRoute] = useState(routeKey)
 	const [moves, setMoves] = useState(0)
 	if (lastRoute !== routeKey) {
 		setLastRoute(routeKey)
 		setMoves((n) => n + 1)
-		setSnap(snapFor(pathname, view, typeof window === 'undefined' ? '' : window.location.hash))
 	}
 
 	const panel = useRef<HTMLElement>(null)
@@ -112,7 +125,7 @@ export function PanelSheet({
 		} else {
 			setSnap(nearest(now - velocity.current * COAST) ?? SNAPS[index])
 		}
-	}, [heights])
+	}, [heights, setSnap])
 
 	// ---- Grip: drag to move (both directions), tap the handle to step up, or from full back to peek. ----
 	const onGripDown = (event: React.PointerEvent) => {
@@ -194,7 +207,7 @@ export function PanelSheet({
 		const open = (event: Event) => setSnap((event as CustomEvent<Snap | undefined>).detail ?? 'full')
 		window.addEventListener('govgraph:open-panel', open)
 		return () => window.removeEventListener('govgraph:open-panel', open)
-	}, [])
+	}, [setSnap])
 
 	// A new page starts at its top (or at the section it was linked to), not where the last one was left.
 	useEffect(() => {
@@ -208,6 +221,8 @@ export function PanelSheet({
 			// is raised here too: the section must be in view, not scrolled to inside a lowered sheet.
 			requestAnimationFrame(() => setSnap((current) => (current === 'peek' ? 'half' : current)))
 		} else el.scrollTop = 0
+		// setSnap changes with the route too; this runs once per new place.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [routeKey])
 
 	// The map re-centres in the space the sheet leaves above it (globals.css reads this attribute), so a

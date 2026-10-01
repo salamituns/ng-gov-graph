@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { SeeOnMap } from '@/components/see-on-map'
+import { SeeOn } from '@/components/see-on-map'
 import { naira, perNigerian } from '@/data/nigeria/budget'
 import { spotlight } from '@/lib/spotlight'
 
@@ -142,6 +142,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 			picked.length
 				? {
 						label: pickedState?.name ?? pickedZone!.zone,
+						amount: (pickedState ?? pickedZone)!.money.total,
 						nodeIds: picked.flatMap((state) => state.ministers.flatMap((minister) => minister.nodeIds)),
 						stateIds: picked.map((state) => state.id),
 					}
@@ -230,7 +231,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 								<p className="fc-gap">No minister on record from {pickedState.name}. Section 147(3) asks for at least one from every state.</p>
 							)}
 							<Link href={pickedState.representHref} className="fc-pick-link">Who represents {pickedState.name} →</Link>
-							<SeeOnMap />
+							<SeeOn />
 						</div>
 					) : pickedZone ? (
 						<div key={pickedZone.slug} className="fc-pick-card">
@@ -256,7 +257,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 										)}
 									</div>
 								))}
-							<SeeOnMap />
+							<SeeOn />
 						</div>
 					) : null}
 				</div>
