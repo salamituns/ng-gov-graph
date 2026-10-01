@@ -48,6 +48,8 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	const prose: ProseItem[] = stories.slice(0, 12).map((item) => ({
 		id: item.id,
 		url: item.url,
+		source: new URL(item.url).hostname.replace(/^www\./, ''),
+		when: item.publishedAt ? storyTime(item.publishedAt, now) : undefined,
 		segments: newsSegments(newsLead(item), labels).map((segment) => {
 			const node = segment.id ? data.graph.nodes[segment.id] : undefined
 			return node
@@ -254,3 +256,12 @@ function FederalCharacterCard({ gov, graph, lang }: { gov: string; graph: Compil
 	)
 }
 
+/** "Today", "Yesterday" or "30 Sep": the feeds give a publication date, not a time. */
+function storyTime(published: string, now: Date) {
+	const lagos = (value: Date) => value.toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' })
+	const day = /^\d{4}-\d{2}-\d{2}$/.test(published) ? published : lagos(new Date(published))
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return undefined
+	if (day === lagos(now)) return 'Today'
+	if (day === lagos(new Date(now.getTime() - 86_400_000))) return 'Yesterday'
+	return new Date(`${day}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+}
