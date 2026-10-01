@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { BrandBar } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
+import { QuickActions } from '@/components/quick-actions'
 import { RepresentPicker } from '@/components/represent-picker'
 import { NewsProse, type ProseItem } from '@/components/panel-client'
 import { changesInWindow } from '@/lib/graph/feed'
@@ -78,6 +79,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	return (
 		<>
 			<BrandBar layer={layer} tagline />
+			{layer === 'federal' ? <QuickActions gov={data.gov} /> : null}
 			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} guideHref={`/${data.gov}/elections`} />
 			<RepresentPicker
 				gov={data.gov}
