@@ -673,7 +673,40 @@
 .fc-gap { margin-top:10px; color:#b4532a; font-size:12.5px; }
 .fc-map { display:block; width:100%; max-width:420px; margin:14px auto 4px; }
 .fc-state { stroke:var(--gg-panel); stroke-width:.35; stroke-linejoin:round; }
+/* The map answers a pick: the picked state (or zone) stays, the rest step back. */
+.fc-state { cursor:pointer; transition:opacity .18s ease, stroke-width .18s ease; outline:none; }
+.fc-map.has-pick .fc-state:not(.is-in) { opacity:.45; }
+.fc-state:focus-visible { stroke:var(--gg-text); stroke-width:.9; }
 @media (hover:hover) { .fc-state:hover { stroke:var(--gg-text); stroke-width:.6; } }
+.fc-state-outline { fill:none; stroke:var(--gg-hub-ink); stroke-width:.7; stroke-linejoin:round; pointer-events:none; filter:drop-shadow(0 .6px 1.2px rgb(0 0 0 / .35)); animation:fc-pick-in .22s ease both; }
+.fc-hint { margin-top:4px; }
+.fc-zones button:hover, .fc-zones button[aria-pressed="true"] { background:var(--gg-panel-2); }
+.fc-zones button[aria-pressed="true"] .fc-zone-name { font-weight:600; }
+.fc-pick:empty { display:none; }
+.fc-pick { scroll-margin:12px; }
+.fc-pick-card { margin-top:14px; padding:14px; border:1px solid var(--gg-line); border-radius:10px; background:var(--gg-panel-2); animation:fc-pick-in .22s ease both; }
+@keyframes fc-pick-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.fc-pick-card header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.fc-pick-card h3 { font-size:17px; font-weight:600; font-family:var(--font-display),var(--font-body),sans-serif; }
+.fc-pick-card header p { margin-top:2px; color:var(--gg-muted); font-size:12px; }
+.fc-pick-clear { width:32px; height:32px; margin:-6px -6px 0 0; border-radius:50%; color:var(--gg-muted); font-size:20px; line-height:1; }
+.fc-pick-clear:hover { background:var(--gg-panel); color:var(--gg-text); }
+.fc-ministers { display:grid; gap:4px; margin-top:10px; }
+.fc-minister { display:flex; align-items:center; gap:10px; min-height:44px; padding:4px 6px; margin:0 -6px; border-radius:8px; }
+.fc-minister:hover { background:var(--gg-panel); }
+.fc-minister img, .fc-minister-initials { width:36px; height:36px; flex:none; border-radius:50%; object-fit:cover; object-position:top; background:var(--gg-panel); display:grid; place-items:center; color:var(--gg-muted); font-size:12px; font-weight:600; }
+.fc-minister strong { display:block; font-size:13.5px; font-weight:600; }
+.fc-minister small { display:block; color:var(--gg-muted); font-size:11.5px; line-height:1.3; }
+.fc-minister sup { margin-left:2px; color:var(--gg-muted); font-weight:400; }
+.fc-pick-group { margin-top:12px; }
+.fc-pick-group + .fc-pick-group { padding-top:10px; border-top:1px solid var(--gg-line); }
+.fc-pick-state { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:inherit; }
+.fc-pick-state span { min-width:20px; padding:1px 6px; border-radius:9px; background:var(--gg-panel); color:var(--gg-muted); font-size:11px; font-weight:500; text-align:center; }
+.fc-pick-state:hover { text-decoration:underline; }
+.fc-pick-group .fc-ministers { margin-top:4px; }
+.fc-pick-link { display:inline-block; margin-top:12px; color:var(--gg-hub-ink); font-size:13px; font-weight:600; }
+.fc-pick-link:hover { text-decoration:underline; }
+@media (prefers-reduced-motion: reduce) { .fc-state { transition:none; } .fc-pick-card { animation:none; } }
 .fc-none { fill:var(--gg-panel-2); background:var(--gg-panel-2); }
 .fc-one { fill:color-mix(in srgb, var(--gg-green) 22%, transparent); background:color-mix(in srgb, var(--gg-green) 22%, transparent); }
 .fc-two { fill:color-mix(in srgb, var(--gg-green) 58%, transparent); background:color-mix(in srgb, var(--gg-green) 58%, transparent); }
@@ -682,7 +715,7 @@
 .fc-key li { display:flex; align-items:center; gap:6px; }
 .fc-key i { width:12px; height:12px; border-radius:3px; border:1px solid var(--gg-line); }
 .fc-zones { display:grid; gap:10px; margin-top:14px; }
-.fc-zones li { display:grid; grid-template-columns:110px 1fr 84px; align-items:center; gap:10px; font-size:13px; }
+.fc-zones button { display:grid; grid-template-columns:110px 1fr 84px; align-items:center; gap:10px; width:100%; min-height:32px; padding:4px 6px; margin:0 -6px; box-sizing:content-box; border-radius:7px; font-size:13px; text-align:left; color:inherit; background:transparent; }
 .fc-bar { height:10px; border-radius:5px; background:var(--gg-panel-2); overflow:hidden; }
 .fc-bar span { display:block; height:100%; border-radius:5px; background:var(--gg-green); }
 .fc-zone-count { text-align:right; font-variant-numeric:tabular-nums; }
@@ -698,7 +731,7 @@
 .fc-states sup { margin-left:2px; color:var(--gg-muted); }
 .fc-states .fc-gap { margin-top:6px; }
 @media (max-width: 1100px) { .fc-states { grid-template-columns:1fr; } }
-@media (max-width: 520px) { .fc-zones li { grid-template-columns:92px 1fr 70px; } }
+@media (max-width: 520px) { .fc-zones button { grid-template-columns:92px 1fr 70px; } }
 .entity-origin { margin-top:8px; color:var(--gg-muted); font-size:12px; }
 .entity-origin a { color:var(--gg-hub-ink); }
 @media (hover:hover) { .entity-origin a:hover { text-decoration:underline; } }
