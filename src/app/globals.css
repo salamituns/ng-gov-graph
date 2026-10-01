@@ -299,6 +299,16 @@
 .brand-slash { color:var(--gg-faint); }
 .brand-crumb { display:flex; align-items:center; gap:7px; min-width:0; overflow:hidden; }
 .brand-crumb > a, .brand-crumb > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* A narrow bar (the desktop panel, every phone) has room for one crumb: the page itself, given the space that
+   is left rather than squeezed beside the trail (a fraction of a pixel short already ellipsizes it). The
+   trail's crumbs are labels, not links, and the page's heading says the same. */
+.brand-bar { container-type:inline-size; }
+.brand-crumb:last-of-type { min-width:56px; }
+@container (max-width: 640px) {
+  .brand-crumb:not(:last-of-type) { display:none; }
+  /* The flag already says Nigeria: with a crumb to fit, the state map's menu reads "States". */
+  .brand-bar:has(.brand-crumb) .layer-country { display:none; }
+}
 .brand-home, .brand-slash, .layer-menu { flex:none; }
 @media (hover:hover) { .brand-crumb a:hover { text-decoration:underline; } }
 .layer-menu { position:relative; }

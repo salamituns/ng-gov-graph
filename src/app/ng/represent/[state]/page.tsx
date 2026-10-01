@@ -156,7 +156,7 @@ export default async function RepresentPage({ params }: PageProps) {
 	const isFct = state.id === 'ng-fct'
 	return (
 		<>
-			<BrandBar layer="state" crumbs={[{ label: 'Who represents me?' }, { label: state.name, href: nodePath(gov, state) }]} />
+			<BrandBar layer="state" crumbs={[{ label: 'Who represents me?' }, { label: state.name.replace(/ State$/, ''), href: nodePath(gov, state) }]} />
 			<article className="panel-card entity-card">
 				<p className="represent-zone">{STATE_ZONES[state.id] ?? 'North Central'} zone</p>
 				<h1>{isFct ? 'The Federal Capital Territory' : state.name}</h1>

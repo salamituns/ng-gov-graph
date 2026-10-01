@@ -9,6 +9,7 @@ import { PowerMap } from '@/components/power-map'
 import { filterGraph } from '@/lib/graph/filter'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
+import { seatTitle } from '@/lib/graph/seat-title'
 import type { CompiledGraph } from '@/lib/graph/types'
 import { LangSelect, useT } from '@/components/lang'
 import { PanelSheet } from '@/components/panel-sheet'
@@ -74,7 +75,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 		: section === 'elections' ? 'Nigeria Decides 2027'
 		: section === 'budget' ? t('budgetTitle')
 		: section === 'federal-character' ? t('federalCharacter')
-		: section ? (selected?.name ?? 'Not found')
+		: section ? (selected ? seatTitle(graph, selected) : 'Not found')
 		: undefined
 	const select = (id: string) => {
 		const node = graph.nodes[id]
