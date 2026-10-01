@@ -43,7 +43,9 @@ export function PanelSheet({
 	const params = useSearchParams()
 	const view = params.get('view')
 	const routeKey = `${pathname}?${view ?? ''}`
-	const [snap, setSnap] = useState<Snap>(() => snapFor(pathname, view, typeof window === 'undefined' ? '' : window.location.hash))
+	// The first render ignores the #hash: the server never sees it, and a snap that differs from the server's
+	// would not be patched up on hydration. A jump to a section is raised by the scroll effect below.
+	const [snap, setSnap] = useState<Snap>(() => snapFor(pathname, view))
 	// The sheet answers navigation: each new place sets the sheet where that place reads best.
 	const [lastRoute, setLastRoute] = useState(routeKey)
 	const [moves, setMoves] = useState(0)
