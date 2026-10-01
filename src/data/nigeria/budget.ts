@@ -54,6 +54,21 @@ export const BUDGET_2026 = {
 	sourceUrl: 'https://gazettengr.com/president-tinubu-signs-n68-32-trillion-2026-appropriation-bill-extends-2025-budget-implementation/',
 }
 
+/** Nigeria's population on 1 July 2026, the UN's projection (World Population Prospects 2024, medium variant). */
+export const POPULATION_2026 = {
+	total: 242_431_832,
+	source: 'UN World Population Prospects 2024',
+	sourceUrl: 'https://population.un.org/wpp/',
+}
+
+/** An amount shared across every Nigerian, to three figures: "₦14,800", "₦282,000", "₦59". */
+export function perNigerian(amount: number) {
+	const each = amount / POPULATION_2026.total
+	if (each < 100) return `₦${Math.round(each)}`
+	const step = 10 ** (Math.floor(Math.log10(each)) - 2)
+	return `₦${(Math.round(each / step) * step).toLocaleString('en-NG')}`
+}
+
 /** "₦3.16 trillion", "₦88.6 billion", "₦950 million". */
 export function naira(amount: number) {
 	const units: [number, string][] = [[1e12, 'trillion'], [1e9, 'billion'], [1e6, 'million']]
