@@ -44,4 +44,14 @@ describe('constitution layer', () => {
 		}
 		assert.deepEqual(provisionsFor(graph, 'ng-ministry-of-finance').slice(0, 1), [PROVISIONS.ministers])
 	})
+
+	it('returns distinct provisions that repeat a citation, so lists cannot key on the cite alone', () => {
+		const provisions = provisionsFor(graph, 'ng-president')
+		const cites = provisions.map((provision) => provision.cite)
+		// The President appoints both officers s.171 grounds: the Secretary to the Government of the
+		// Federation and the Head of the Civil Service.
+		assert.ok(cites.length > new Set(cites).size, 'expected the President’s page to cite one section twice')
+		// Each entry is a distinct provision, so identity survives where the citation repeats.
+		assert.equal(new Set(provisions).size, provisions.length)
+	})
 })

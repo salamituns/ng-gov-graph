@@ -106,7 +106,11 @@ function ConstitutionCard({ node, provisions }: { node: GraphNode; provisions: P
 			{provisions.length ? (
 				<ul>
 					{provisions.map((provision) => (
-						<li key={provision.cite}>
+						// The citation alone cannot key this list: two provisions can cite the same section
+						// (s.171 grounds both the Secretary to the Government of the Federation and the Head
+						// of the Civil Service, and three provisions cite s.153, Third Schedule). Each entry
+						// is deduplicated by object upstream, so its own words tell same-cited ones apart.
+						<li key={`${provision.cite} ${provision.text}`}>
 							<a href={provisionUrl(provision)} target="_blank" rel="noreferrer" className="constitution-cite">{provision.cite}</a>
 							<p>{provision.text}</p>
 						</li>
