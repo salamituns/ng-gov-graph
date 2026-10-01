@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { spotlight } from '@/lib/spotlight'
 
 export interface ExplorerMinister {
 	name: string
@@ -11,6 +12,8 @@ export interface ExplorerMinister {
 	imageUrl?: string
 	/** The state comes from the minister's hometown, not a nomination report. */
 	hometown?: boolean
+	/** The minister's seats and the bodies they sit in, for the spotlight on the government map. */
+	nodeIds: string[]
 }
 
 export interface ExplorerState {
@@ -75,6 +78,15 @@ function MinisterRow({ minister }: { minister: ExplorerMinister }) {
 	)
 }
 
+/** Phones only (see globals.css): the sheet covers the government map, so lower it to show the spotlight. */
+function SeeOnMap() {
+	return (
+		<button type="button" className="fc-see-map" onClick={() => window.dispatchEvent(new CustomEvent('govgraph:open-panel', { detail: 'peek' }))}>
+			See on the government map ↓
+		</button>
+	)
+}
+
 export function CabinetExplorer({ states, zones, shapes, width, height }: { states: ExplorerState[]; zones: ExplorerZone[]; shapes: Record<string, string>; width: number; height: number }) {
 	const params = useSearchParams()
 	const fromUrl: Pick = params.get('state') ? { kind: 'state', slug: params.get('state')! } : params.get('zone') ? { kind: 'zone', slug: params.get('zone')! } : null
@@ -105,6 +117,25 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 		if (value) url.searchParams.set(value.kind, value.slug)
 		window.history.replaceState(window.history.state, '', url)
 	}
+
+	// The government map follows what the card shows: a hover preview, a pick, or nothing.
+	const spotKey = pickedState ? `s:${pickedState.id}` : pickedZone ? `z:${pickedZone.slug}` : ''
+	useEffect(() => {
+		const picked = pickedState ? [pickedState] : pickedZone ? states.filter((state) => zoneSlug(state.zone) === pickedZone.slug) : []
+		spotlight(
+			picked.length
+				? {
+						label: pickedState?.name ?? pickedZone!.zone,
+						nodeIds: picked.flatMap((state) => state.ministers.flatMap((minister) => minister.nodeIds)),
+						stateIds: picked.map((state) => state.id),
+					}
+				: null,
+		)
+		// spotKey stands for the pick; the lists themselves never change while the page is open.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [spotKey])
+	// Leaving the page leaves the map as it was.
+	useEffect(() => () => spotlight(null), [])
 
 	// After a pick, bring the card into view: on a phone it sits below the fold of the sheet.
 	useEffect(() => {
@@ -182,6 +213,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 								<p className="fc-gap">No minister on record from {pickedState.name}. Section 147(3) asks for at least one from every state.</p>
 							)}
 							<Link href={pickedState.representHref} className="fc-pick-link">Who represents {pickedState.name} →</Link>
+							<SeeOnMap />
 						</div>
 					) : pickedZone ? (
 						<div key={pickedZone.slug} className="fc-pick-card">
@@ -206,6 +238,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 										)}
 									</div>
 								))}
+							<SeeOnMap />
 						</div>
 					) : null}
 				</div>
