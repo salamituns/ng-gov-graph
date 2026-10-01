@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { BrandTagline } from '@/components/brand-tagline'
 import { LayerMenu } from '@/components/layer-menu'
+import { PhoneFloat } from '@/components/phone-float'
 import { NigeriaMark } from '@/components/nigeria-mark'
 
 export interface Crumb {
@@ -11,6 +12,7 @@ export interface Crumb {
 /** "Who Runs Naija / Nigeria ⌄ / Executive": the Nigeria menu switches between the federal and state maps. */
 export function BrandBar({ crumbs = [], layer = 'federal', tagline = false }: { crumbs?: Crumb[]; layer?: 'federal' | 'state'; tagline?: boolean }) {
 	return (
+		<PhoneFloat>
 		<header className="brand-bar">
 			<Link href="/ng" className="brand-home">
 				<span className="brand-mark"><NigeriaMark /></span>
@@ -26,5 +28,6 @@ export function BrandBar({ crumbs = [], layer = 'federal', tagline = false }: { 
 			))}
 			{tagline && !crumbs.length ? <BrandTagline /> : null}
 		</header>
+		</PhoneFloat>
 	)
 }
