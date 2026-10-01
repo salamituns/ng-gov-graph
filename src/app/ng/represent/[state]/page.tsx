@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BrandBar } from '@/components/brand-bar'
+import { Fold } from '@/components/fold'
 import { RepresentPicker } from '@/components/represent-picker'
 import { GENERAL_ELECTION, governorshipFor } from '@/data/nigeria/elections'
 import { STATE_ZONES } from '@/data/nigeria/states'
@@ -136,9 +137,9 @@ export default async function RepresentPage({ params }: PageProps) {
 					<h2>Your members of the House of Representatives</h2>
 					<span>{representatives.length} federal constituencies</span>
 				</div>
-				<ul className="detail-roster-grid represent-list">
+				<Fold className="detail-roster-grid represent-list" limit={10} showAll={`Show all ${representatives.length} members`}>
 					{representatives.map((seat) => <SeatCard key={seat.id} gov={gov} seat={seat} />)}
-				</ul>
+				</Fold>
 			</section>
 
 			{assembly ? (
