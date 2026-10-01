@@ -1,21 +1,24 @@
 'use client'
 
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { SNAPS, snapFor, type Snap } from '@/lib/sheet'
 
 /**
  * On portrait phones the panel is a bottom sheet, after Google Maps: the map is the page and the details
- * ride on top of it. The sheet snaps between a peek (the handle and the top of the first card) and open
- * (the brand bar, the map toolbar and a sliver of the graph stay reachable above it).
+ * ride on top of it. The sheet has three heights — a peek (the handle and its header), half (the map stays
+ * in view) and full (the brand bar and map toolbar stay reachable above it) — and it answers navigation:
+ * wherever the reader goes, the sheet moves to show it (see snapFor), so nothing changes out of sight.
  *
  * The snap lives in the data-snap attribute, which globals.css turns into the sheet's height; the sheet is
  * anchored to the bottom, so it never extends past the viewport. Drags set the height inline and settle on
- * the nearest snap, with a flick beating distance. The height (not a transform) is animated on purpose: a
- * transformed sheet would become the containing block of the fixed brand bar inside it and drag the bar
- * along.
+ * the nearest snap, with a flick moving one step. The height (not a transform) is animated on purpose: a
+ * transformed sheet would become the containing block of anything fixed inside it.
  */
 
-/** These mirror --sheet-peek and --sheet-gap in globals.css (phone portrait). */
+/** These mirror --sheet-peek, --sheet-half and --sheet-gap in globals.css (phone portrait). */
 const PEEK = 128
+const HALF = 0.52
 const GAP = 112
 /** Pointer travel before a touch on the peeking card becomes a drag, so taps still click through. */
 const DRAG_START = 8
@@ -24,23 +27,51 @@ const FLICK = 0.5
 /** How far ahead (ms) a released sheet keeps drifting before its snap is chosen. */
 const COAST = 120
 
-export function PanelSheet({ children }: { children: ReactNode }) {
-	const [snap, setSnap] = useState<'peek' | 'open'>('peek')
+export function PanelSheet({
+	children,
+	title,
+	onBack,
+	onClose,
+}: {
+	children: ReactNode
+	/** The page in the sheet, named in its sticky header. Home has none. */
+	title?: string
+	onBack: () => void
+	onClose: () => void
+}) {
+	const pathname = usePathname()
+	const params = useSearchParams()
+	const view = params.get('view')
+	const routeKey = `${pathname}?${view ?? ''}`
+	const [snap, setSnap] = useState<Snap>(() => snapFor(pathname, view, typeof window === 'undefined' ? '' : window.location.hash))
+	// The sheet answers navigation: each new place sets the sheet where that place reads best.
+	const [lastRoute, setLastRoute] = useState(routeKey)
+	const [moves, setMoves] = useState(0)
+	if (lastRoute !== routeKey) {
+		setLastRoute(routeKey)
+		setMoves((n) => n + 1)
+		setSnap(snapFor(pathname, view, typeof window === 'undefined' ? '' : window.location.hash))
+	}
+
 	const panel = useRef<HTMLElement>(null)
-	// The handle always drags the sheet; the body drags it only while peeking (upward, to open it).
-	// active marks a pressed pointer: without it, a hover crossing the handle would resume the last gesture.
-	const handleDrag = useRef({ active: false, y: 0, height: 0, moved: false })
+	const body = useRef<HTMLDivElement>(null)
+	// The grip (handle and header) always drags the sheet; the body drags it only while peeking.
+	// active marks a pressed pointer: without it, a hover crossing the grip would resume the last gesture.
+	const gripDrag = useRef({ active: false, y: 0, height: 0, moved: false })
 	const bodyDrag = useRef<{ y: number; started: boolean } | null>(null)
 	const bodyMoved = useRef(false)
 	const last = useRef({ y: 0, at: 0 })
 	const velocity = useRef(0)
 
-	const heights = useCallback(() => ({ peek: PEEK, open: Math.max(180, window.innerHeight - GAP) }), [])
+	const heights = useCallback((): Record<Snap, number> => {
+		const full = Math.max(180, window.innerHeight - GAP)
+		return { peek: PEEK, half: Math.min(full, Math.max(PEEK + 120, Math.round(window.innerHeight * HALF))), full }
+	}, [])
 
 	const clampHeight = useCallback(
 		(height: number) => {
-			const { peek, open } = heights()
-			return Math.min(peek, Math.max(open, height))
+			const { peek, full } = heights()
+			return Math.min(full, Math.max(peek, height))
 		},
 		[heights],
 	)
@@ -59,49 +90,62 @@ export function PanelSheet({ children }: { children: ReactNode }) {
 		} catch {}
 	}, [])
 
-	/** Let go: hand the sheet back to CSS at the snap it was heading for, and let the transition finish the move. */
+	/** Let go: hand the sheet back to CSS at the snap it was heading for; a flick moves one step. */
 	const settle = useCallback(() => {
 		const el = panel.current
 		if (!el) return
 		delete el.dataset.dragging
+		const now = el.getBoundingClientRect().height
 		el.style.height = ''
-		const { peek, open } = heights()
-		const projected = el.getBoundingClientRect().height - velocity.current * COAST
-		setSnap(
-			velocity.current < -FLICK ? 'open' :
-			velocity.current > FLICK ? 'peek' :
-			Math.abs(projected - open) < Math.abs(projected - peek) ? 'open' : 'peek',
-		)
+		const h = heights()
+		// The snap the sheet was at (or passing) when let go.
+		const nearest = (height: number) => SNAPS.reduce((best, s) => (Math.abs(h[s] - height) < Math.abs(h[best] - height) ? s : best), SNAPS[0])
+		const from = nearest(now)
+		const index = SNAPS.indexOf(from)
+		if (velocity.current < -FLICK) {
+			// Flick up: the next snap above the sheet's height.
+			setSnap(SNAPS.find((s) => h[s] > now + 1) ?? 'full')
+		} else if (velocity.current > FLICK) {
+			setSnap([...SNAPS].reverse().find((s) => h[s] < now - 1) ?? 'peek')
+		} else {
+			setSnap(nearest(now - velocity.current * COAST) ?? SNAPS[index])
+		}
 	}, [heights])
 
-	// ---- Handle: drag to move (both directions), tap to toggle. ----
-	const onHandleDown = (event: React.PointerEvent) => {
+	// ---- Grip: drag to move (both directions), tap the handle to step up, or from full back to peek. ----
+	const onGripDown = (event: React.PointerEvent) => {
 		if (event.pointerType === 'mouse' && event.button !== 0) return
 		const el = panel.current
 		if (!el) return
-		handleDrag.current = { active: true, y: event.clientY, height: el.getBoundingClientRect().height, moved: false }
+		gripDrag.current = { active: true, y: event.clientY, height: el.getBoundingClientRect().height, moved: false }
 		velocity.current = 0
 		last.current = { y: event.clientY, at: event.timeStamp }
-		capture(event)
 	}
-	const onHandleMove = (event: React.PointerEvent) => {
-		const drag = handleDrag.current
+	const onGripMove = (event: React.PointerEvent) => {
+		const drag = gripDrag.current
 		const el = panel.current
 		if (!drag.active || !el) return
-		if (!drag.moved && Math.abs(event.clientY - drag.y) < 3) return
+		if (!drag.moved && Math.abs(event.clientY - drag.y) < 4) return
+		if (!drag.moved) capture(event)
 		drag.moved = true
 		el.dataset.dragging = ''
 		track(event)
 		el.style.height = `${clampHeight(drag.height - (event.clientY - drag.y))}px`
 	}
-	const onHandleUp = () => {
-		if (handleDrag.current.moved) settle()
-		handleDrag.current.active = false
+	const onGripUp = () => {
+		if (gripDrag.current.moved) settle()
+		gripDrag.current.active = false
+	}
+	const onGripClickCapture = (event: React.MouseEvent) => {
+		// A drag that just ended must not also press the header's buttons.
+		if (!gripDrag.current.moved) return
+		event.preventDefault()
+		event.stopPropagation()
+		gripDrag.current.moved = false
 	}
 	const onHandleClick = () => {
-		// A drag that just ended must not also toggle; the flag is reset by the next pointerdown.
-		if (handleDrag.current.moved) return
-		setSnap((current) => (current === 'open' ? 'peek' : 'open'))
+		if (gripDrag.current.moved) return
+		setSnap((current) => (current === 'peek' ? 'half' : current === 'half' ? 'full' : 'peek'))
 	}
 
 	// ---- Body: while peeking, an upward drag opens the sheet; taps fall through to their links. ----
@@ -142,12 +186,36 @@ export function PanelSheet({ children }: { children: ReactNode }) {
 		bodyMoved.current = false
 	}
 
-	// The map's caption ("Details ↑") asks for the sheet; on desktop the same click scrolls the panel.
+	// "Details ↑" on the map or the budget flow asks for the whole page; a link to a home section (which
+	// changes only the URL's #hash, so the route does not change) asks for half.
 	useEffect(() => {
-		const open = () => setSnap('open')
+		const open = (event: Event) => setSnap((event as CustomEvent<Snap | undefined>).detail ?? 'full')
 		window.addEventListener('govgraph:open-panel', open)
 		return () => window.removeEventListener('govgraph:open-panel', open)
 	}, [])
+
+	// A new page starts at its top (or at the section it was linked to), not where the last one was left.
+	useEffect(() => {
+		const el = body.current
+		if (!el) return
+		const hash = window.location.hash.slice(1)
+		const target = hash ? document.getElementById(hash) : null
+		if (target && el.contains(target)) {
+			target.scrollIntoView({ block: 'start' })
+			// The URL's #section can land after the render that chose the snap, so a jump to a section
+			// is raised here too: the section must be in view, not scrolled to inside a lowered sheet.
+			requestAnimationFrame(() => setSnap((current) => (current === 'peek' ? 'half' : current)))
+		} else el.scrollTop = 0
+	}, [routeKey])
+
+	// The map re-centres in the space the sheet leaves above it (globals.css reads this attribute), so a
+	// selection the map turns to the bottom of its circle is not hidden behind a half-open sheet.
+	useEffect(() => {
+		document.documentElement.dataset.sheet = snap
+		return () => {
+			delete document.documentElement.dataset.sheet
+		}
+	}, [snap])
 
 	// Only portrait phones do the sheeting; leaving portrait must clear whatever a drag left inline.
 	useEffect(() => {
@@ -164,26 +232,48 @@ export function PanelSheet({ children }: { children: ReactNode }) {
 
 	return (
 		<aside ref={panel} id="gov-panel" className="shell-panel" data-snap={snap} onClickCapture={onPanelClickCapture}>
-			<button
-				type="button"
-				className="sheet-handle"
-				aria-expanded={snap === 'open'}
-				aria-controls="gov-panel"
-				aria-label={snap === 'open' ? 'Hide the details' : 'Show the details'}
-				onClick={onHandleClick}
-				onPointerDown={onHandleDown}
-				onPointerMove={onHandleMove}
-				onPointerUp={onHandleUp}
-				onPointerCancel={onHandleUp}
-			/>
 			<div
+				className="sheet-grip"
+				onPointerDown={onGripDown}
+				onPointerMove={onGripMove}
+				onPointerUp={onGripUp}
+				onPointerCancel={onGripUp}
+				onClickCapture={onGripClickCapture}
+			>
+				<button
+					type="button"
+					className="sheet-handle"
+					aria-expanded={snap !== 'peek'}
+					aria-controls="gov-panel"
+					aria-label={snap === 'full' ? 'Lower the details' : 'Raise the details'}
+					onClick={onHandleClick}
+				/>
+				{title ? (
+					<div className="sheet-header">
+						{moves > 0 ? (
+							<button type="button" className="sheet-header-button" aria-label="Back" onClick={onBack}>
+								<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+							</button>
+						) : null}
+						<p className="sheet-title">{title}</p>
+						<button type="button" className="sheet-header-button" aria-label="Close" onClick={onClose}>
+							<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+						</button>
+					</div>
+				) : null}
+			</div>
+			<div
+				ref={body}
 				className="sheet-body"
 				onPointerDown={onBodyDown}
 				onPointerMove={onBodyMove}
 				onPointerUp={onBodyUp}
 				onPointerCancel={onBodyUp}
 			>
-				{children}
+				{/* Keyed to the page: each new page plays a short entrance, so the change registers. */}
+				<div key={pathname} className="sheet-page">
+					{children}
+				</div>
 			</div>
 		</aside>
 	)

@@ -51,7 +51,16 @@ export function LayerMenu({ layer }: { layer: 'federal' | 'state' }) {
 					))}
 					<p className="layer-menu-heading" role="presentation">{t('explore')}</p>
 					{EXPLORE.map((item) => (
-						<Link key={item.href} href={item.href} role="menuitem" onClick={() => setOpen(false)}>
+						<Link
+							key={item.href}
+							href={item.href}
+							role="menuitem"
+							onClick={() => {
+								setOpen(false)
+								// A home section (#represent) changes only the hash: tell the phone sheet to show it.
+								if (item.href.includes('#')) window.dispatchEvent(new CustomEvent('govgraph:open-panel', { detail: 'half' }))
+							}}
+						>
 							<strong>{t(item.label)}</strong>
 							{'hint' in item ? <small>{t(item.hint)}</small> : null}
 						</Link>
