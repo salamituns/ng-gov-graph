@@ -16,6 +16,8 @@ interface GovShellProps {
 	gov: string
 	graph: CompiledGraph
 	power: { people: PowerPerson[]; links: PowerLink[]; articles: number; sources: string[]; days: number }
+	/** 2026 allocation by node id, for the Budget view. */
+	budgets: Record<string, number>
 	asOf: string
 	children: ReactNode
 }
@@ -24,7 +26,7 @@ interface GovShellProps {
  * The map lives in the /ng layout, so it stays mounted while the left panel changes.
  * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
-export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
+export function GovShell({ gov, graph, power, budgets, asOf, children }: GovShellProps) {
 	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -34,19 +36,25 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 	const selectedId = section === 'represent' && slug ? stateIdFromSlug(slug) : slug
 	const selected = selectedId ? graph.nodes[selectedId] : undefined
 	const selectedLayer = selected?.layer ?? (selected?.parentId ? graph.nodes[selected.parentId]?.layer : undefined)
-	const layer = params.get('layer') === 'states' || params.get('layer') === 'state' || selectedLayer === 'state' ? 'state' : 'federal'
-	// ?view=newsmakers; the older ?view=power links still open the same view.
-	const view = params.get('view') === 'newsmakers' || params.get('view') === 'power' ? 'power' : 'graph'
+	const layer = (params.get('layer') === 'states' || params.get('layer') === 'state' || selectedLayer === 'state') && params.get('view') !== 'budget' ? 'state' : 'federal'
+	// ?view=newsmakers (the older ?view=power still works) or ?view=budget.
+	const view = params.get('view') === 'newsmakers' || params.get('view') === 'power' ? 'power' : params.get('view') === 'budget' ? 'budget' : 'graph'
 	const visible = useMemo(() => filterGraph(graph, layer), [graph, layer])
 	const stateNames = useMemo(
 		() => Object.fromEntries(Object.values(graph.nodes).filter((node) => node.type === 'state').map((node) => [node.id, node.name])),
 		[graph],
 	)
 
-	const href = (next: { id?: string; view?: 'graph' | 'power' }) => {
+	const href = (next: { id?: string; view?: 'graph' | 'power' | 'budget' }) => {
 		const query = new URLSearchParams(params.toString())
 		query.delete('view')
-		if ((next.view ?? view) === 'power') query.set('view', 'newsmakers')
+		const target = next.view ?? view
+		if (target === 'power') query.set('view', 'newsmakers')
+		// The budget is federal: the Budget view always shows the federal map.
+		if (target === 'budget') {
+			query.set('view', 'budget')
+			query.delete('layer')
+		}
 		const node = next.id ? graph.nodes[next.id] : selected
 		const base = node ? nodePath(gov, node) : pathname
 		return `${base}${query.size ? `?${query}` : ''}`
@@ -85,12 +93,13 @@ export function GovShell({ gov, graph, power, asOf, children }: GovShellProps) {
 							onClear={() => router.push(`/${gov}?view=newsmakers`, { scroll: false })}
 						/>
 					) : (
-						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} stateNames={stateNames} />
+						<GraphMap graph={visible} layer={layer} selectedId={selectedId} onSelect={select} stateNames={stateNames} budgets={view === 'budget' ? budgets : undefined} budgetHref={`/${gov}/budget`} />
 					)}
 				</div>
 				<nav className="map-views" aria-label="Map view">
 					<button type="button" aria-pressed={view === 'graph'} onClick={() => router.push(href({ view: 'graph' }), { scroll: false })}>{t('viewGovernment')}</button>
 					<button type="button" aria-pressed={view === 'power'} onClick={() => router.push(href({ view: 'power' }), { scroll: false })}>{t('viewNewsmakers')}</button>
+					<button type="button" aria-pressed={view === 'budget'} onClick={() => router.push(href({ view: 'budget' }), { scroll: false })}>{t('viewBudget')}</button>
 				</nav>
 			</section>
 		</main>

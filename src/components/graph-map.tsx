@@ -9,6 +9,7 @@ import { layoutGovernment, MAP, readableArc, RING, type PlacedNode, type Tone } 
 import type { CompiledGraph, NodeType } from '@/lib/graph/types'
 import { constitutionalBasis } from '@/lib/graph/constitution'
 import { useT } from '@/components/lang'
+import { naira } from '@/data/nigeria/budget'
 
 export const ENTITY_LABEL: Partial<Record<NodeType, string>> = {
 	elected: 'Elected offices',
@@ -47,10 +48,14 @@ interface GraphMapProps {
 	onSelect: (id: string) => void
 	/** Names for the states on the core map, which the federal layer's graph does not contain. */
 	stateNames?: Record<string, string>
+	/** Budget view: 2026 allocation by node id. Each funded body gets a bubble whose area is its share. */
+	budgets?: Record<string, number>
+	budgetHref?: string
 }
 
-export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }: GraphMapProps) {
+export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {}, budgets, budgetHref }: GraphMapProps) {
 	const [hoverId, setHoverId] = useState<string | null>(null)
+	const { t } = useT()
 	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
 	const [edgeHover, setEdgeHover] = useState<{ text: string; tone: string; x: number; y: number } | null>(null)
 	const svgRef = useRef<SVGSVGElement>(null)
@@ -144,6 +149,9 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 		const provision = constitutionalBasis(graph, link)
 		return `${from.node.name} ${LINK_VERB[link.type]} ${to.node.name}${provision ? `. ${provision.cite}: ${provision.text}` : ''}`
 	}
+	// Budget view: bubble area is proportional to the allocation, so the radius goes with its square root.
+	const budgetMax = budgets ? Math.max(...Object.values(budgets), 1) : 1
+	const bubbleR = (total: number) => Math.max(3, 30 * Math.sqrt(total / budgetMax))
 	const visible = (item: PlacedNode) => !hiddenTypes.has(item.node.type) && !(item.kind === 'dot' && hiddenTypes.has('sub'))
 
 	const toggle = (key: string) =>
@@ -219,8 +227,20 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 					})}
 				</g>
 
+				{budgets && (
+					<g className="budget-bubbles" pointerEvents="none">
+						{layout.nodes
+							.filter((item) => budgets[item.id] && visible(item))
+							.sort((a, b) => budgets[b.id] - budgets[a.id])
+							.map((item) => {
+								const at = place(item.id)!
+								return <circle key={item.id} cx={at.x} cy={at.y} r={bubbleR(budgets[item.id])} className="budget-bubble" />
+							})}
+					</g>
+				)}
 				{layout.nodes.filter((item) => item.kind !== 'hub' && visible(item)).map((item) => (
 					<Node
+						dimmed={Boolean(budgets && !budgets[item.id])}
 						key={item.id}
 						item={expanded.get(item.id) ?? item}
 						seatUnrecorded={Boolean(item.node.head && graph.nodes[item.node.head]?.unrecorded)}
@@ -245,7 +265,26 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 					)
 				})}
 				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} onSelect={choose} />}
-				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} />}
+				{budgets && (
+					<g className="budget-labels" pointerEvents="none">
+						{layout.nodes
+							.filter((item) => budgets[item.id] && visible(item))
+							.sort((a, b) => budgets[b.id] - budgets[a.id])
+							.slice(0, 6)
+							.map((item) => {
+								const at = turn(place(item.id)!, rotation)
+								const r = bubbleR(budgets[item.id])
+								// Labels sit on the outer side of the bubble so they don't cover the glyph.
+								const out = Math.atan2(at.y - MAP.cy, at.x - MAP.cx)
+								return (
+									<text key={item.id} x={at.x + Math.cos(out) * (r + 12)} y={at.y + Math.sin(out) * (r + 12) + 3} className="budget-label">
+										{naira(budgets[item.id]).replace(' trillion', 'T').replace(' billion', 'B')}
+									</text>
+								)
+							})}
+					</g>
+				)}
+				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} extra={budgets?.[hover.id] ? naira(budgets[hover.id]).replace(' trillion', 'T').replace(' billion', 'B').replace(' million', 'M') : undefined} />}
 				{edgeHover && !hover && (
 					<g className={`edge-pill tone-${edgeHover.tone}`} pointerEvents="none">
 						<rect x={edgeHover.x + 6} y={edgeHover.y - 22} width={edgeHover.text.length * 5.6 + 12} height={15} rx={4} />
@@ -268,6 +307,12 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 				<button type="button" aria-label="Zoom out" onClick={zoom.zoomOut} disabled={!zoom.zoomed}>−</button>
 				{zoom.zoomed ? <button type="button" aria-label="Show the whole map" onClick={zoom.reset}>⤢</button> : null}
 			</div>
+			{budgets ? (
+				<p className="budget-legend">
+					{t('budgetLegend')}
+					{budgetHref ? <> · <a href={budgetHref}>{t('budgetTitle')} →</a></> : null}
+				</p>
+			) : null}
 			<details className="graph-legend">
 				<summary>Key</summary>
 				<div className="graph-legend-content">
@@ -309,12 +354,15 @@ function Node({
 	state,
 	seatUnrecorded = false,
 	seatSelected = false,
+	dimmed = false,
 	onSelect,
 	onHover,
 }: {
 	item: PlacedNode
 	seatUnrecorded?: boolean
 	seatSelected?: boolean
+	/** Budget view: a body with no line in the Act fades back. */
+	dimmed?: boolean
 	state: 'selected' | 'lit' | 'hover' | 'idle'
 	onSelect: (id: string) => void
 	onHover: (id: string | null) => void
@@ -324,7 +372,7 @@ function Node({
 		role: 'link',
 		tabIndex: item.kind === 'dot' ? -1 : 0,
 		'aria-label': item.node.name,
-		className: `node node-${item.kind} tone-${item.tone} is-${state}${item.node.id === 'ng-house-of-representatives' ? ' chamber-green' : ''}`,
+		className: `node node-${item.kind} tone-${item.tone} is-${state}${item.node.id === 'ng-house-of-representatives' ? ' chamber-green' : ''}${dimmed ? ' is-dimmed' : ''}`,
 		onClick: activate,
 		onKeyDown: (event: React.KeyboardEvent) => {
 			if (event.key === 'Enter' || event.key === ' ') {
@@ -467,8 +515,9 @@ function starPath(cx: number, cy: number, r: number) {
 	}).join(' L ')} Z`
 }
 
-function HoverPill({ item }: { item: PlacedNode }) {
-	const text = item.node.name.length > 46 ? `${item.node.name.slice(0, 44)}…` : item.node.name
+function HoverPill({ item, extra }: { item: PlacedNode; extra?: string }) {
+	const name = item.node.name.length > 46 ? `${item.node.name.slice(0, 44)}…` : item.node.name
+	const text = extra ? `${name} · ${extra}` : name
 	const width = text.length * 5.9 + 16
 	const above = item.y > MAP.cy - 60
 	const y = above ? item.y - (item.h ?? item.r * 2) / 2 - 22 : item.y + (item.h ?? item.r * 2) / 2 + 6
