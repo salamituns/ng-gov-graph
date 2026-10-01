@@ -145,6 +145,15 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 	const selectedBody = bodies.find((b) => b.id === selectedId && b.id !== 'others')
 	const focusedBody = bodies.find((b) => b.id === focus && b.id !== 'others')
 
+	// The snippet answers "how much?", then gets out of the way: an × hides it until the reader taps
+	// something else, and any new focus is a new question the card answers again.
+	const [dismissedKey, setDismissedKey] = useState<string | null>(null)
+	const [prevFocus, setPrevFocus] = useState(focus)
+	if (prevFocus !== focus) {
+		setPrevFocus(focus)
+		setDismissedKey(null)
+	}
+
 	const hoverProps = (id: string) => ({ onMouseEnter: () => setHover(id), onMouseLeave: () => setHover(null), onFocus: () => setHover(id), onBlur: () => setHover(null) })
 
 	// Pinch, drag and double-tap zoom, after the graph map: the viewBox moves, so labels stay sharp.
@@ -224,8 +233,9 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 					))}
 				</svg>
 			</div>
-			{detail ? (
+			{detail && dismissedKey !== focus ? (
 				<div className="flow-detail" aria-live="polite">
+					<button type="button" className="flow-detail-x" aria-label="Hide these details" onClick={() => setDismissedKey(focus)}>×</button>
 					<strong>{detail.title}</strong>
 					<span>{naira(detail.value)} · {(detail.share * 100).toFixed(1)}% of the budget</span>
 					<small>{detail.note}</small>
@@ -248,17 +258,13 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 			</div>
 			{/* The flow opens as an overview; the chip teaches the pinch that brings it to reading size. */}
 			<p className="flow-swipe" aria-hidden="true">Pinch to zoom into the money →</p>
-			{/* After the map's caption: names the ministry whose page is in the sheet, nudges on each new pick. */}
+			{/* After the map's caption: names the ministry whose page is in the sheet, nudges on each new
+			    pick, then fades — a pointer, not a button, so it never blocks the flow beneath it. */}
 			{selectedBody ? (
-				<button
-					type="button"
-					key={selectedBody.id}
-					className="flow-caption tone-own"
-					onClick={() => window.dispatchEvent(new Event('govgraph:open-panel'))}
-				>
+				<p key={selectedBody.id} className="flow-caption tone-own" aria-hidden="true">
 					{selectedBody.label}
-					<span className="map-caption-cta" aria-hidden="true"> · Details ↑</span>
-				</button>
+					<span className="map-caption-cta"> · Details ↑</span>
+				</p>
 			) : null}
 			</div>
 		</div>

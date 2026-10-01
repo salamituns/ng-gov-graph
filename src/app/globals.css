@@ -816,6 +816,9 @@
 .tone-run { fill:#d08b3e; }
 .tone-build { fill:var(--gg-green); }
 .flow-detail { position:absolute; right:16px; top:12px; display:grid; gap:2px; max-width:280px; padding:9px 12px; border-radius:9px; background:var(--gg-panel); box-shadow:0 6px 20px #0002, 0 0 0 1px var(--gg-line); font-size:12.5px; }
+/* The × clears the snippet until the reader taps something else — the map is theirs again. */
+.flow-detail-x { position:absolute; top:0; right:0; width:40px; height:40px; border:0; border-radius:0 9px 0 9px; background:transparent; color:var(--gg-muted); font-size:19px; line-height:1; }
+.flow-detail-x:focus-visible { outline:2px solid var(--gg-green); outline-offset:-2px; }
 .flow-detail strong { font-size:13.5px; }
 .flow-detail span { color:var(--gg-hub-ink); font-variant-numeric:tabular-nums; }
 .flow-detail small { color:var(--gg-muted); font-size:11.5px; line-height:1.4; }
@@ -883,10 +886,12 @@
   .flow-swipe { position:absolute; left:50%; bottom:10px; display:block; transform:translateX(-50%); padding:7px 13px; border-radius:99px; background:var(--gg-panel); box-shadow:var(--gg-shadow); color:var(--gg-muted); font-size:12.5px; font-weight:500; pointer-events:none; opacity:0; animation:flow-swipe 7s ease .8s forwards; }
   @keyframes flow-swipe { 8% { opacity:1; } 75% { opacity:1; } 100% { opacity:0; } }
   /* The budget view's answer to the map's caption: names the ministry whose page is in the sheet,
-     nudges on each new pick, and opens the sheet. Sits above the chip, clear of the zoom buttons. */
-  .flow-caption { position:absolute; z-index:6; left:50%; bottom:44px; display:block; transform:translateX(-50%); max-width:70%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border:0; cursor:pointer; padding:6px 10px; border-radius:99px; font-size:13px; font-weight:500; color:color-mix(in srgb, var(--tone) 80%, var(--gg-text)); background:color-mix(in srgb, var(--tone) 18%, transparent); box-shadow:var(--gg-shadow); animation:caption-nudge .5s ease-out .15s both; }
+     nudges on each new pick, then fades away. A pointer, not a button — the card and the handle
+     open the sheet — so it never sits on the flow or the view switcher beneath it. */
+  .flow-caption { position:absolute; z-index:6; left:50%; bottom:64px; display:block; transform:translateX(-50%); max-width:70%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:6px 10px; border-radius:99px; pointer-events:none; font-size:13px; font-weight:500; color:color-mix(in srgb, var(--tone) 80%, var(--gg-text)); background:color-mix(in srgb, var(--tone) 18%, transparent); box-shadow:var(--gg-shadow); animation:caption-nudge .5s ease-out .15s both, flow-caption-out 6s ease 1.2s forwards; }
+  @keyframes flow-caption-out { 60% { opacity:1; } 100% { opacity:0; } }
   /* The snippet's call to go deeper: the ministry's page is already in the sheet, one tap away. */
   .flow-detail-open { display:block; margin-top:8px; min-height:40px; padding:0 12px; border-radius:8px; background:color-mix(in srgb, var(--gg-green) 14%, transparent); color:var(--gg-hub-ink); font-size:13.5px; font-weight:600; }
-  @media (prefers-reduced-motion: reduce) { .flow-swipe, .flow-caption { animation:none; } }
+  @media (prefers-reduced-motion: reduce) { .flow-swipe { animation:none; } .flow-caption { animation:flow-caption-out 6s ease 1.2s forwards; } }
 }
 
