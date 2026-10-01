@@ -48,7 +48,7 @@ export function RepresentPicker({ gov, states, compact = false }: { gov: string;
 		router.push(representPath(gov, stateId), { scroll: false })
 	}
 	return (
-		<section className={`panel-card represent-card${compact ? ' is-compact' : ''}`}>
+		<section id={compact ? undefined : 'represent'} className={`panel-card represent-card${compact ? ' is-compact' : ''}`}>
 			{compact ? null : (
 				<>
 					<h2>{t('whoRepresents')}</h2>

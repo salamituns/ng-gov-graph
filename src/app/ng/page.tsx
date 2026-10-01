@@ -16,6 +16,8 @@ import { nodePath } from '@/lib/graph/paths'
 import { powerPeople } from '@/lib/graph/power'
 import type { CompiledGraph, PersonnelChange } from '@/lib/graph/types'
 import { federalCharacter } from '@/lib/graph/federal-character'
+import { BUDGET_2026, naira } from '@/data/nigeria/budget'
+import { MINISTRY_BUDGETS } from '@/data/nigeria/budget-2026'
 import { t, type Lang } from '@/lib/i18n'
 import { getLang } from '@/lib/i18n-server'
 
@@ -82,6 +84,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 				states={Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name }))}
 			/>
 			{layer === 'federal' ? <FederalCharacterCard gov={data.gov} graph={data.graph} lang={lang} /> : null}
+			{layer === 'federal' ? <BudgetHomeCard gov={data.gov} graph={data.graph} lang={lang} /> : null}
 			<section className="panel-card">
 				<h1 className="sr-only">Who Runs Naija: Nigeria’s government, mapped and sourced</h1>
 				<h2>{t(lang, 'newsHeading')}</h2>
@@ -275,4 +278,31 @@ function hostOf(url: string) {
 	} catch {
 		return ''
 	}
+}
+
+/** The 2026 budget at a glance: the total and the three largest ministries, linking to the full ranking. */
+function BudgetHomeCard({ gov, graph, lang }: { gov: string; graph: CompiledGraph; lang: Lang }) {
+	const top = Object.entries(MINISTRY_BUDGETS)
+		.filter(([id]) => id.startsWith('ng-ministry-of-') && graph.nodes[id])
+		.sort((a, b) => b[1].total - a[1].total)
+		.slice(0, 3)
+	const largest = top[0]?.[1].total ?? 1
+	return (
+		<Link href={`/${gov}/budget`} className="panel-card fc-card budget-home">
+			<div>
+				<h2>{t(lang, 'budgetTitle')}</h2>
+				<p className="muted-copy">{t(lang, 'budgetCard', { total: naira(BUDGET_2026.total) })}</p>
+				<ul className="budget-home-bars">
+					{top.map(([id, budget]) => (
+						<li key={id}>
+							<span>{graph.nodes[id].name.replace(/^(Federal )?Ministry of /, '')}</span>
+							<span className="fc-bar" aria-hidden="true"><span style={{ width: `${(budget.total / largest) * 100}%` }} /></span>
+							<strong>{naira(budget.total).replace(' trillion', 'T').replace(' billion', 'B')}</strong>
+						</li>
+					))}
+				</ul>
+			</div>
+			<span aria-hidden="true" className="fc-card-arrow">→</span>
+		</Link>
+	)
 }

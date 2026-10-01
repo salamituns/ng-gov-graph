@@ -10,6 +10,14 @@ const LAYERS = [
 	{ id: 'state', href: '/ng?layer=states', label: 'layerState', hint: 'layerStateHint' },
 ] as const
 
+/** The civic pages, reachable from the menu on every page. */
+const EXPLORE = [
+	{ href: '/ng#represent', label: 'whoRepresents', hint: 'representHint' },
+	{ href: '/ng/elections', label: 'electionGuide' },
+	{ href: '/ng/budget', label: 'budgetTitle' },
+	{ href: '/ng/federal-character', label: 'federalCharacter' },
+] as const
+
 /** "Nigeria ⌄": switches between the federal and state maps, and closes on choice, Escape or outside click. */
 export function LayerMenu({ layer }: { layer: 'federal' | 'state' }) {
 	const [open, setOpen] = useState(false)
@@ -39,6 +47,13 @@ export function LayerMenu({ layer }: { layer: 'federal' | 'state' }) {
 						<Link key={item.id} href={item.href} role="menuitem" aria-current={layer === item.id ? 'page' : undefined} onClick={() => setOpen(false)}>
 							<strong>{t(item.label)}</strong>
 							<small>{t(item.hint)}</small>
+						</Link>
+					))}
+					<p className="layer-menu-heading" role="presentation">{t('explore')}</p>
+					{EXPLORE.map((item) => (
+						<Link key={item.href} href={item.href} role="menuitem" onClick={() => setOpen(false)}>
+							<strong>{t(item.label)}</strong>
+							{'hint' in item ? <small>{t(item.hint)}</small> : null}
 						</Link>
 					))}
 				</nav>

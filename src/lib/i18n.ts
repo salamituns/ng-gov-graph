@@ -47,6 +47,10 @@ const en = {
 	pollsOpen: 'polls open 8:30 a.m. WAT',
 	then: 'Then',
 	electionGuide: 'Your election guide',
+	explore: 'Explore',
+	budgetTitle: 'Where the money goes',
+	budgetCard: '{total} appropriated for 2026. The largest shares:',
+	representHint: 'Your governor, senators and representatives',
 }
 
 export type MessageKey = keyof typeof en
@@ -77,6 +81,10 @@ const pcm: Record<MessageKey, string> = {
 	pollsOpen: 'voting start 8:30 a.m. WAT',
 	then: 'After that,',
 	electionGuide: 'Your election guide',
+	explore: 'Explore',
+	budgetTitle: 'Where the money dey go',
+	budgetCard: '{total} na wetin dem approve for 2026. The biggest shares:',
+	representHint: 'Your governor, senators and Reps',
 }
 
 const ha: Record<MessageKey, string> = {
@@ -105,6 +113,10 @@ const ha: Record<MessageKey, string> = {
 	pollsOpen: 'ana buɗe rumfunan zaɓe ƙarfe 8:30 na safe (WAT)',
 	then: 'Sai kuma',
 	electionGuide: 'Jagoran zaɓenka',
+	explore: 'Bincika',
+	budgetTitle: 'Inda kuɗin ke tafiya',
+	budgetCard: 'An ware {total} don 2026. Mafi girman kaso:',
+	representHint: 'Gwamnanka, sanatocinka da wakilanka',
 }
 
 const yo: Record<MessageKey, string> = {
@@ -133,6 +145,10 @@ const yo: Record<MessageKey, string> = {
 	pollsOpen: 'ìdìbò bẹ̀rẹ̀ ní agogo 8:30 òwúrọ̀ (WAT)',
 	then: 'Lẹ́yìn náà',
 	electionGuide: 'Ìtọ́sọ́nà ìdìbò rẹ',
+	explore: 'Ṣàwárí',
+	budgetTitle: 'Ibi tí owó ń lọ',
+	budgetCard: '{total} ni wọ́n yà sọ́tọ̀ fún 2026. Ìpín tó tóbi jùlọ:',
+	representHint: 'Gómìnà, sẹ́nétọ̀ àti aṣojú rẹ',
 }
 
 const ig: Record<MessageKey, string> = {
@@ -161,6 +177,10 @@ const ig: Record<MessageKey, string> = {
 	pollsOpen: 'ntuli aka na-amalite n’elekere 8:30 ụtụtụ (WAT)',
 	then: 'Mgbe ahụ',
 	electionGuide: 'Ntụziaka ntuli aka gị',
+	explore: 'Nyochaa',
+	budgetTitle: 'Ebe ego na-aga',
+	budgetCard: 'E kenyere {total} maka 2026. Òkè kachasị ukwuu:',
+	representHint: 'Gọvanọ, ndị senatọ na ndị nnọchite anya gị',
 }
 
 const MESSAGES: Record<Lang, Record<MessageKey, string>> = { en, pcm, ha, yo, ig }
