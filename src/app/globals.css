@@ -710,11 +710,40 @@ a.holder-card:hover { background:var(--gg-panel-2); }
 .budget-home:hover h2 { text-decoration:underline; }
 .layer-menu-heading { margin:6px 10px 2px; padding-top:8px; border-top:1px solid var(--gg-line); color:var(--gg-faint); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; font-family:var(--font-geist-mono),monospace; }
 
-/* ---------- Budget view ---------- */
-.budget-bubble { fill:color-mix(in srgb, var(--gg-green) 26%, transparent); stroke:var(--gg-green); stroke-width:.8; }
-.node.is-dimmed { opacity:.28; }
-.budget-legend { position:absolute; z-index:4; top:58px; left:50%; transform:translateX(-50%); max-width:calc(100% - 28px); padding:5px 11px; border-radius:8px; background:var(--gg-panel); box-shadow:var(--gg-shadow); color:var(--gg-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.budget-legend a { color:var(--gg-hub-ink); font-weight:600; }
-.budget-legend a:hover { text-decoration:underline; }
-@media (max-width: 760px) { .budget-legend { top:104px; white-space:normal; text-align:center; } }
-.budget-label { fill:var(--gg-hub-ink); font-size:10.5px; font-weight:600; text-anchor:middle; paint-order:stroke; stroke:var(--gg-surface); stroke-width:3px; font-variant-numeric:tabular-nums; }
+
+
+/* ---------- Budget flow ---------- */
+.budget-flow { position:relative; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; }
+.budget-flow-scroll { width:100%; overflow-x:auto; overscroll-behavior-x:contain; }
+.budget-flow svg { display:block; width:100%; min-width:860px; height:auto; max-height:calc(100vh - 150px); }
+.flow-title { fill:var(--gg-text); font-family:var(--font-display),var(--font-body),sans-serif; font-size:20px; font-weight:600; }
+.flow-column { fill:var(--gg-faint); font-family:var(--font-geist-mono),monospace; font-size:11px; letter-spacing:.06em; text-transform:uppercase; }
+.flow-band { opacity:.42; transition:opacity .15s; }
+.flow-band.is-faded { opacity:.08; }
+.flow-node { rx:2px; }
+.flow-label { fill:var(--gg-text); font-size:13px; paint-order:stroke; stroke:var(--gg-surface); stroke-width:4px; stroke-linejoin:round; }
+.flow-label.is-strong { font-size:15px; font-weight:600; }
+.flow-amount { fill:var(--gg-muted); font-variant-numeric:tabular-nums; }
+.flow-clickable { cursor:pointer; }
+.flow-clickable:hover .flow-label, .flow-clickable:focus .flow-label { text-decoration:underline; }
+.flow-node.is-selected { stroke:var(--gg-text); stroke-width:2px; }
+.tone-total { fill:var(--gg-text); }
+.tone-own { fill:var(--gg-green); }
+.tone-debt { fill:var(--gg-legislative); }
+.tone-swv { fill:#7b8794; }
+.tone-statutory { fill:var(--gg-judicial); }
+.tone-rest { fill:var(--gg-faint); }
+.tone-pay { fill:var(--gg-executive); }
+.tone-run { fill:#d08b3e; }
+.tone-build { fill:var(--gg-green); }
+.flow-detail { position:absolute; right:16px; top:12px; display:grid; gap:2px; max-width:280px; padding:9px 12px; border-radius:9px; background:var(--gg-panel); box-shadow:0 6px 20px #0002, 0 0 0 1px var(--gg-line); font-size:12.5px; }
+.flow-detail strong { font-size:13.5px; }
+.flow-detail span { color:var(--gg-hub-ink); font-variant-numeric:tabular-nums; }
+.flow-detail small { color:var(--gg-muted); font-size:11.5px; line-height:1.4; }
+.flow-hint { color:var(--gg-muted); }
+@media (max-width: 760px) {
+  .budget-flow { justify-content:flex-start; padding-bottom:58px; }
+  .budget-flow-scroll { flex:1; min-height:0; overflow:auto; }
+  .budget-flow svg { max-height:none; }
+  .flow-detail { position:static; margin:8px 12px 0; max-width:none; }
+}
