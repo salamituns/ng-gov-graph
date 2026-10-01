@@ -8,6 +8,7 @@ import { naira } from '@/data/nigeria/budget'
 import { toneOf } from '@/lib/graph/layout'
 import { nodePath } from '@/lib/graph/paths'
 import { searchGraph } from '@/lib/graph/search'
+import { seatTitle } from '@/lib/graph/seat-title'
 import type { CompiledGraph, GraphNode } from '@/lib/graph/types'
 
 /** Before the reader types: the bodies most people come looking for. */
@@ -52,7 +53,7 @@ export function GraphSearch({ gov, graph, budgets = {} }: { gov: string; graph: 
 			<Link href={nodePath(gov, node)} onClick={() => dialog.current?.close()}>
 				<Glyph type={node.type} tone={toneOf(node)} size={14} />
 				<span>
-					<strong>{node.name}</strong>
+					<strong>{seatTitle(graph, node)}</strong>
 					<small>
 						{kind(node)}
 						{node.people[0] ? ` · ${node.people[0].name}` : ''}

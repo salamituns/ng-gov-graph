@@ -39,7 +39,7 @@ export function LayerMenu({ layer }: { layer: 'federal' | 'state' }) {
 		<div className="layer-menu" ref={root}>
 			<button type="button" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
 				<span className="flag-chip" aria-hidden="true"><span /><span /><span /></span>
-				{layer === 'state' ? 'Nigeria · States' : 'Nigeria'} <ChevronDown size={14} />
+				{layer === 'state' ? <span><span className="layer-country">Nigeria · </span>States</span> : 'Nigeria'} <ChevronDown size={14} />
 			</button>
 			{/* On phones the menu is a bottom sheet over a dimmed map; tapping the backdrop closes it. */}
 			{open && <div className="layer-menu-backdrop" aria-hidden="true" onClick={() => setOpen(false)} />}

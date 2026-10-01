@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authorityChain, descendantsOf, organizationOf } from '@/lib/graph/authority'
 import { newsForEntity } from '@/lib/graph/feed'
 import { toneOf } from '@/lib/graph/layout'
+import { seatTitle } from '@/lib/graph/seat-title'
 import { decodeHtml, newsHeadline } from '@/lib/graph/news-text'
 import { getNode, loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath } from '@/lib/graph/paths'
@@ -48,9 +49,10 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
 	const { slug } = await params
-	const node = getNode((await loadNigeriaGraph()).graph, slug)
+	const { graph } = await loadNigeriaGraph()
+	const node = getNode(graph, slug)
 	return {
-		title: node ? `${node.name} · Who Runs Naija` : 'Who Runs Naija',
+		title: node ? `${seatTitle(graph, node)} · Who Runs Naija` : 'Who Runs Naija',
 		description: node?.description,
 	}
 }
@@ -147,7 +149,7 @@ export default async function EntityPage({ params }: PageProps) {
 			<BrandBar crumbs={crumbs} layer={node.layer === 'state' || parent?.layer === 'state' ? 'state' : 'federal'} />
 			{/* On phones the sheet's header already names the page, so this heading is visually hidden there. */}
 			<article className="panel-card entity-card is-titled-by-sheet">
-				<h1>{node.name}</h1>
+				<h1>{seatTitle(graph, node)}</h1>
 				<p className="entity-description">{node.description}</p>
 				<p className="entity-sources">
 					{node.legalSourceUrl ? <a href={node.legalSourceUrl} target="_blank" rel="noreferrer">Legal basis</a> : null}
