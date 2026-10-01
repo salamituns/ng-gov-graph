@@ -77,3 +77,15 @@ export function federalCharacter(graph: CompiledGraph): FederalCharacter {
 		unsourced: members.filter((member) => !member.origin),
 	}
 }
+
+/** Ministry name, without the "Federal Ministry of" preamble, for a short portfolio line. */
+export function portfolioOf(graph: CompiledGraph, member: CabinetMember) {
+	return member.seats
+		.map((seat) => {
+			const ministry = seat.parentId ? graph.nodes[seat.parentId] : undefined
+			const area = (ministry?.name ?? seat.name).replace(/^(Federal )?Ministry of (the )?/, '')
+			if (seat.id === 'ng-attorney-general') return 'Attorney-General and Justice'
+			return seat.id.startsWith('ng-minister-of-state-') ? `${area} (State)` : area
+		})
+		.join(' · ')
+}

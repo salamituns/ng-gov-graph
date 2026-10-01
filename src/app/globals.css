@@ -701,6 +701,11 @@
 .fc-pick-clear { width:32px; height:32px; margin:-6px -6px 0 0; border-radius:50%; color:var(--gg-muted); font-size:20px; line-height:1; }
 .fc-pick-clear:hover { background:var(--gg-panel); color:var(--gg-text); }
 .fc-ministers { display:grid; gap:4px; margin-top:10px; }
+.fc-money { margin-top:10px; font-size:12.5px; line-height:1.45; color:var(--gg-muted); }
+.fc-money strong { color:var(--gg-text); }
+.represent-money { margin-top:10px; }
+.search-budget { color:var(--gg-hub-ink); font-variant-numeric:tabular-nums; }
+.represent-money strong { color:var(--gg-text); }
 .fc-minister { display:flex; align-items:center; gap:10px; min-height:44px; padding:4px 6px; margin:0 -6px; border-radius:8px; }
 .fc-minister:hover { background:var(--gg-panel); }
 .fc-minister img, .fc-minister-initials { width:36px; height:36px; flex:none; border-radius:50%; object-fit:cover; object-position:top; background:var(--gg-panel); display:grid; place-items:center; color:var(--gg-muted); font-size:12px; font-weight:600; }

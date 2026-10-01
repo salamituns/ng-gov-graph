@@ -5,11 +5,15 @@ import { BrandBar } from '@/components/brand-bar'
 import { Fold } from '@/components/fold'
 import { RepresentPicker } from '@/components/represent-picker'
 import { GENERAL_ELECTION, governorshipFor } from '@/data/nigeria/elections'
+import { naira, perNigerian } from '@/data/nigeria/budget'
 import { STATE_ZONES } from '@/data/nigeria/states'
+import { ministriesOf, ministriesTotal } from '@/lib/graph/cabinet-budget'
+import { federalCharacter, portfolioOf } from '@/lib/graph/federal-character'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
-import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
+import { nodePath, representPath, stateIdFromSlug } from '@/lib/graph/paths'
 import { representativesFor } from '@/lib/graph/representatives'
 import type { RosterSeat } from '@/lib/graph/roster'
+import type { CompiledGraph } from '@/lib/graph/types'
 
 interface PageProps {
 	params: Promise<{ state: string }>
@@ -82,6 +86,66 @@ function NextElections({ gov, stateId, stateName }: { gov: string; stateId: stri
 }
 
 /** Everyone who represents or governs one state, with the map turned to it. */
+/** The state's place in the federal cabinet: its ministers, and what the ministries they serve in spend. */
+function StateInCabinet({ gov, graph, stateId, stateName }: { gov: string; graph: CompiledGraph; stateId: string; stateName: string }) {
+	const tally = federalCharacter(graph).states.find((item) => item.state.id === stateId)
+	if (!tally) return null
+	const slug = representPath(gov, stateId).split('/').pop()
+	const money = ministriesTotal(tally.members.flatMap((member) => ministriesOf(graph, member)))
+	return (
+		<section className="detail-roster">
+			<div className="detail-roster-heading">
+				<h2>From {stateName} in the federal cabinet</h2>
+				<span>{tally.members.length === 1 ? 'one minister' : `${tally.members.length} ministers`}</span>
+			</div>
+			{tally.members.length ? (
+				<>
+					<ul className="detail-roster-grid represent-list">
+						{tally.members.map((member) => {
+							const ministries = ministriesOf(graph, member)
+							const budget = ministriesTotal(ministries).total
+							return (
+								<li key={member.person.name}>
+									<Link href={nodePath(gov, member.seats[0])} className="detail-roster-card">
+										{member.person.imageUrl ? (
+											<Image src={member.person.imageUrl} alt="" width={36} height={36} className="size-9 rounded-full object-cover" unoptimized />
+										) : (
+											<span className="detail-roster-empty represent-initials">{initials(member.person.name)}</span>
+										)}
+										<span className="min-w-0">
+											<p>{member.person.name}</p>
+											<p>
+												{portfolioOf(graph, member)}
+												{budget ? ` · ${naira(budget)} budget` : ''}
+											</p>
+										</span>
+									</Link>
+								</li>
+							)
+						})}
+					</ul>
+					{!money.total && money.uncounted.length ? (
+						<p className="muted-copy represent-money">
+							{tally.members.length === 1 ? 'This minister serves' : 'They serve'} in {money.uncounted.join(' and ')}, which the Act funds outside a ministry line, so there is no ministry budget to show.
+						</p>
+					) : null}
+					{money.total ? (
+						<p className="muted-copy represent-money">
+							{tally.members.length === 1 ? 'This minister serves' : 'They serve'} in ministries with <strong>{naira(money.total)}</strong> of the 2026 budget, about {perNigerian(money.total)} for every Nigerian
+							{money.uncounted.length ? `, not counting ${money.uncounted.join(' and ')}, which the Act funds outside a ministry line` : ''}.
+						</p>
+					) : null}
+				</>
+			) : (
+				<p className="fc-gap">No minister on record from {stateName}. Section 147(3) asks for at least one from every state.</p>
+			)}
+			<p className="muted-copy">
+				<Link href={`/${gov}/federal-character?state=${slug}`} className="entity-link">Compare every state on the federal character map →</Link>
+			</p>
+		</section>
+	)
+}
+
 export default async function RepresentPage({ params }: PageProps) {
 	const { state: slug } = await params
 	const { gov, graph } = await loadNigeriaGraph()
@@ -141,6 +205,8 @@ export default async function RepresentPage({ params }: PageProps) {
 					{representatives.map((seat) => <SeatCard key={seat.id} gov={gov} seat={seat} />)}
 				</Fold>
 			</section>
+
+			<StateInCabinet gov={gov} graph={graph} stateId={state.id} stateName={isFct ? 'the FCT' : state.name} />
 
 			{assembly ? (
 				<section className="panel-card">

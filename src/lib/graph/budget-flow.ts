@@ -1,5 +1,5 @@
 import { BUDGET_2026 } from '@/data/nigeria/budget'
-import { MINISTRY_BUDGETS } from '@/data/nigeria/budget-2026'
+import { AGENCY_BUDGETS, MINISTRY_BUDGETS } from '@/data/nigeria/budget-2026'
 import type { CompiledGraph } from './types'
 
 export interface FlowMinistry {
@@ -64,4 +64,15 @@ export function budgetFlow(graph: CompiledGraph): BudgetFlow {
 		ministries: shown,
 		others: { id: 'others', label: `${tail.length} other bodies`, count: tail.length, personnel: sum('personnel'), overhead: sum('overhead'), capital: sum('capital'), total: sum('total') },
 	}
+}
+
+/**
+ * Each funded body's own 2026 total, by graph node, for places that only need the headline (search results).
+ * Lines that are money routed through a body for all of government are left out: they are not its spending.
+ */
+export function budgetTotals(graph: CompiledGraph): Record<string, number> {
+	const totals: Record<string, number> = {}
+	for (const [id, agency] of Object.entries(AGENCY_BUDGETS)) if (graph.nodes[id] && !agency.passThrough) totals[id] = agency.total
+	for (const [id, ministry] of Object.entries(MINISTRY_BUDGETS)) if (graph.nodes[id]) totals[id] = ministry.total
+	return totals
 }
