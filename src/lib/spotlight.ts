@@ -12,6 +12,8 @@ export interface Spotlight {
 	nodeIds: string[]
 	/** States to light on the Nigeria map at the core. */
 	stateIds: string[]
+	/** The map's caption, when a count of ministries is not the point, e.g. "Works · ₦3.59 trillion". */
+	caption?: string
 }
 
 // The last spotlight sent: a small external store, so a map that mounts after the panel (a direct load of

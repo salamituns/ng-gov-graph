@@ -1,8 +1,11 @@
 import Link from 'next/link'
-import { BUDGET_2026, naira, type AgencyBudget, type MinistryBudget } from '@/data/nigeria/budget'
+import { BUDGET_2026, naira, perNigerian, type AgencyBudget, type MinistryBudget } from '@/data/nigeria/budget'
 import { ACT_PDF_URL, AGENCY_BUDGETS, MINISTRY_BUDGETS } from '@/data/nigeria/budget-2026'
 import { nodePath } from '@/lib/graph/paths'
+import { SpendBar } from '@/components/spend-bar'
 import type { CompiledGraph } from '@/lib/graph/types'
+
+export { SpendBar }
 
 export function actPage(page: number) {
 	return `${ACT_PDF_URL}#page=${page}`
@@ -12,25 +15,6 @@ export function budgetFor(id: string): { ministry?: MinistryBudget; agency?: Age
 	const ministry = MINISTRY_BUDGETS[id]
 	const agency = AGENCY_BUDGETS[id]
 	return ministry || agency ? { ministry, agency } : null
-}
-
-/** Personnel, overhead and capital as one bar. */
-export function SpendBar({ personnel, overhead, capital, total }: { personnel: number; overhead: number; capital: number; total: number }) {
-	const share = (value: number) => `${total > 0 ? Math.max(0, (value / total) * 100) : 0}%`
-	return (
-		<>
-			<span className="spend-bar" aria-hidden="true">
-				<span className="spend-personnel" style={{ width: share(personnel) }} />
-				<span className="spend-overhead" style={{ width: share(overhead) }} />
-				<span className="spend-capital" style={{ width: share(capital) }} />
-			</span>
-			<ul className="spend-key">
-				<li><i className="spend-personnel" />Salaries {naira(personnel)}</li>
-				<li><i className="spend-overhead" />Running costs {naira(overhead)}</li>
-				<li><i className="spend-capital" />Projects {naira(capital)}</li>
-			</ul>
-		</>
-	)
 }
 
 /** What the 2026 Appropriation Act gives this body, with the page to check it against. */
@@ -48,7 +32,7 @@ export function BudgetCard({ id, gov, graph }: { id: string; gov: string; graph:
 			</header>
 			<p className="budget-total">
 				<strong>{naira(figures.total)}</strong>
-				<span>{share >= 0.1 ? `${share.toFixed(1)}%` : 'under 0.1%'} of the ₦68.32 trillion budget</span>
+				<span>{share >= 0.1 ? `${share.toFixed(1)}%` : 'under 0.1%'} of the ₦68.32 trillion budget · about {perNigerian(figures.total)} for every Nigerian</span>
 			</p>
 			<SpendBar {...figures} />
 			{ministry?.passThrough?.map((item) => (

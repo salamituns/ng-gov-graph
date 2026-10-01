@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { SeeOnMap } from '@/components/see-on-map'
 import { spotlight } from '@/lib/spotlight'
 
 export interface ExplorerMinister {
@@ -75,15 +76,6 @@ function MinisterRow({ minister }: { minister: ExplorerMinister }) {
 				</span>
 			</Link>
 		</li>
-	)
-}
-
-/** Phones only (see globals.css): the sheet covers the government map, so lower it to show the spotlight. */
-function SeeOnMap() {
-	return (
-		<button type="button" className="fc-see-map" onClick={() => window.dispatchEvent(new CustomEvent('govgraph:open-panel', { detail: 'peek' }))}>
-			See on the government map ↓
-		</button>
 	)
 }
 

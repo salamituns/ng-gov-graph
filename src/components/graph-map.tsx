@@ -264,7 +264,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 			</svg>
 			{spot && !(focus && focus.kind !== 'hub') ? (
 				<p key={spot.label} className="map-caption tone-executive map-spotlight-caption" aria-live="polite">
-					{spot.label}: {spotIds.size} {spotIds.size === 1 ? 'ministry' : 'ministries'}
+					{spot.caption ?? `${spot.label}: ${spotIds.size} ${spotIds.size === 1 ? 'ministry' : 'ministries'}`}
 				</p>
 			) : null}
 			{focus && focus.kind !== 'hub' ? (
