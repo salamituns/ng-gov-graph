@@ -254,13 +254,19 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 				)}
 			</svg>
 			{focus && focus.kind !== 'hub' ? (
+				// Keyed to the node, so every new selection replays the caption's nudge on phones.
 				<button
 					type="button"
+					key={focus.node.id}
 					className={`map-caption tone-${focus.tone}`}
-					onClick={() => document.querySelector('.shell-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+					onClick={() => {
+						// On phones the panel is a bottom sheet: open it. On desktop, scroll it into view.
+						window.dispatchEvent(new Event('govgraph:open-panel'))
+						document.querySelector('.shell-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+					}}
 				>
 					{focus.node.name}
-					<span className="map-caption-cta" aria-hidden="true"> · Details ↓</span>
+					<span className="map-caption-cta" aria-hidden="true"> · Details ↑</span>
 				</button>
 			) : null}
 			<div className="zoom-controls" role="group" aria-label="Zoom">

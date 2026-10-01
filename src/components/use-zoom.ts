@@ -135,6 +135,9 @@ export function useZoom(svgRef: RefObject<SVGSVGElement | null>, viewBox: string
 			gesture.current = null
 		},
 		onDoubleClick: (event: React.MouseEvent) => {
+			// A quick double-tap on a tappable thing (a map node, a state, a ministry bar) is a (re)selection,
+			// not a zoom; only the drawing's background zooms.
+			if ((event.target as Element).closest?.('.node, .core-state, .link-hit, .flow-clickable')) return
 			const box = viewRef.current
 			setView(zoomed ? parseBox(baseKey) : zoomAt(toSvg(event.clientX, event.clientY, box), 2.4, box))
 		},

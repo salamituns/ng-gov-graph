@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Bricolage_Grotesque, Geist_Mono, Hanken_Grotesk } from 'next/font/google'
 import './globals.css'
 import { getLang } from '@/lib/i18n-server'
@@ -20,6 +20,19 @@ const display = Bricolage_Grotesque({
 	variable: '--font-display',
 	subsets: ['latin', 'latin-ext', 'vietnamese'],
 })
+
+// viewport-fit=cover lets the phone layout use env(safe-area-inset-*), so the floating brand bar clears the notch.
+export const viewport: Viewport = {
+	width: 'device-width',
+	initialScale: 1,
+	viewportFit: 'cover',
+	colorScheme: 'light dark',
+	// The browser chrome picks the one matching the system scheme; ThemeToggle keeps both in sync with the in-app theme.
+	themeColor: [
+		{ media: '(prefers-color-scheme: light)', color: '#e9ebe6' },
+		{ media: '(prefers-color-scheme: dark)', color: '#151916' },
+	],
+}
 
 export const metadata: Metadata = {
 	// Links, previews and canonical URLs point at the site's own domain, not the vercel.app one.

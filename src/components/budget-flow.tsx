@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '@/components/lang'
+import { useZoom } from '@/components/use-zoom'
 import { naira } from '@/data/nigeria/budget'
 import type { BudgetFlow as Flow, FlowMinistry } from '@/lib/graph/budget-flow'
 
@@ -142,12 +143,25 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 
 	const hoverProps = (id: string) => ({ onMouseEnter: () => setHover(id), onMouseLeave: () => setHover(null), onFocus: () => setHover(id), onBlur: () => setHover(null) })
 
+	// Pinch, drag and double-tap zoom, after the graph map: the viewBox moves, so labels stay sharp.
+	// While the whole flow is in view, touch-action still lets one finger swipe the flow horizontally;
+	// once zoomed, that finger pans the diagram instead.
+	const svgRef = useRef<SVGSVGElement>(null)
+	const zoom = useZoom(svgRef, `0 0 ${W} ${H}`)
+
 	return (
 		<div className="budget-flow">
 			<BudgetFlowList flow={flow} selectedId={selectedId} onSelect={onSelect} />
 			<div className="budget-flow-wide">
 			<div className="budget-flow-scroll">
-				<svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${t('budgetTitle')}: ${naira(flow.total)} in 2026`}>
+				<svg
+					ref={svgRef}
+					viewBox={zoom.viewBox}
+					role="img"
+					aria-label={`${t('budgetTitle')}: ${naira(flow.total)} in 2026`}
+					className={zoom.zoomed ? 'is-zoomed' : undefined}
+					{...zoom.handlers}
+				>
 					<text x={X[0]} y={26} className="flow-title">{t('budgetTitle')}</text>
 					{['Budget', 'First split', 'Ministries and offices', 'Spent on'].map((label, i) => (
 						<text key={label} x={X[i]} y={52} className="flow-column">{label}</text>
@@ -185,7 +199,8 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 								tabIndex={clickable ? 0 : -1}
 								role={clickable ? 'link' : undefined}
 								className={clickable ? 'flow-clickable' : undefined}
-								onClick={clickable ? () => onSelect(body.id) : undefined}
+								// A pan or pinch that ends over a bar walked the flow, it did not choose the bar.
+								onClick={clickable ? () => { if (!zoom.wasDrag()) onSelect(body.id) } : undefined}
 								onKeyDown={clickable ? (e) => { if (e.key === 'Enter') onSelect(body.id) } : undefined}
 							>
 								<rect x={c2[i].x} y={c2[i].y} width={NODE} height={c2[i].h} className={`flow-node tone-own${body.id === selectedId ? ' is-selected' : ''}`} />
@@ -213,8 +228,19 @@ export function BudgetFlow({ flow, selectedId, onSelect }: { flow: Flow; selecte
 					<small>{detail.note}</small>
 				</div>
 			) : (
-				<p className="flow-detail flow-hint">Hover a band to see the amount. Select a ministry to open it.</p>
+				<p className="flow-detail flow-hint">
+					<span className="flow-hint-hover">Hover a band to see the amount.</span>
+					<span className="flow-hint-touch">Tap a bar to see the amount.</span>
+					{' '}Select a ministry to open it.
+				</p>
 			)}
+			<div className="flow-zoom" role="group" aria-label="Zoom the budget flow">
+				<button type="button" aria-label="Zoom in" onClick={zoom.zoomIn}>+</button>
+				<button type="button" aria-label="Zoom out" onClick={zoom.zoomOut} disabled={!zoom.zoomed}>−</button>
+				{zoom.zoomed ? <button type="button" aria-label="Show the whole flow" onClick={zoom.reset}>⤢</button> : null}
+			</div>
+			{/* Portrait phones read the flow by swiping through it and pinch to inspect it; the chip teaches the gestures once. */}
+			<p className="flow-swipe" aria-hidden="true">Swipe to follow, pinch to zoom →</p>
 			</div>
 		</div>
 	)

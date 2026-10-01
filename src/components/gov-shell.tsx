@@ -11,6 +11,7 @@ import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 import type { CompiledGraph } from '@/lib/graph/types'
 import { LangSelect, useT } from '@/components/lang'
+import { PanelSheet } from '@/components/panel-sheet'
 import { BudgetFlow } from '@/components/budget-flow'
 import type { BudgetFlow as BudgetFlowData } from '@/lib/graph/budget-flow'
 
@@ -69,9 +70,7 @@ export function GovShell({ gov, graph, power, budget, asOf, children }: GovShell
 
 	return (
 		<main className="shell">
-			<aside className="shell-panel">
-				{children}
-			</aside>
+			<PanelSheet>{children}</PanelSheet>
 			<section className="shell-map" aria-label="Government map">
 				<div className="map-toolbar">
 					<GraphSearch gov={gov} graph={graph} />
@@ -142,6 +141,12 @@ function ThemeToggle() {
 		() => document.documentElement.classList.contains('dark'),
 		() => false,
 	)
+	// The theme-color meta tags ship with the system scheme; follow the reader's in-app choice too.
+	useEffect(() => {
+		document
+			.querySelectorAll('meta[name="theme-color"]')
+			.forEach((meta) => meta.setAttribute('content', dark ? '#151916' : '#e9ebe6'))
+	}, [dark])
 	const flip = () => {
 		const next = !dark
 		document.documentElement.classList.toggle('dark', next)
