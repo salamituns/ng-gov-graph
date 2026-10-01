@@ -932,3 +932,8 @@
   .phone-float { font-family:var(--font-body),system-ui,sans-serif; color:var(--gg-text); }
   .phone-float > .brand-bar { position:fixed; z-index:30; top:max(10px, env(safe-area-inset-top)); left:10px; right:10px; box-shadow:0 6px 20px #0003; }
 }
+/* More provisions than fit: their citations show as a quiet row, and the button opens them in place. */
+.constitution-more { margin-top:12px; }
+.constitution-more-cites { display:flex; flex-wrap:wrap; gap:6px; }
+.constitution-more-cites span { padding:2px 7px; border-radius:6px; background:var(--gg-panel-2); color:var(--gg-muted); font-family:var(--font-geist-mono),monospace; font-size:11px; white-space:nowrap; }
+.constitution-more .text-action { min-height:40px; margin-top:4px; color:var(--gg-hub-ink); font-size:13.5px; font-weight:600; }
