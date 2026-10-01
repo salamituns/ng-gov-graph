@@ -583,9 +583,13 @@
    of it. The sheet is anchored to the bottom and its height snaps between the peek and open heights set by
    PanelSheet (data-snap); PEEK and GAP in panel-sheet.tsx must stay in step with the two vars below. */
 @media (max-width: 820px) and (orientation: portrait) {
-  html, body { overscroll-behavior:none; }
-  .shell { --sheet-peek:128px; --sheet-gap:112px; display:block; }
-  .shell-map { height:100dvh; min-height:0; }
+  /* The page itself never scrolls: the map is pinned to the screen and the sheet scrolls inside itself.
+     Otherwise min-height:100vh (taller than the visible area while the browser's bars show) or a
+     scrollIntoView lets the page slide, pushing the map's toolbar under the brand bar and leaving the
+     view tabs floating above a gap. */
+  html, body { overscroll-behavior:none; height:100%; overflow:hidden; }
+  .shell { --sheet-peek:128px; --sheet-gap:112px; display:block; min-height:0; height:100%; overflow:hidden; }
+  .shell-map { position:fixed; inset:0; height:auto; min-height:0; }
   /* The canvas stops above the sheet's peek, so no view has content hidden behind it. */
   .map-canvas { padding:108px 0 calc(var(--sheet-peek) + 12px); }
   /* The map's corner controls ride above the sheet's peek, and go under the sheet once it opens. */
