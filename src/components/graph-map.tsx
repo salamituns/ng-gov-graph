@@ -180,6 +180,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 				{layout.bands.map((band) => <path key={band.key} d={band.d} className={`band band-${band.tone}`} />)}
 				{layout.rings.map((ring) => <path key={ring.key} d={ring.d} className="ring-guide" />)}
 				<circle cx={MAP.cx} cy={MAP.cy} r={RING.disc} className="hub-disc" />
+				<circle cx={MAP.cx} cy={MAP.cy} r={RING.disc - 6} className="hub-rim" />
 
 				{focus && fan.length > 0 && (
 					<g className="fan">
@@ -254,7 +255,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 					)
 				})}
 				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} lit={spotStates} onSelect={choose} />}
-				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} />}
+				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} reach={layout.reach} />}
 				{edgeHover && !hover && (
 					<g className={`edge-pill tone-${edgeHover.tone}`} pointerEvents="none">
 						<rect x={edgeHover.x + 6} y={edgeHover.y - 22} width={edgeHover.text.length * 5.6 + 12} height={15} rx={4} />
@@ -449,9 +450,10 @@ function turn(item: PlacedNode, angle: number): PlacedNode {
 function NigeriaCore({ x, y, names, selectedId, lit, onSelect }: { x: number; y: number; names: Record<string, string>; selectedId?: string; lit: Set<string>; onSelect: (id: string) => void }) {
 	const [hoverState, setHoverState] = useState<string | null>(null)
 	const peopleLabel = useT().t('peopleOfNigeria')
-	const scale = 1.08
-	const top = y - 14
+	const scale = 1.3
+	const top = y - 16
 	const named = hoverState ? names[hoverState] : undefined
+	const label = named ?? peopleLabel
 	return (
 		<g className="nigeria-core">
 			<g transform={`translate(${x} ${top}) scale(${scale})`}>
@@ -472,8 +474,8 @@ function NigeriaCore({ x, y, names, selectedId, lit, onSelect }: { x: number; y:
 					<title>Abuja, Federal Capital Territory</title>
 				</path>
 			</g>
-			<text x={x} y={top + (NIGERIA_MAP.height * scale) / 2 + 17} className="hub-text" pointerEvents="none">
-				{named ?? peopleLabel}
+			<text x={x} y={top + (NIGERIA_MAP.height * scale) / 2 + 20} className={`hub-text${label.length <= 18 ? ' core-label' : ''}`} pointerEvents="none">
+				{label}
 			</text>
 		</g>
 	)
@@ -487,12 +489,12 @@ function starPath(cx: number, cy: number, r: number) {
 	}).join(' L ')} Z`
 }
 
-function HoverPill({ item }: { item: PlacedNode }) {
+function HoverPill({ item, reach }: { item: PlacedNode; reach: number }) {
 	const text = item.node.name.length > 46 ? `${item.node.name.slice(0, 44)}…` : item.node.name
 	const width = text.length * 5.9 + 16
 	const above = item.y > MAP.cy - 60
 	const y = above ? item.y - (item.h ?? item.r * 2) / 2 - 22 : item.y + (item.h ?? item.r * 2) / 2 + 6
-	const x = Math.min(MAP.size + 20 - width, Math.max(-20, item.x - width / 2))
+	const x = Math.min(MAP.cx + reach - width, Math.max(MAP.cx - reach, item.x - width / 2))
 	return (
 		<g className={`hover-pill tone-${item.tone}`} pointerEvents="none">
 			<rect x={x} y={y} width={width} height={17} rx={4} />

@@ -18,6 +18,11 @@ export const RING = {
 } as const
 
 const DOT_STEP = 7.6
+/** Width of one letter of a branch title (20px heavy, .22em tracking), in map units. */
+const TITLE_ADVANCE = 19
+/** Height of a title's letters above its arc, in map units: branch titles (20px) and ring labels (9.5px or less). */
+const TITLE_RISE = 18
+const LABEL_RISE = 10
 const GAP = 0.045
 
 export type Tone = 'executive' | 'legislative' | 'judicial'
@@ -77,6 +82,8 @@ export interface Band {
 
 export interface GovernmentLayout {
 	viewBox: string
+	/** Radius from the centre that holds everything drawn, at any rotation: the viewBox is this circle's square. */
+	reach: number
 	nodes: PlacedNode[]
 	wedges: Wedge[]
 	rings: RingGuide[]
@@ -382,8 +389,27 @@ function layoutFederal(graph: CompiledGraph): GovernmentLayout {
 	for (const tone of ['judicial', 'legislative', 'executive'] as const) {
 		const arc = SECTOR_ARC[tone]
 		const own = clusters.filter((cluster) => toneOf(byId.get(cluster.ownerId)!) === tone)
-		const outer = Math.max(RING.rim, ...own.map((cluster) => RING.cluster + (cluster.rows - 1) * DOT_STEP + 13))
+		// The title only has to clear the lobes it passes over, so slide it along the sector to the stretch with the
+		// shallowest ones (nearest the middle on a tie): every lobe it sits on costs the whole wheel room on screen.
+		// It only slides where it reads close to level at rest (within 50 degrees, or as level as the middle).
+		const mid = (arc.start + arc.end) / 2
+		const titleHalf = (tone.length * TITLE_ADVANCE) / 2 / RING.rim + 0.06
+		const depthAt = (centre: number) => Math.max(RING.rim, ...own
+			.filter((cluster) => Math.abs(cluster.angle - centre) < cluster.half + 0.03 + titleHalf)
+			.map((cluster) => RING.cluster + (cluster.rows - 1) * DOT_STEP + 13))
+		let centre = mid
+		let outer = depthAt(mid)
+		const level = Math.min(Math.abs(Math.sin(mid)), Math.cos(0.9))
+		for (let angle = arc.start + titleHalf; angle <= arc.end - titleHalf; angle += 0.01) {
+			if (Math.abs(Math.sin(angle)) < level) continue
+			const depth = depthAt(angle)
+			if (depth < outer || (depth === outer && Math.abs(angle - mid) < Math.abs(centre - mid))) {
+				centre = angle
+				outer = depth
+			}
+		}
 		const shape = lobedWedge(arc.start, arc.end, RING.rim, own, outer + 16)
+		shape.labelArc = { r: outer + 16, start: centre - titleHalf * 1.5, end: centre + titleHalf * 1.5 }
 		wedges.push({ key: tone, tone, label: tone.toUpperCase(), ...shape })
 		for (const [key, r] of [['authority', RING.authority], ['oversight', RING.oversight], ['administration', RING.administration]] as const) {
 			if (tone !== 'executive' && key === 'authority') continue
@@ -412,12 +438,18 @@ function bandPath(inner: number, outer: number, start: number, end: number) {
 	].join(' ')
 }
 
-function finish(parts: Omit<GovernmentLayout, 'viewBox'>): GovernmentLayout {
+function finish(parts: Omit<GovernmentLayout, 'viewBox' | 'reach'>): GovernmentLayout {
 	for (const item of parts.nodes) {
 		item.x = round(item.x)
 		item.y = round(item.y)
 	}
-	return { viewBox: '-24 -24 848 848', ...parts }
+	// The wheel turns to bring a selection round, so frame the whole circle it sweeps, not the resting shape.
+	const reach = Math.ceil(Math.max(
+		...parts.nodes.map((item) => Math.hypot(item.x - MAP.cx, item.y - MAP.cy) + (item.w ?? item.r * 2) / 2),
+		...parts.wedges.map((wedge) => wedge.labelArc.r + TITLE_RISE),
+		...parts.labels.map((label) => label.arc.r + LABEL_RISE),
+	) + 4)
+	return { viewBox: `${MAP.cx - reach} ${MAP.cy - reach} ${reach * 2} ${reach * 2}`, reach, ...parts }
 }
 
 /** The States layer: the six geopolitical zones as wedges, each state with its House of Assembly. */
