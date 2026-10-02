@@ -156,10 +156,12 @@
   /* The budget's own colours, not the branches': what the money buys is not who governs. */
   --gg-spend-pay: #7a5aa6;
   --gg-spend-run: #b8901a;
-  --gg-wedge-executive: #eaf4ee;
-  --gg-wedge-legislative: #eceffb;
-  --gg-wedge-judicial: #f6eee5;
-  --gg-band-executive: #d3e9dc;
+  --gg-wedge-executive: #d9ede2;
+  --gg-wedge-legislative: #dde2f8;
+  --gg-wedge-judicial: #f0e2d2;
+  --gg-band-executive: #c9e5d4;
+  /* Labels written on the wheel's rings and band: darker than --gg-faint so they hold up on the fills. */
+  --gg-ring-label: #5a564f;
   --gg-disc: #e6e1d4;
   --gg-glyph: #fbfaf8;
   --gg-ring: #a7c1b2;
@@ -189,10 +191,11 @@
   --gg-core-pick: #3fbf84;
   --gg-spend-pay: #b08bd6;
   --gg-spend-run: #e0b84a;
-  --gg-wedge-executive: #17261e;
-  --gg-wedge-legislative: #1c2137;
-  --gg-wedge-judicial: #30241a;
-  --gg-band-executive: #1e3529;
+  --gg-wedge-executive: #1b3125;
+  --gg-wedge-legislative: #222a48;
+  --gg-wedge-judicial: #3d2c1d;
+  --gg-band-executive: #203b2a;
+  --gg-ring-label: #a8a29a;
   --gg-disc: #151916;
   --gg-glyph: #1a271f;
   --gg-ring: #4f6b5c;
@@ -233,32 +236,33 @@
 .wedge-legislative { fill:var(--gg-wedge-legislative); }
 .wedge-judicial { fill:var(--gg-wedge-judicial); }
 .band-executive { fill:var(--gg-band-executive); }
-.ring-guide { fill:none; stroke:var(--gg-ring); stroke-width:0.8; stroke-dasharray:3 4; opacity:.75; }
+.ring-guide { fill:none; stroke:var(--gg-ring); stroke-width:1; stroke-dasharray:3 4; opacity:.9; }
 .hub-disc { fill:var(--gg-disc); }
-.wedge-label { fill:var(--tone); font-size:12px; font-weight:500; letter-spacing:.28em; }
-.arc-label { fill:var(--tone); opacity:.8; font-weight:500; }
-.arc-label-ring { fill:var(--gg-faint); font-size:8.5px; letter-spacing:.2em; }
+.wedge-label { fill:var(--tone); font-size:13px; font-weight:700; letter-spacing:.26em; }
+.arc-label { fill:var(--tone); font-weight:600; }
+.arc-label-ring { fill:var(--gg-ring-label); font-size:8.5px; letter-spacing:.2em; }
 .arc-label-band { font-size:9.5px; letter-spacing:.24em; }
 .node { cursor:pointer; outline:none; }
 .node .hit { fill:transparent; }
-.node .glyph, .node .assembly { fill:var(--gg-glyph); stroke:var(--tone); stroke-width:1.15; transition:fill .15s; }
-.node .assembly { fill:none; stroke-width:1.6; }
-.node .dot { fill:var(--tone); opacity:.75; }
+/* Bold enough to read at a glance: each office a token tinted with its branch, outlined firmly. */
+.node .glyph, .node .assembly { fill:color-mix(in srgb, var(--tone) 14%, var(--gg-glyph)); stroke:var(--tone); stroke-width:1.6; transition:fill .15s; }
+.node .assembly { fill:none; stroke-width:2.2; }
+.node .dot { fill:var(--tone); opacity:1; }
 .node .seat { stroke:var(--tone); stroke-width:1; }
 .node .seat-filled { fill:var(--tone); }
 .node .seat-vacant { fill:var(--gg-glyph); }
-.node.is-hover .glyph, .node:focus-visible .glyph { fill:color-mix(in srgb, var(--tone) 30%, var(--gg-glyph)); stroke-width:1.6; }
-.node.is-lit .glyph { fill:color-mix(in srgb, var(--tone) 45%, var(--gg-glyph)); }
-.node.is-lit .assembly { stroke-width:2.2; }
+.node.is-hover .glyph, .node:focus-visible .glyph { fill:color-mix(in srgb, var(--tone) 34%, var(--gg-glyph)); stroke-width:2.1; }
+.node.is-lit .glyph { fill:color-mix(in srgb, var(--tone) 50%, var(--gg-glyph)); }
+.node.is-lit .assembly { stroke-width:2.8; }
 .node.is-selected .glyph { fill:var(--tone); }
 .node.is-selected .seat-filled { fill:var(--gg-glyph); }
 .node.is-selected .dot, .node.is-lit .dot, .node.is-hover .dot { opacity:1; }
 .node-hub .hub-seal { fill:var(--gg-core-fill); stroke:var(--gg-core-line); stroke-width:1.3; }
 .hub-text { fill:var(--gg-core-ink); font-size:12.5px; font-weight:600; text-anchor:middle; }
-.fan-line { stroke:var(--tone); stroke-width:.6; stroke-dasharray:2 2.5; opacity:.7; }
-.chain-link { fill:none; stroke:var(--tone); stroke-width:1.3; }
-.chain-link.link-oversees, .chain-link.link-contains { stroke-dasharray:4 3; stroke-width:1.1; }
-.chain-link.link-ex_officio { stroke-dasharray:1 3; stroke-linecap:round; stroke-width:1.6; }
+.fan-line { stroke:var(--tone); stroke-width:.9; stroke-dasharray:2 2.5; opacity:.85; }
+.chain-link { fill:none; stroke:var(--tone); stroke-width:1.8; }
+.chain-link.link-oversees, .chain-link.link-contains { stroke-dasharray:4 3; stroke-width:1.5; }
+.chain-link.link-ex_officio { stroke-dasharray:1 3; stroke-linecap:round; stroke-width:2.1; }
 .node .seat-unrecorded { fill:var(--gg-glyph); stroke-dasharray:1.2 1.2; }
 .marker-fill { fill:var(--tone); }
 .marker-open { fill:var(--gg-surface); stroke:var(--tone); stroke-width:1.3; }
@@ -520,7 +524,7 @@
 @media (hover:hover) { .person-card-latest:hover span { text-decoration:underline; } }
 .person-card-cta { width:100%; margin-top:12px; padding:8px; border-radius:8px; background:var(--gg-text); color:var(--gg-panel); font-weight:500; }
 @media (hover:hover) { .person-card-cta:hover { opacity:.88; } }
-.reach-link { fill:none; stroke:var(--tone); stroke-width:.7; opacity:.55; }
+.reach-link { fill:none; stroke:var(--tone); stroke-width:1; opacity:.7; }
 @media (hover:hover) { .link-group:hover .reach-link { stroke-width:1.8; opacity:1; } }
 .reach-link.link-oversees { stroke-dasharray:3 3; }
 .reach-link.link-ex_officio { stroke-dasharray:1 3; stroke-linecap:round; stroke-width:1.2; }
