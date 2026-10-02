@@ -61,18 +61,20 @@ describe('government layout', () => {
 describe('portraits', () => {
 	it('attaches a portrait url to named people that lack one', () => {
 		const graph = compileNigeriaGraph()
+		const senatePresident = graph.nodes['ng-president-of-the-senate'].people[0]
+		const verified = graph.nodes['ng-president'].people[0]?.imageUrl
+		assert.ok(senatePresident?.name && !senatePresident.imageUrl, 'the example needs a holder without a portrait')
 		applyPortraitUrls(graph, {
-			'Bola Ahmed Tinubu':
-				'https://upload.wikimedia.org/wikipedia/commons/tinubu.jpg',
+			[senatePresident.name]: 'https://upload.wikimedia.org/wikipedia/commons/senate-president.jpg',
+			'Bola Ahmed Tinubu': 'https://upload.wikimedia.org/wikipedia/commons/someone-else.jpg',
 		})
 		assert.equal(
-			graph.nodes['ng-president'].people[0]?.imageUrl,
-			'https://upload.wikimedia.org/wikipedia/commons/tinubu.jpg',
-		)
-		assert.equal(
 			graph.nodes['ng-president-of-the-senate'].people[0]?.imageUrl,
-			undefined,
+			'https://upload.wikimedia.org/wikipedia/commons/senate-president.jpg',
 		)
+		// The President's portrait is pinned (verified-portraits): a lookup never replaces it.
+		assert.ok(verified)
+		assert.equal(graph.nodes['ng-president'].people[0]?.imageUrl, verified)
 	})
 
 	it('asks Wikipedia only for org-head names that still lack a portrait', () => {
