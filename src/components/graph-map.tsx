@@ -50,6 +50,26 @@ interface GraphMapProps {
 	stateNames?: Record<string, string>
 }
 
+const HINT_SEEN = 'gg:map-hint-seen'
+/** The office the first-visit pulse points at: the President, the map's most natural first click. */
+const HINT_NODE = 'ng-president'
+// Where storage is blocked, the hint still goes once something is chosen, for the rest of the visit.
+let hintSeenThisVisit = false
+const noSubscribe = () => () => {}
+function readHintSeen() {
+	try {
+		return hintSeenThisVisit || localStorage.getItem(HINT_SEEN) === '1'
+	} catch {
+		return hintSeenThisVisit
+	}
+}
+function markHintSeen() {
+	hintSeenThisVisit = true
+	try {
+		localStorage.setItem(HINT_SEEN, '1')
+	} catch {}
+}
+
 export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }: GraphMapProps) {
 	const [hoverId, setHoverId] = useState<string | null>(null)
 	const [hiddenTypes, setHiddenTypes] = useState<Set<string>>(new Set())
@@ -117,6 +137,14 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 		})
 		return opened
 	}, [focus, fan, at])
+	const { t } = useT()
+	// First visit only: a line in the empty caption spot and a pulse on the President say the offices open.
+	// The server renders it as seen (storage is browser-only); it goes for good after the first selection.
+	const hintSeen = useSyncExternalStore(noSubscribe, readHintSeen, () => true)
+	useEffect(() => {
+		if (focusId) markHintSeen()
+	}, [focusId])
+	const hint = !hintSeen && !focusId
 	const zoom = useZoom(svgRef, layout.viewBox, `${layer}|${focusId ?? ''}`)
 	// A drag or pinch that ends over a node is navigation of the map, not a choice of that node.
 	const choose = (id: string) => {
@@ -229,6 +257,9 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 					})}
 				</g>
 
+				{hint && at.get(HINT_NODE) && (
+					<circle cx={at.get(HINT_NODE)!.x} cy={at.get(HINT_NODE)!.y} r={at.get(HINT_NODE)!.r + 3} className="hint-pulse tone-executive" pointerEvents="none" />
+				)}
 				{layout.nodes.filter((item) => item.kind !== 'hub' && visible(item)).map((item) => (
 					<Node
 						key={item.id}
@@ -266,6 +297,12 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 			{spot && !(focus && focus.kind !== 'hub') ? (
 				<p key={spot.label} className="map-caption tone-executive map-spotlight-caption" aria-live="polite">
 					{spot.caption ?? `${spot.label}: ${spotIds.size} ${spotIds.size === 1 ? 'ministry' : 'ministries'}`}
+				</p>
+			) : null}
+			{hint && !spot && !(focus && focus.kind !== 'hub') ? (
+				<p className="map-caption map-hint tone-executive">
+					<span className="map-hint-click">{t('mapHintClick')}</span>
+					<span className="map-hint-tap">{t('mapHintTap')}</span>
 				</p>
 			) : null}
 			{focus && focus.kind !== 'hub' ? (
