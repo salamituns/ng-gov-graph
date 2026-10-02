@@ -138,21 +138,31 @@
   --gg-text: #1b1a17;
   --gg-muted: #6f6b64;
   --gg-faint: #9d988f;
-  --gg-executive: #8484dc;
-  --gg-legislative: #dd4e35;
-  --gg-judicial: #c89c15;
+  /* Flag & Bronze: the executive in the flag's green, the legislature in adire indigo, the judiciary in Benin
+     bronze. Nigerian colours, and none where the CivLab reference keeps its own. */
+  --gg-executive: #0a7046;
+  --gg-legislative: #3a4fc4;
+  --gg-judicial: #8c5423;
   /* Nigeria's flag green (#008751) marks the country and its people: the core, the elects links, the countdown. */
   --gg-green: #008751;
   --gg-hub: var(--gg-green);
   --gg-hub-fill: #d5ede0;
   --gg-hub-ink: #006b40;
-  --gg-wedge-executive: #f3f2fb;
-  --gg-wedge-legislative: #fcede9;
-  --gg-wedge-judicial: #f7f2e3;
-  --gg-band-executive: #e5e4f7;
-  --gg-disc: #e0e5de;
+  /* The people at the core: the map in the flag's white, its states edged in green. */
+  --gg-core-fill: #efe7d3;
+  --gg-core-line: #2f7a54;
+  --gg-core-ink: #2e3a2f;
+  --gg-core-pick: #008751;
+  /* The budget's own colours, not the branches': what the money buys is not who governs. */
+  --gg-spend-pay: #7a5aa6;
+  --gg-spend-run: #b8901a;
+  --gg-wedge-executive: #eaf4ee;
+  --gg-wedge-legislative: #eceffb;
+  --gg-wedge-judicial: #f6eee5;
+  --gg-band-executive: #d3e9dc;
+  --gg-disc: #e6e1d4;
   --gg-glyph: #fbfaf8;
-  --gg-ring: #b8b5c9;
+  --gg-ring: #a7c1b2;
   --gg-shadow: 0 1px 2px #0000000d;
   /* Adire eleko: the indigo resist-dyed circles and dots of Yoruba cloth, barely there behind the map. */
   --gg-adire: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%232b3f8f' stroke-opacity='.07'%3E%3Ccircle cx='20' cy='20' r='6.5'/%3E%3Ccircle cx='20' cy='20' r='11' stroke-dasharray='1.4 2.6'/%3E%3Cpath d='M0 20h3M37 20h3M20 0v3M20 37v3'/%3E%3C/g%3E%3Cg fill='%232b3f8f' fill-opacity='.08'%3E%3Ccircle cx='20' cy='20' r='1.7'/%3E%3Ccircle cx='0' cy='0' r='1.3'/%3E%3Ccircle cx='40' cy='0' r='1.3'/%3E%3Ccircle cx='0' cy='40' r='1.3'/%3E%3Ccircle cx='40' cy='40' r='1.3'/%3E%3C/g%3E%3C/svg%3E");
@@ -170,13 +180,22 @@
   --gg-hub: var(--gg-green);
   --gg-hub-fill: #0f4a31;
   --gg-hub-ink: #c6f0da;
-  --gg-wedge-executive: #2f2b33;
-  --gg-wedge-legislative: #3a241e;
-  --gg-wedge-judicial: #38301d;
-  --gg-band-executive: #373248;
+  --gg-executive: #3fbf84;
+  --gg-legislative: #7d8fff;
+  --gg-judicial: #cf8d4e;
+  --gg-core-fill: #e6dcc2;
+  --gg-core-line: #2f6b4c;
+  --gg-core-ink: #f3ecda;
+  --gg-core-pick: #3fbf84;
+  --gg-spend-pay: #b08bd6;
+  --gg-spend-run: #e0b84a;
+  --gg-wedge-executive: #17261e;
+  --gg-wedge-legislative: #1c2137;
+  --gg-wedge-judicial: #30241a;
+  --gg-band-executive: #1e3529;
   --gg-disc: #151916;
-  --gg-glyph: #2b2730;
-  --gg-ring: #57536a;
+  --gg-glyph: #1a271f;
+  --gg-ring: #4f6b5c;
   --gg-shadow: none;
   --gg-adire: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='none' stroke='%238ea2ee' stroke-opacity='.08'%3E%3Ccircle cx='20' cy='20' r='6.5'/%3E%3Ccircle cx='20' cy='20' r='11' stroke-dasharray='1.4 2.6'/%3E%3Cpath d='M0 20h3M37 20h3M20 0v3M20 37v3'/%3E%3C/g%3E%3Cg fill='%238ea2ee' fill-opacity='.09'%3E%3Ccircle cx='20' cy='20' r='1.7'/%3E%3Ccircle cx='0' cy='0' r='1.3'/%3E%3Ccircle cx='40' cy='0' r='1.3'/%3E%3Ccircle cx='0' cy='40' r='1.3'/%3E%3Ccircle cx='40' cy='40' r='1.3'/%3E%3C/g%3E%3C/svg%3E");
 }
@@ -208,7 +227,7 @@
 .tone-executive { --tone: var(--gg-executive); --wedge: var(--gg-wedge-executive); }
 .tone-legislative { --tone: var(--gg-legislative); --wedge: var(--gg-wedge-legislative); }
 .tone-judicial { --tone: var(--gg-judicial); --wedge: var(--gg-wedge-judicial); }
-.tone-hub { --tone: var(--gg-hub); }
+.tone-hub { --tone: var(--gg-core-ink); }
 .wedge { stroke:none; }
 .wedge-executive { fill:var(--gg-wedge-executive); }
 .wedge-legislative { fill:var(--gg-wedge-legislative); }
@@ -234,9 +253,8 @@
 .node.is-selected .glyph { fill:var(--tone); }
 .node.is-selected .seat-filled { fill:var(--gg-glyph); }
 .node.is-selected .dot, .node.is-lit .dot, .node.is-hover .dot { opacity:1; }
-.node-hub .hub-seal { fill:var(--gg-hub-fill); stroke:var(--gg-hub); stroke-width:1.3; }
-.hub-text { fill:var(--gg-hub); font-size:12.5px; font-weight:600; text-anchor:middle; }
-.hub-text { fill:var(--gg-hub-ink); }
+.node-hub .hub-seal { fill:var(--gg-core-fill); stroke:var(--gg-core-line); stroke-width:1.3; }
+.hub-text { fill:var(--gg-core-ink); font-size:12.5px; font-weight:600; text-anchor:middle; }
 .fan-line { stroke:var(--tone); stroke-width:.6; stroke-dasharray:2 2.5; opacity:.7; }
 .chain-link { fill:none; stroke:var(--tone); stroke-width:1.3; }
 .chain-link.link-oversees, .chain-link.link-contains { stroke-dasharray:4 3; stroke-width:1.1; }
@@ -365,8 +383,9 @@
 .change-card { padding:12px 13px; border:1px solid var(--gg-line); border-radius:10px; }
 .change-meta { display:flex; justify-content:space-between; align-items:center; color:var(--gg-muted); font-size:10px; font-family:var(--font-geist-mono),monospace; }
 .badge { padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:.06em; }
-.badge.appointed { color:var(--gg-legislative); background:color-mix(in srgb, var(--gg-legislative) 12%, transparent); border:1px solid color-mix(in srgb, var(--gg-legislative) 35%, transparent); }
-.badge.departure { color:var(--gg-executive); background:color-mix(in srgb, var(--gg-executive) 12%, transparent); border:1px solid color-mix(in srgb, var(--gg-executive) 35%, transparent); }
+.badge.appointed { color:var(--gg-hub-ink); background:color-mix(in srgb, var(--gg-green) 12%, transparent); border:1px solid color-mix(in srgb, var(--gg-green) 35%, transparent); }
+/* An appointment in the accent green, a departure in bronze: news, not a verdict. */
+.badge.departure { color:var(--gg-judicial); background:color-mix(in srgb, var(--gg-judicial) 12%, transparent); border:1px solid color-mix(in srgb, var(--gg-judicial) 35%, transparent); }
 .change-card h3 { margin:10px 0; font-size:14px; line-height:1.35; font-weight:500; }
 @media (hover:hover) { .change-card h3 a:hover { text-decoration:underline; } }
 .change-people { display:grid; gap:4px; padding:9px 11px; border-radius:7px; background:var(--gg-panel-2); }
@@ -524,9 +543,9 @@
 @media (hover:hover) { .election-source:hover { color:var(--gg-text); } }
 
 /* ---------- Nigeria at the core ---------- */
-.nigeria-core .core-state { fill:var(--gg-hub-fill); stroke:var(--gg-hub); stroke-width:.55; stroke-linejoin:round; cursor:pointer; transition:fill .2s ease; }
-@media (hover:hover) { .nigeria-core .core-state:hover { fill:color-mix(in srgb, var(--gg-hub) 55%, var(--gg-hub-fill)); } }
-.nigeria-core .core-state.is-selected { fill:var(--gg-hub); }
+.nigeria-core .core-state { fill:var(--gg-core-fill); stroke:var(--gg-core-line); stroke-width:.55; stroke-linejoin:round; cursor:pointer; transition:fill .2s ease; }
+@media (hover:hover) { .nigeria-core .core-state:hover { fill:color-mix(in srgb, var(--gg-core-pick) 45%, var(--gg-core-fill)); } }
+.nigeria-core .core-state.is-selected { fill:var(--gg-core-pick); }
 /* A spotlight from the panel: the lit bodies stay, everything else steps back. */
 .graph-svg .node { transition:opacity .2s ease; }
 .graph-svg.has-spotlight .node:not(.is-lit):not(.is-selected) { opacity:.22; }
@@ -534,13 +553,8 @@
 .map-spotlight-caption { cursor:default; }
 /* The spotlight's fades are decoration: without motion the colours simply switch. */
 @media (prefers-reduced-motion: reduce) { .graph-svg .node, .graph-svg .node .glyph, .nigeria-core .core-state { transition:none; } }
-.nigeria-core .core-capital { fill:var(--gg-hub); stroke:var(--gg-hub-fill); stroke-width:.6; }
-.dark .nigeria-core .core-state { fill:var(--gg-hub-fill); stroke:#7fd7ad; }
-/* After the dark fill, which would otherwise win the specificity tie and hide a selected state. */
-.dark .nigeria-core .core-state.is-selected { fill:#7fd7ad; }
-.dark .nigeria-core .core-capital { fill:#ffffff; stroke:var(--gg-hub-fill); }
-/* Abuja's star is white on the green, as on the flag. */
-.nigeria-core .core-capital { fill:#ffffff; stroke:var(--gg-hub); }
+/* Abuja's star is green on the white, as on the flag; both themes read the core's own tokens. */
+.nigeria-core .core-capital { fill:var(--gg-core-pick); stroke:var(--gg-core-fill); stroke-width:.6; }
 .panel-footer span { display:block; margin-top:4px; }
 .panel-footer a { text-decoration:underline; text-underline-offset:2px; }
 
@@ -836,8 +850,8 @@
 .budget-total strong { font-family:var(--font-display),var(--font-body),sans-serif; font-size:28px; font-weight:600; letter-spacing:-.02em; color:var(--gg-hub-ink); font-variant-numeric:tabular-nums; }
 .budget-total span { color:var(--gg-muted); font-size:12px; }
 .spend-bar { display:flex; height:10px; margin-top:12px; border-radius:5px; overflow:hidden; background:var(--gg-panel-2); }
-.spend-personnel { background:var(--gg-executive); }
-.spend-overhead { background:var(--gg-judicial); }
+.spend-personnel { background:var(--gg-spend-pay); }
+.spend-overhead { background:var(--gg-spend-run); }
 .spend-capital { background:var(--gg-green); }
 .spend-key { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:8px; color:var(--gg-muted); font-size:11.5px; }
 .spend-key li { display:flex; align-items:center; gap:5px; }
@@ -923,8 +937,8 @@
 .tone-swv { fill:#7b8794; }
 .tone-statutory { fill:var(--gg-judicial); }
 .tone-rest { fill:var(--gg-faint); }
-.tone-pay { fill:var(--gg-executive); }
-.tone-run { fill:#d08b3e; }
+.tone-pay { fill:var(--gg-spend-pay); }
+.tone-run { fill:var(--gg-spend-run); }
 .tone-build { fill:var(--gg-green); }
 .flow-detail { position:absolute; right:16px; top:12px; display:grid; gap:2px; max-width:280px; padding:9px 12px; border-radius:9px; background:var(--gg-panel); box-shadow:0 6px 20px #0002, 0 0 0 1px var(--gg-line); font-size:12.5px; }
 /* The × clears the snippet until the reader taps something else — the map is theirs again. */
@@ -962,8 +976,8 @@
 .flow-stack .tone-swv, .flow-rows i.tone-swv { background:#7b8794; }
 .flow-stack .tone-statutory, .flow-rows i.tone-statutory { background:var(--gg-judicial); }
 .flow-stack .tone-rest, .flow-rows i.tone-rest { background:var(--gg-faint); }
-.flow-stack .tone-pay, .flow-mini .tone-pay, .flow-rows i.tone-pay { background:var(--gg-executive); }
-.flow-stack .tone-run, .flow-mini .tone-run, .flow-rows i.tone-run { background:#d08b3e; }
+.flow-stack .tone-pay, .flow-mini .tone-pay, .flow-rows i.tone-pay { background:var(--gg-spend-pay); }
+.flow-stack .tone-run, .flow-mini .tone-run, .flow-rows i.tone-run { background:var(--gg-spend-run); }
 .flow-stack .tone-build { background:var(--gg-green); }
 .flow-rows { display:grid; border-radius:10px; background:var(--gg-panel); box-shadow:var(--gg-shadow); overflow:hidden; }
 .flow-rows li + li { border-top:1px solid var(--gg-line); }
