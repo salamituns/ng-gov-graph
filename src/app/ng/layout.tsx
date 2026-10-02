@@ -6,8 +6,6 @@ import { powerPeople } from '@/lib/graph/power'
 import { LangProvider } from '@/components/lang'
 import { getLang } from '@/lib/i18n-server'
 
-export const dynamic = 'force-dynamic'
-
 export default async function NigeriaLayout({ children }: { children: ReactNode }) {
 	const [data, lang] = await Promise.all([loadNigeriaGraph(), getLang()])
 	const now = new Date()
