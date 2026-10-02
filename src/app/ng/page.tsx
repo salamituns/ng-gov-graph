@@ -5,6 +5,9 @@ import { BrandBar } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
 import { QuickActions } from '@/components/quick-actions'
 import { RepresentPicker } from '@/components/represent-picker'
+import { TrendingTopics } from '@/components/trending-topics'
+import { CIVIC_TOPICS } from '@/data/nigeria/topics'
+import { trendingTopics } from '@/lib/graph/trending'
 import { NewsProse, type ProseItem } from '@/components/panel-client'
 import { changesInWindow } from '@/lib/graph/feed'
 import { filterGraph, parseLayer } from '@/lib/graph/filter'
@@ -63,6 +66,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 		}),
 	}))
 	const inNews = powerPeople(data.graph, data.news, 90, now).people.slice(0, 5)
+	const trending = trendingTopics(data.news, CIVIC_TOPICS, now)
 
 	const changes = [...data.changes].sort((a, b) => b.date.localeCompare(a.date))
 	const windowed = changesInWindow(changes, days, now)
@@ -81,6 +85,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 		<>
 			<BrandBar layer={layer} tagline />
 			{layer === 'federal' ? <QuickActions gov={data.gov} /> : null}
+			{layer === 'federal' ? <TrendingTopics gov={data.gov} trending={trending} heading={t(lang, trending.hasHistory ? 'trendingThisWeek' : 'mostCoveredThisWeek')} /> : null}
 			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} guideHref={`/${data.gov}/elections`} />
 			<RepresentPicker
 				gov={data.gov}

@@ -5,13 +5,12 @@ import { BrandBar, type Crumb } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
 import { GENERAL_ELECTION } from '@/data/nigeria/elections'
 import { ChamberRosterList } from '@/components/chamber-roster'
-import { ConnectionGroup, Glyph, StoryImage, type ConnectionCard } from '@/components/panel-client'
+import { ConnectionGroup, Glyph, type ConnectionCard } from '@/components/panel-client'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { authorityChain, descendantsOf, organizationOf } from '@/lib/graph/authority'
 import { newsForEntity } from '@/lib/graph/feed'
 import { toneOf } from '@/lib/graph/layout'
 import { seatTitle } from '@/lib/graph/seat-title'
-import { decodeHtml, newsHeadline } from '@/lib/graph/news-text'
 import { getNode, loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath } from '@/lib/graph/paths'
 import { chamberRoster } from '@/lib/graph/roster'
@@ -23,7 +22,7 @@ import { CONSTITUTION_URL, type Provision } from '@/data/nigeria/constitution'
 import { provisionsFor } from '@/lib/graph/constitution'
 import { BudgetCard } from '@/components/budget-card'
 import { ProvisionList } from '@/components/provision-list'
-import { Fold } from '@/components/fold'
+import { StoryList } from '@/components/story-list'
 
 const COLLECTIONS: Record<string, NodeType[]> = {
 	departments: ['department'],
@@ -219,27 +218,7 @@ export default async function EntityPage({ params }: PageProps) {
 				</TabsList>
 				<TabsContent value="news" className="entity-tab">
 					<h2>Where it appears in the news</h2>
-					{stories.length === 0 ? (
-						<p className="empty-box">No story names this body yet</p>
-					) : (
-						<Fold className="story-list" limit={6} showAll={`Show all ${stories.length} stories`}>
-							{stories.map((item) => (
-								<li key={item.id}>
-									<div className="story-text">
-										<a href={item.url} target="_blank" rel="noreferrer">
-											<h3>{newsHeadline(item)}</h3>
-										</a>
-										{item.publishedAt ? <time dateTime={item.publishedAt}>{new Date(`${item.publishedAt.slice(0, 10)}T12:00:00Z`).toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</time> : null}
-										{item.excerpt ? <p>{decodeHtml(item.excerpt).slice(0, 260)}</p> : null}
-										<a href={item.url} target="_blank" rel="noreferrer" className="source-pill">{hostOf(item.url)} ↗</a>
-									</div>
-									<a href={item.url} target="_blank" rel="noreferrer" className="story-image" aria-hidden="true" tabIndex={-1}>
-										<StoryImage src={item.imageUrl} />
-									</a>
-								</li>
-							))}
-						</Fold>
-					)}
+					<StoryList stories={stories} empty="No story names this body yet" />
 				</TabsContent>
 				<TabsContent value="connections" className="entity-tab">
 					{groups.length ? groups.map((group) => <ConnectionGroup key={group.title} title={group.title} cards={group.cards} />) : (
@@ -250,12 +229,4 @@ export default async function EntityPage({ params }: PageProps) {
 			{roster ? <ChamberRosterList gov={gov} roster={roster} /> : null}
 		</>
 	)
-}
-
-function hostOf(url: string) {
-	try {
-		return new URL(url).hostname.replace(/^www\./, '')
-	} catch {
-		return 'source'
-	}
 }

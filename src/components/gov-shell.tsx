@@ -10,6 +10,7 @@ import { filterGraph } from '@/lib/graph/filter'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
 import { seatTitle } from '@/lib/graph/seat-title'
+import { CIVIC_TOPICS } from '@/data/nigeria/topics'
 import type { CompiledGraph } from '@/lib/graph/types'
 import { LangSelect, useT } from '@/components/lang'
 import { PanelSheet } from '@/components/panel-sheet'
@@ -39,7 +40,8 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 	const params = useSearchParams()
 	const [, section, slug] = pathname.split('/').filter(Boolean)
 	// /ng/represent/lagos selects Lagos State; every other section's third segment is a node id.
-	const selectedId = section === 'represent' && slug ? stateIdFromSlug(slug) : slug
+	// A topic page's slug is a topic, not a node: nothing is selected (its bodies are lit by TopicSpotlight).
+	const selectedId = section === 'topics' ? undefined : section === 'represent' && slug ? stateIdFromSlug(slug) : slug
 	const selected = selectedId ? graph.nodes[selectedId] : undefined
 	const selectedLayer = selected?.layer ?? (selected?.parentId ? graph.nodes[selected.parentId]?.layer : undefined)
 	const layer = (params.get('layer') === 'states' || params.get('layer') === 'state' || selectedLayer === 'state') && params.get('view') !== 'budget' ? 'state' : 'federal'
@@ -75,6 +77,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 		: section === 'elections' ? 'Nigeria Decides 2027'
 		: section === 'budget' ? t('budgetTitle')
 		: section === 'federal-character' ? t('federalCharacter')
+		: section === 'topics' ? (CIVIC_TOPICS.find((topic) => topic.id === slug)?.label ?? 'Trending')
 		: section ? (selected ? seatTitle(graph, selected) : 'Not found')
 		: undefined
 	const select = (id: string) => {
