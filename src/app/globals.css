@@ -711,6 +711,8 @@
 .fc-pick-card header { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
 .fc-pick-card h3 { font-size:17px; font-weight:600; font-family:var(--font-display),var(--font-body),sans-serif; }
 .fc-pick-card header p { margin-top:2px; color:var(--gg-muted); font-size:12px; }
+/* Measured against s.147(3), the rule the page is about: a fact, set in the text colour, not a verdict. */
+.fc-pick-card header p.fc-minimum { margin-top:4px; color:var(--gg-text); font-size:12.5px; text-wrap:balance; }
 .fc-pick-clear { width:32px; height:32px; margin:-6px -6px 0 0; border-radius:50%; color:var(--gg-muted); font-size:20px; line-height:1; }
 .fc-pick-clear:hover { background:var(--gg-panel); color:var(--gg-text); }
 .fc-ministers { display:grid; gap:4px; margin-top:10px; }

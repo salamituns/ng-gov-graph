@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import { SeeOn } from '@/components/see-on-map'
 import { naira, perNigerian } from '@/data/nigeria/budget'
+import { stateAgainstMinimum, zoneAgainstMinimum } from '@/lib/graph/fc-minimum'
 import { spotlight } from '@/lib/spotlight'
 
 export interface ExplorerMinister {
@@ -221,6 +222,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 								<div>
 									<h3>{pickedState.name}</h3>
 									<p>{pickedState.zone} · {plural(pickedState.ministers.length)}</p>
+									<p className="fc-minimum">{stateAgainstMinimum(pickedState.ministers.length, states.map((state) => state.ministers.length))}</p>
 								</div>
 								<button type="button" className="fc-pick-clear" aria-label="Clear" onClick={() => choose(null)}>×</button>
 							</header>
@@ -239,6 +241,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 								<div>
 									<h3>{pickedZone.zone}</h3>
 									<p>{pickedZone.states} states · {plural(pickedZone.ministers)}</p>
+									<p className="fc-minimum">{zoneAgainstMinimum(states.filter((state) => zoneSlug(state.zone) === pickedZone.slug).map((state) => state.ministers.length))}</p>
 								</div>
 								<button type="button" className="fc-pick-clear" aria-label="Clear" onClick={() => choose(null)}>×</button>
 							</header>
