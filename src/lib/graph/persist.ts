@@ -4,7 +4,7 @@ import { getDb } from '@/db'
 import { civicFeed, graphSnapshots } from '@/db/schema'
 import { compileNigeriaGraph, parseGraphSnapshot } from '@/lib/graph/nigeria'
 import { overlayNassOccupancy } from '@/lib/graph/nass-live'
-import { overlayPortraits } from '@/lib/graph/portraits'
+import { carryPortraits, overlayPortraits } from '@/lib/graph/portraits'
 import { overlayNaltfOccupancy } from '@/lib/graph/naltf-fill'
 import { overlayOrderpaperOccupancy } from '@/lib/graph/orderpaper-fill'
 import { overlayWikiOccupancy, adoptConstituencyIds } from '@/lib/graph/wiki-fill'
@@ -78,18 +78,19 @@ export function persistNigeriaGraph(options?: {
 			const { overlayAgencyHeads } = await import('@/lib/graph/agency-heads')
 			graph = await overlayAgencyHeads(graph)
 		}
-		if (options?.portraits) {
-			graph = await overlayPortraits(graph)
-		}
-		const { applyAppointments, diffOfficeholders, appointmentsFromNews, fetchAppointmentBodies, mergeChanges, mergeNews } = await import('@/lib/graph/changes')
-		const { enrichNewsImages, parseChangesFeed, parseNewsFeed, parseRssNews, resolveStoredFeed } = await import('@/lib/graph/feed')
-		const { mentionLabels } = await import('@/lib/graph/mentions')
+		// The last snapshot, read before portraits so a face it had survives a lookup that fails today.
 		const [previousPayload, storedNews, storedChanges] = await Promise.all([
 			fetchNeonSnapshot(),
 			fetchCivicFeed(NEWS_FEED_ID),
 			fetchCivicFeed(CHANGES_FEED_ID),
 		])
 		const previous = parseGraphSnapshot(previousPayload)
+		if (options?.portraits) {
+			graph = await overlayPortraits(carryPortraits(graph, previous))
+		}
+		const { applyAppointments, diffOfficeholders, appointmentsFromNews, fetchAppointmentBodies, mergeChanges, mergeNews } = await import('@/lib/graph/changes')
+		const { enrichNewsImages, parseChangesFeed, parseNewsFeed, parseRssNews, resolveStoredFeed } = await import('@/lib/graph/feed')
+		const { mentionLabels } = await import('@/lib/graph/mentions')
 		const today = new Date().toISOString().slice(0, 10)
 		// History accumulates: stored items are kept and new ones join them.
 		let news = resolveStoredFeed(storedNews, nigeriaNews, parseNewsFeed).items

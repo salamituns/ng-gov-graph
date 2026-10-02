@@ -50,6 +50,24 @@ export function isSamePerson(name: string, title: string, about: string) {
 	return matches && /Nigeria/i.test(about)
 }
 
+/**
+ * Wikipedia, asked about hundreds of people in one refresh, sometimes answers "slow down" (429), fails (5xx)
+ * or times out; one more try after a pause usually gets through. A failure still costs nobody their face:
+ * carryPortraits keeps the last one.
+ */
+async function wikiFetch(url: URL, attempts = 2): Promise<Response | null> {
+	for (let attempt = 1; attempt <= attempts; attempt++) {
+		try {
+			const res = await fetch(url, { headers: WIKI_HEADERS, cache: 'no-store', signal: AbortSignal.timeout(6000) })
+			if (res.ok || (res.status !== 429 && res.status < 500)) return res
+		} catch {
+			// A timeout or a dropped connection: try again below.
+		}
+		if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 1500 * attempt))
+	}
+	return null
+}
+
 async function wikipediaImage(name: string) {
 	const url = new URL('https://en.wikipedia.org/w/api.php')
 	url.searchParams.set('action', 'query')
@@ -64,8 +82,8 @@ async function wikipediaImage(name: string) {
 	url.searchParams.set('explaintext', '1')
 	url.searchParams.set('exsentences', '2')
 	url.searchParams.set('redirects', '1')
-	const res = await fetch(url, { headers: WIKI_HEADERS, cache: 'no-store', signal: AbortSignal.timeout(6000) })
-	if (!res.ok) return null
+	const res = await wikiFetch(url)
+	if (!res?.ok) return null
 	const body = (await res.json()) as {
 		query?: { pages?: Record<string, { index?: number; title: string; description?: string; extract?: string; thumbnail?: { source?: string }; original?: { source?: string } }> }
 	}
@@ -182,6 +200,28 @@ async function officialPortraits(graph: CompiledGraph, names: Set<string>) {
 		while (cursor < tasks.length) await tasks[cursor++]()
 	}))
 	return found
+}
+
+/**
+ * Keeps the portraits the last snapshot had. Each refresh rebuilds the graph and looks portraits up again,
+ * and a lookup that times out or is rate-limited would otherwise drop a face that was right yesterday (the
+ * President's, once). Only fills people without one, so a hand-verified portrait still wins.
+ */
+export function carryPortraits(graph: CompiledGraph, previous: CompiledGraph | null): CompiledGraph {
+	if (!previous) return graph
+	const known = new Map<string, { imageUrl: string; imageSourceUrl?: string }>()
+	for (const node of Object.values(previous.nodes)) {
+		for (const person of node.people) {
+			if (person.name && person.imageUrl && !known.has(person.name)) known.set(person.name, { imageUrl: person.imageUrl, imageSourceUrl: person.imageSourceUrl })
+		}
+	}
+	for (const node of Object.values(graph.nodes)) {
+		node.people = node.people.map((person) => {
+			const kept = person.imageUrl ? undefined : known.get(person.name)
+			return kept ? { ...person, imageUrl: kept.imageUrl, ...(kept.imageSourceUrl ? { imageSourceUrl: kept.imageSourceUrl } : {}) } : person
+		})
+	}
+	return graph
 }
 
 export async function overlayPortraits(
