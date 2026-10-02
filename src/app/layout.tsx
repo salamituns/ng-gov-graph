@@ -38,6 +38,8 @@ export const metadata: Metadata = {
 	// Links, previews and canonical URLs point at the site's own domain, not the vercel.app one.
 	metadataBase: new URL('https://whoruns9ja.com'),
 	openGraph: { siteName: 'Who Runs Naija', locale: 'en_NG', type: 'website' },
+	// X shows the share card (opengraph-image.tsx) full width; it reads og:image when there is no twitter:image.
+	twitter: { card: 'summary_large_image' },
 	title: 'Who Runs Naija · Nigeria’s government, mapped and sourced',
 	applicationName: 'Who Runs Naija',
 	appleWebApp: { title: 'Who Runs Naija' },
