@@ -389,13 +389,27 @@ function layoutFederal(graph: CompiledGraph): GovernmentLayout {
 	for (const tone of ['judicial', 'legislative', 'executive'] as const) {
 		const arc = SECTOR_ARC[tone]
 		const own = clusters.filter((cluster) => toneOf(byId.get(cluster.ownerId)!) === tone)
-		// The title sits centred on the arc and only has to clear the lobes it passes over, not the deepest one
-		// elsewhere in the sector: that keeps it close to the wheel and the frame tight.
+		// The title only has to clear the lobes it passes over, so slide it along the sector to the stretch with the
+		// shallowest ones (nearest the middle on a tie): every lobe it sits on costs the whole wheel room on screen.
+		// It only slides where it reads close to level at rest (within 50 degrees, or as level as the middle).
 		const mid = (arc.start + arc.end) / 2
 		const titleHalf = (tone.length * TITLE_ADVANCE) / 2 / RING.rim + 0.06
-		const under = own.filter((cluster) => Math.abs(cluster.angle - mid) < cluster.half + 0.03 + titleHalf)
-		const outer = Math.max(RING.rim, ...under.map((cluster) => RING.cluster + (cluster.rows - 1) * DOT_STEP + 13))
+		const depthAt = (centre: number) => Math.max(RING.rim, ...own
+			.filter((cluster) => Math.abs(cluster.angle - centre) < cluster.half + 0.03 + titleHalf)
+			.map((cluster) => RING.cluster + (cluster.rows - 1) * DOT_STEP + 13))
+		let centre = mid
+		let outer = depthAt(mid)
+		const level = Math.min(Math.abs(Math.sin(mid)), Math.cos(0.9))
+		for (let angle = arc.start + titleHalf; angle <= arc.end - titleHalf; angle += 0.01) {
+			if (Math.abs(Math.sin(angle)) < level) continue
+			const depth = depthAt(angle)
+			if (depth < outer || (depth === outer && Math.abs(angle - mid) < Math.abs(centre - mid))) {
+				centre = angle
+				outer = depth
+			}
+		}
 		const shape = lobedWedge(arc.start, arc.end, RING.rim, own, outer + 16)
+		shape.labelArc = { r: outer + 16, start: centre - titleHalf * 1.5, end: centre + titleHalf * 1.5 }
 		wedges.push({ key: tone, tone, label: tone.toUpperCase(), ...shape })
 		for (const [key, r] of [['authority', RING.authority], ['oversight', RING.oversight], ['administration', RING.administration]] as const) {
 			if (tone !== 'executive' && key === 'authority') continue
