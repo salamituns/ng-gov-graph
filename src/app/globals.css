@@ -784,6 +784,16 @@
 .entity-origin { margin-top:8px; color:var(--gg-muted); font-size:12px; }
 .entity-origin a { color:var(--gg-hub-ink); }
 @media (hover:hover) { .entity-origin a:hover { text-decoration:underline; } }
+/* ---------- Trending this week ---------- */
+.trending h2 { font-size:15px; font-weight:600; }
+.trending-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.trending-chips a { display:inline-flex; align-items:center; gap:7px; min-height:36px; padding:0 12px; border-radius:18px; border:1px solid var(--gg-line); background:var(--gg-panel-2); color:var(--gg-text); font-size:13px; font-weight:500; }
+.trending-chips a.is-rising { border-color:color-mix(in srgb, var(--gg-green) 45%, var(--gg-line)); }
+@media (hover:hover) { .trending-chips a:hover { border-color:var(--gg-muted); } }
+.trending-rise { color:var(--gg-hub-ink); font-weight:700; }
+.trending-count { min-width:20px; padding:1px 6px; border-radius:9px; background:var(--gg-panel); color:var(--gg-muted); font-size:11px; font-variant-numeric:tabular-nums; text-align:center; }
+.topic-bodies { display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:6px; font-size:13px; }
+.topic-keywords { margin-top:12px; font-size:11.5px; }
 .fc-card { display:flex; align-items:center; gap:14px; padding:14px 16px; }
 .fc-card h2 { font-size:15px; font-weight:600; }
 .fc-card .muted-copy { margin-top:4px; }
