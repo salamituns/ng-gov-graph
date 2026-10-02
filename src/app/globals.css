@@ -217,7 +217,9 @@
 .history-buttons button { width:31px; height:32px; display:grid; place-items:center; }
 /* Hover effects are for pointers: on touch the last tap stays "hovered". The same guard is used on every :hover rule below. */
 @media (hover:hover) { .icon-button:hover, .history-buttons button:hover { background:var(--gg-panel-2); border-radius:9px; } }
-.map-canvas { position:absolute; inset:0; display:grid; place-items:center; padding:52px 12px 54px; }
+/* The toolbar, key and view switch sit in the corners, which a circle leaves empty, so the wheel runs nearly edge to edge.
+   The bottom keeps room for the selection caption, since the wheel turns a selection (and its title) to the bottom. */
+.map-canvas { position:absolute; inset:0; display:grid; place-items:center; padding:12px 0 46px; }
 .map-views { position:absolute; z-index:4; right:14px; bottom:14px; display:flex; padding:3px; gap:2px; border-radius:10px; background:var(--gg-panel-2); box-shadow:var(--gg-shadow); }
 .map-views button { border-radius:8px; color:var(--gg-muted); font-size:13px; padding:6px 13px; }
 .map-views button[aria-pressed="true"] { background:var(--gg-panel); color:var(--gg-text); box-shadow:var(--gg-shadow); }

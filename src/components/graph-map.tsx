@@ -255,7 +255,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 					)
 				})}
 				{hub && <NigeriaCore x={hub.x} y={hub.y} names={stateNames} selectedId={selectedId} lit={spotStates} onSelect={choose} />}
-				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} />}
+				{hover && hover.kind !== 'hub' && <HoverPill item={turn(hover, rotation)} reach={layout.reach} />}
 				{edgeHover && !hover && (
 					<g className={`edge-pill tone-${edgeHover.tone}`} pointerEvents="none">
 						<rect x={edgeHover.x + 6} y={edgeHover.y - 22} width={edgeHover.text.length * 5.6 + 12} height={15} rx={4} />
@@ -489,12 +489,12 @@ function starPath(cx: number, cy: number, r: number) {
 	}).join(' L ')} Z`
 }
 
-function HoverPill({ item }: { item: PlacedNode }) {
+function HoverPill({ item, reach }: { item: PlacedNode; reach: number }) {
 	const text = item.node.name.length > 46 ? `${item.node.name.slice(0, 44)}…` : item.node.name
 	const width = text.length * 5.9 + 16
 	const above = item.y > MAP.cy - 60
 	const y = above ? item.y - (item.h ?? item.r * 2) / 2 - 22 : item.y + (item.h ?? item.r * 2) / 2 + 6
-	const x = Math.min(MAP.size + 20 - width, Math.max(-20, item.x - width / 2))
+	const x = Math.min(MAP.cx + reach - width, Math.max(MAP.cx - reach, item.x - width / 2))
 	return (
 		<g className={`hover-pill tone-${item.tone}`} pointerEvents="none">
 			<rect x={x} y={y} width={width} height={17} rx={4} />
