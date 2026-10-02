@@ -13,12 +13,7 @@ import { portraitSize } from '@/lib/graph/portraits'
 import { parseChangesFeed, parseNewsFeed, resolveStoredFeed, retagNews } from '@/lib/graph/feed'
 import { mentionLabels } from '@/lib/graph/mentions'
 import { summarizeOverview } from '@/lib/graph/overview'
-import {
-	CHANGES_FEED_ID,
-	fetchCivicFeed,
-	fetchNeonSnapshot,
-	NEWS_FEED_ID,
-} from '@/lib/graph/store'
+import { loadStoredData } from '@/lib/graph/store'
 import type { Catalog, CompiledGraph, GraphNode } from '@/lib/graph/types'
 
 function mergeCatalogs(base: Catalog, extra: Catalog): Catalog {
@@ -150,11 +145,11 @@ export async function resolveNigeriaGraph(
 }
 
 export const loadNigeriaGraph = cache(async () => {
-	const [resolved, newsPayload, changesPayload] = await Promise.all([
-		resolveNigeriaGraph(fetchNeonSnapshot),
-		fetchCivicFeed(NEWS_FEED_ID),
-		fetchCivicFeed(CHANGES_FEED_ID),
-	])
+	// One cached read for the snapshot and both feeds (see loadStoredData): not a database round trip per page.
+	const stored = await loadStoredData()
+	const resolved = await resolveNigeriaGraph(async () => stored.snapshot)
+	const newsPayload = stored.news
+	const changesPayload = stored.changes
 	const news = resolveStoredFeed(newsPayload, nigeriaNews, parseNewsFeed)
 	const changes = resolveStoredFeed(
 		changesPayload,
