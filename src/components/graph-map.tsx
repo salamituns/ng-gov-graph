@@ -180,6 +180,7 @@ export function GraphMap({ graph, layer, selectedId, onSelect, stateNames = {} }
 				{layout.bands.map((band) => <path key={band.key} d={band.d} className={`band band-${band.tone}`} />)}
 				{layout.rings.map((ring) => <path key={ring.key} d={ring.d} className="ring-guide" />)}
 				<circle cx={MAP.cx} cy={MAP.cy} r={RING.disc} className="hub-disc" />
+				<circle cx={MAP.cx} cy={MAP.cy} r={RING.disc - 6} className="hub-rim" />
 
 				{focus && fan.length > 0 && (
 					<g className="fan">
@@ -449,9 +450,10 @@ function turn(item: PlacedNode, angle: number): PlacedNode {
 function NigeriaCore({ x, y, names, selectedId, lit, onSelect }: { x: number; y: number; names: Record<string, string>; selectedId?: string; lit: Set<string>; onSelect: (id: string) => void }) {
 	const [hoverState, setHoverState] = useState<string | null>(null)
 	const peopleLabel = useT().t('peopleOfNigeria')
-	const scale = 1.08
-	const top = y - 14
+	const scale = 1.3
+	const top = y - 16
 	const named = hoverState ? names[hoverState] : undefined
+	const label = named ?? peopleLabel
 	return (
 		<g className="nigeria-core">
 			<g transform={`translate(${x} ${top}) scale(${scale})`}>
@@ -472,8 +474,8 @@ function NigeriaCore({ x, y, names, selectedId, lit, onSelect }: { x: number; y:
 					<title>Abuja, Federal Capital Territory</title>
 				</path>
 			</g>
-			<text x={x} y={top + (NIGERIA_MAP.height * scale) / 2 + 17} className="hub-text" pointerEvents="none">
-				{named ?? peopleLabel}
+			<text x={x} y={top + (NIGERIA_MAP.height * scale) / 2 + 20} className={`hub-text${label.length <= 18 ? ' core-label' : ''}`} pointerEvents="none">
+				{label}
 			</text>
 		</g>
 	)
