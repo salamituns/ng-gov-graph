@@ -4,15 +4,18 @@ Everything needed to post the launch. Facts below match the live site on 3 Octob
 
 ## Files (in `launch-video/out/`)
 
-| File | Use it on |
-|---|---|
-| `whoruns9ja-launch-16x9.mp4` (1920x1080, 46s) | X, YouTube, LinkedIn, Facebook |
-| `whoruns9ja-launch-9x16.mp4` (1080x1920, 46s) | TikTok, Instagram Reels, YouTube Shorts |
-| `whoruns9ja-launch-9x16-whatsapp.mp4` (720p, 2.7 MB) | WhatsApp Status, chats and groups |
-| `cover-9x16.png` | TikTok / Reels / Shorts cover |
-| `cover-16x9.png` | YouTube thumbnail, X/LinkedIn preview |
+| File | Sound | Use it on |
+|---|---|---|
+| `whoruns9ja-launch-16x9.mp4` (1920x1080, 46s) | Music + effects, -14 LUFS | X, YouTube, LinkedIn, Facebook |
+| `whoruns9ja-launch-9x16-silent.mp4` (1080x1920, 46s) | Silent | **TikTok and Reels: add a trending sound in the app** (best for reach) |
+| `whoruns9ja-launch-9x16-sfx.mp4` (1080x1920, 46s) | Effects only | Reels or Shorts when you don't add a trending sound |
+| `whoruns9ja-launch-9x16-whatsapp.mp4` (720p, under 3 MB) | Effects only | WhatsApp Status, chats and groups |
+| `cover-9x16.png` | | TikTok / Reels / Shorts cover |
+| `cover-16x9.png` | | YouTube thumbnail, X/LinkedIn preview |
 
-No music is baked in: add a trending sound inside TikTok and Reels (it helps reach). Keep it low; the story is in the captions.
+**Sound.** The effects (clicks on every real click, whooshes on camera moves, a rise under the title, a chord on the end card) are synthesised from scratch in `sound/synth.py`, so they need no licence. The 16:9 music is "Afro House" by jonasblakewood from Pixabay (Pixabay Content License: free to use in a video, no credit required); it starts 1.3s in so its drop lands on "Your governor. Your senators. Your reps." The audio files are git-ignored because the licence doesn't allow redistributing them, so keep your copy in `public/Music/`.
+
+**Re-rendering** after a data change: `node capture/desktop.mjs`, then `npm run render`, then `npm run master` (sets the loudness; a plain render is quieter than social platforms expect).
 
 ## Links: use the tagged one for each platform
 

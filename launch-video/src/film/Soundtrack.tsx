@@ -29,11 +29,19 @@ export function soundHits(shots: Placed[], title: number): Hit[] {
 	return hits
 }
 
-const MUSIC = 'music/bed.mp3'
+/**
+ * The 16:9 cut's music: "Afro House" by jonasblakewood (Pixabay, Pixabay Content License: free to use in a
+ * video, no credit required, but not to redistribute as audio, so public/Music is git-ignored).
+ * Its drop lands at 18.0s of the track; starting it 1.3s in puts the drop on "Your governor. Your senators.
+ * Your reps." (19.3s), and the fade-out falls in its calm breakdown, under the closing chord.
+ */
+const MUSIC = { file: 'Music/jonasblakewood-afro-house-afro-house-music-567328.mp3', delay: 1.3, level: 0.16 }
 
 /** Effects always; a music bed only where asked for and only once a track has been added to public/music. */
 export function Soundtrack({ hits, fps, total, music = false }: { hits: Hit[]; fps: number; total: number; music?: boolean }) {
-	const hasMusic = music && getStaticFiles().some((file) => file.name === MUSIC)
+	const hasMusic = music && getStaticFiles().some((file) => file.name === MUSIC.file)
+	const start = Math.round(MUSIC.delay * fps)
+	const length = total - start
 	return (
 		<>
 			{hits.map((hit, index) => (
@@ -42,11 +50,13 @@ export function Soundtrack({ hits, fps, total, music = false }: { hits: Hit[]; f
 				</Sequence>
 			))}
 			{hasMusic ? (
-				<Audio
-					src={staticFile(MUSIC)}
-					// Under everything: in over two seconds, out over the last three, never louder than the effects.
-					volume={(f) => 0.16 * interpolate(f, [0, 2 * fps, total - 3 * fps, total], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })}
-				/>
+				<Sequence from={start} layout="none">
+					<Audio
+						src={staticFile(MUSIC.file)}
+						// Under everything: in over two seconds, out over the last three, never louder than the effects.
+						volume={(f) => MUSIC.level * interpolate(f, [0, 2 * fps, length - 3 * fps, length], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })}
+					/>
+				</Sequence>
 			) : null}
 		</>
 	)

@@ -5,7 +5,9 @@
   "scripts": {
     "capture": "node capture/capture.mjs",
     "studio": "remotion studio",
-    "render": "remotion render LaunchVertical out/whoruns9ja-launch-vertical.mp4"
+    "render": "remotion render LaunchFilm out/whoruns9ja-launch-16x9.mp4 && remotion render LaunchFilmVertical out/whoruns9ja-launch-9x16-sfx.mp4 && remotion render LaunchFilmVerticalSilent out/whoruns9ja-launch-9x16-silent.mp4",
+    "sfx": "python3 sound/synth.py",
+    "master": "bash sound/master.sh"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
