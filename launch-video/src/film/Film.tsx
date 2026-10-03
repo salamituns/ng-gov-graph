@@ -2,6 +2,7 @@ import { Series } from 'remotion'
 import { Stage } from './Stage'
 import { Shot, type ShotProps } from './Shot'
 import { EndCard, TitleCard } from './Cards'
+import { Soundtrack, soundHits } from './Soundtrack'
 import map from '../../public/clips/map.json'
 import represent from '../../public/clips/represent.json'
 import budget from '../../public/clips/budget.json'
@@ -75,6 +76,7 @@ export const FILM_FRAMES = Math.round((TITLE + END + SHOTS.reduce((sum, shot) =>
 export function Film() {
 	return (
 		<Stage>
+			<Soundtrack hits={soundHits(SHOTS, TITLE)} fps={FPS} total={FILM_FRAMES} music />
 			<Series>
 				<Series.Sequence durationInFrames={Math.round(TITLE * FPS)}>
 					<TitleCard lines={['Who actually', 'runs Nigeria?']} />
@@ -156,9 +158,11 @@ const VERTICAL: Array<ShotProps & { to: number }> = [
 
 export const VERTICAL_FRAMES = Math.round((TITLE + END + VERTICAL.reduce((sum, shot) => sum + shot.to - shot.from, 0)) * FPS)
 
-export function FilmVertical() {
+/** The vertical cut, with effects (`sound`) or silent, for a trending sound added in TikTok or Reels. */
+export function FilmVertical({ sound = true }: { sound?: boolean }) {
 	return (
 		<Stage>
+			{sound ? <Soundtrack hits={soundHits(VERTICAL, TITLE)} fps={FPS} total={VERTICAL_FRAMES} /> : null}
 			<Series>
 				<Series.Sequence durationInFrames={Math.round(TITLE * FPS)}>
 					<TitleCard lines={['Who actually', 'runs', 'Nigeria?']} size={150} />
