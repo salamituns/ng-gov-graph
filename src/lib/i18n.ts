@@ -22,6 +22,8 @@ export function parseLang(value: string | undefined | null): Lang {
 }
 
 const en = {
+	mapHintClick: 'Click an office to see who runs it',
+	mapHintTap: 'Tap an office to see who runs it',
 	language: 'Language',
 	tagline: 'Nigeria’s government, mapped and sourced.',
 	peopleOfNigeria: 'People of Nigeria',
@@ -59,6 +61,8 @@ const en = {
 export type MessageKey = keyof typeof en
 
 const pcm: Record<MessageKey, string> = {
+	mapHintClick: 'Click any office, see who dey run am',
+	mapHintTap: 'Tap any office, see who dey run am',
 	language: 'Language',
 	tagline: 'Naija government: we don map am, we get proof.',
 	peopleOfNigeria: 'Naija People',
@@ -94,6 +98,8 @@ const pcm: Record<MessageKey, string> = {
 }
 
 const ha: Record<MessageKey, string> = {
+	mapHintClick: 'Danna ofis don ganin wanda ke tafiyar da shi',
+	mapHintTap: 'Taɓa ofis don ganin wanda ke tafiyar da shi',
 	language: 'Harshe',
 	tagline: 'Gwamnatin Najeriya, a taswira tare da hujjoji.',
 	peopleOfNigeria: 'Al’ummar Najeriya',
@@ -129,6 +135,8 @@ const ha: Record<MessageKey, string> = {
 }
 
 const yo: Record<MessageKey, string> = {
+	mapHintClick: 'Tẹ ọ́fíìsì kan láti rí ẹni tó ń darí rẹ̀',
+	mapHintTap: 'Tẹ ọ́fíìsì kan láti rí ẹni tó ń darí rẹ̀',
 	language: 'Èdè',
 	tagline: 'Ìjọba Nàìjíríà, lórí àwòrán-ilẹ̀ pẹ̀lú ẹ̀rí.',
 	peopleOfNigeria: 'Àwọn ará Nàìjíríà',
@@ -164,6 +172,8 @@ const yo: Record<MessageKey, string> = {
 }
 
 const ig: Record<MessageKey, string> = {
+	mapHintClick: 'Pịa ọfịs ka ịhụ onye na-achị ya',
+	mapHintTap: 'Pịa ọfịs ka ịhụ onye na-achị ya',
 	language: 'Asụsụ',
 	tagline: 'Ọchịchị Naịjirịa, n’eserese na ihe akaebe.',
 	peopleOfNigeria: 'Ndị Naịjirịa',
