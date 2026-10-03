@@ -27,7 +27,8 @@ export function Root() {
 	return (
 		<>
 			<Composition id="LaunchFilm" component={Film} width={1920} height={1080} fps={FILM_FPS} durationInFrames={FILM_FRAMES} />
-			<Composition id="LaunchFilmVertical" component={FilmVertical} width={1080} height={1920} fps={FILM_FPS} durationInFrames={VERTICAL_FRAMES} />
+			<Composition id="LaunchFilmVertical" component={FilmVertical} defaultProps={{ sound: true }} width={1080} height={1920} fps={FILM_FPS} durationInFrames={VERTICAL_FRAMES} />
+			<Composition id="LaunchFilmVerticalSilent" component={FilmVertical} defaultProps={{ sound: false }} width={1080} height={1920} fps={FILM_FPS} durationInFrames={VERTICAL_FRAMES} />
 			<Composition id="PreviewOpening" component={Scene} defaultProps={OPENING} width={1080} height={1920} fps={FPS} durationInFrames={Math.round(9.6 * FPS)} />
 		</>
 	)
