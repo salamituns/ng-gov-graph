@@ -572,6 +572,26 @@
 /* Abuja's star is green on the white, as on the flag; both themes read the core's own tokens. */
 .nigeria-core .core-capital { fill:var(--gg-core-pick); stroke:var(--gg-core-fill); stroke-width:.6; }
 .panel-footer span { display:block; margin-top:4px; }
+/* Feedback: plain text buttons where people look for them (under an office's facts, and in the footer), one short form. */
+.feedback-trigger { color:var(--gg-muted); font-size:13px; text-decoration:underline; text-underline-offset:2px; }
+@media (hover:hover) { .feedback-trigger:hover { color:var(--gg-text); } }
+.entity-feedback { margin-top:16px; padding-top:12px; border-top:1px solid var(--gg-line); }
+.panel-footer .footer-feedback { display:flex; gap:18px; margin:0 0 12px; }
+.panel-footer .footer-feedback .feedback-trigger { color:var(--gg-hub-ink); font-weight:600; font-size:13px; }
+.feedback-dialog { position:fixed; inset:auto auto auto 50%; top:max(14px, 12vh); transform:translateX(-50%); margin:0; width:min(480px,calc(100vw - 28px)); border:0; border-radius:12px; padding:0; color:var(--gg-text); background:var(--gg-panel); box-shadow:0 24px 70px #0005; }
+.feedback-dialog::backdrop { background:#0005; backdrop-filter:blur(4px); }
+.feedback-dialog header { display:flex; justify-content:space-between; align-items:center; padding:14px 16px 0; }
+.feedback-dialog h2 { font-family:var(--font-display),sans-serif; font-size:18px; font-weight:700; }
+.feedback-dialog header button { display:grid; place-items:center; width:36px; height:36px; margin-right:-8px; color:var(--gg-muted); }
+.feedback-dialog form, .feedback-done { display:grid; gap:10px; padding:8px 16px 16px; }
+.feedback-lead { color:var(--gg-muted); font-size:13.5px; line-height:1.45; }
+/* 16px fields: smaller text makes iPhone Safari zoom the page on focus. */
+.feedback-dialog textarea, .feedback-dialog input { width:100%; padding:10px 12px; border:1px solid var(--gg-line); border-radius:8px; background:var(--gg-surface); color:var(--gg-text); font:inherit; font-size:16px; resize:vertical; }
+.feedback-dialog textarea:focus-visible, .feedback-dialog input:focus-visible { outline:2px solid var(--gg-green); outline-offset:1px; }
+.feedback-dialog form > button[type=submit], .feedback-done button { justify-self:end; min-height:40px; padding:0 18px; border-radius:8px; background:var(--gg-text); color:var(--gg-panel); font-weight:600; }
+.feedback-error { color:#b42318; font-size:13px; }
+.dark .feedback-error { color:#f97066; }
+.feedback-done p { font-size:15px; }
 .panel-footer a { text-decoration:underline; text-underline-offset:2px; }
 
 /* ---------- Zoom ---------- */

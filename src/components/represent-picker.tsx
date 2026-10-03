@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { track } from '@/lib/track'
 import { useRouter } from 'next/navigation'
 import { useSyncExternalStore } from 'react'
 import { STATE_ZONES, ZONE_ORDER } from '@/data/nigeria/states'
@@ -45,6 +46,7 @@ export function RepresentPicker({ gov, states, compact = false }: { gov: string;
 	const choose = (stateId: string) => {
 		if (!stateId) return
 		rememberState(stateId)
+		track('represent_state_chosen', { state: stateId })
 		router.push(representPath(gov, stateId), { scroll: false })
 	}
 	return (

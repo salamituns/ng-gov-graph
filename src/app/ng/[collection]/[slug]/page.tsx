@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { FeedbackButton } from '@/components/feedback'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { BrandBar, type Crumb } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
@@ -206,6 +207,10 @@ export default async function EntityPage({ params }: PageProps) {
 						</Link>
 					</>
 				) : null}
+				{/* A div, not a p: the button carries its dialog, and a form can't sit inside a paragraph. */}
+				<div className="entity-feedback">
+					<FeedbackButton kind="error" label="Spot an error?" subject={{ id: node.id, name: seatTitle(graph, node) }} />
+				</div>
 			</article>
 			<ConstitutionCard node={node} provisions={provisionsFor(graph, node.id)} />
 			<BudgetCard id={orgId} gov={gov} graph={graph} />

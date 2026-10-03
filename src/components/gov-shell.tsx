@@ -1,9 +1,10 @@
 'use client'
 
 import { ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react'
+import { track } from '@/lib/track'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react'
-import { GraphMap } from '@/components/graph-map'
+import { GraphMap, readHintSeen } from '@/components/graph-map'
 import { GraphSearch } from '@/components/graph-search'
 import { PowerMap } from '@/components/power-map'
 import { filterGraph } from '@/lib/graph/filter'
@@ -83,6 +84,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 	const select = (id: string) => {
 		const node = graph.nodes[id]
 		if (!node) return
+		track('map_office_selected', { id, type: node.type, first_visit_hint: !readHintSeen() })
 		router.push(href({ id }), { scroll: false })
 	}
 
@@ -124,9 +126,9 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 					)}
 				</div>
 				<nav className="map-views" aria-label="Map view">
-					<button type="button" aria-pressed={view === 'graph'} onClick={() => router.push(href({ view: 'graph' }), { scroll: false })}>{t('viewGovernment')}</button>
-					<button type="button" aria-pressed={view === 'power'} onClick={() => router.push(href({ view: 'power' }), { scroll: false })}>{t('viewNewsmakers')}</button>
-					<button type="button" aria-pressed={view === 'budget'} onClick={() => router.push(href({ view: 'budget' }), { scroll: false })}>{t('viewBudget')}</button>
+					<button type="button" aria-pressed={view === 'graph'} onClick={() => { track('view_changed', { view: 'government' }); router.push(href({ view: 'graph' }), { scroll: false }) }}>{t('viewGovernment')}</button>
+					<button type="button" aria-pressed={view === 'power'} onClick={() => { track('view_changed', { view: 'newsmakers' }); router.push(href({ view: 'power' }), { scroll: false }) }}>{t('viewNewsmakers')}</button>
+					<button type="button" aria-pressed={view === 'budget'} onClick={() => { track('view_changed', { view: 'budget' }); router.push(href({ view: 'budget' }), { scroll: false }) }}>{t('viewBudget')}</button>
 				</nav>
 			</section>
 		</main>

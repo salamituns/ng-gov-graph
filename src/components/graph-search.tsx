@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { track } from '@/lib/track'
 import { Search, X } from 'lucide-react'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Glyph } from '@/components/panel-client'
@@ -50,7 +51,7 @@ export function GraphSearch({ gov, graph, budgets = {} }: { gov: string; graph: 
 
 	const row = (node: GraphNode) => (
 		<li key={node.id}>
-			<Link href={nodePath(gov, node)} onClick={() => dialog.current?.close()}>
+			<Link href={nodePath(gov, node)} onClick={() => { track('search_result_opened', { id: node.id, type: node.type, query_length: query.trim().length }); dialog.current?.close() }}>
 				<Glyph type={node.type} tone={toneOf(node)} size={14} />
 				<span>
 					<strong>{seatTitle(graph, node)}</strong>
