@@ -3,6 +3,7 @@ import { Scene, type SceneProps } from './Scene'
 import opening from '../public/clips/opening.json'
 import './theme'
 import { Film, FILM_FRAMES, FilmVertical, VERTICAL_FRAMES, FPS as FILM_FPS } from './film/Film'
+import { FilmVoice, calculateVoiceMetadata } from './film/FilmVoice'
 
 const FPS = 30
 
@@ -26,6 +27,9 @@ const OPENING: SceneProps = {
 export function Root() {
 	return (
 		<>
+			{/* Narrated cuts: timed from public/voice/voice.json (sound/voice.py); 60s is a placeholder until it loads. */}
+			<Composition id="LaunchFilmVoice" component={FilmVoice} defaultProps={{ voice: null, layout: 'landscape' as const }} calculateMetadata={calculateVoiceMetadata} width={1920} height={1080} fps={FILM_FPS} durationInFrames={60 * FILM_FPS} />
+			<Composition id="LaunchFilmVoiceVertical" component={FilmVoice} defaultProps={{ voice: null, layout: 'portrait' as const }} calculateMetadata={calculateVoiceMetadata} width={1080} height={1920} fps={FILM_FPS} durationInFrames={60 * FILM_FPS} />
 			<Composition id="LaunchFilm" component={Film} width={1920} height={1080} fps={FILM_FPS} durationInFrames={FILM_FRAMES} />
 			<Composition id="LaunchFilmVertical" component={FilmVertical} defaultProps={{ sound: true }} width={1080} height={1920} fps={FILM_FPS} durationInFrames={VERTICAL_FRAMES} />
 			<Composition id="LaunchFilmVerticalSilent" component={FilmVertical} defaultProps={{ sound: false }} width={1080} height={1920} fps={FILM_FPS} durationInFrames={VERTICAL_FRAMES} />
