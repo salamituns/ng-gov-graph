@@ -107,7 +107,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 						</div>
 					</div>
 				</div>
-				<div className="map-canvas">
+				<div className={`map-canvas${view === 'budget' || view === 'power' ? '' : ' is-wheel'}`}>
 					{view === 'budget' ? (
 						<BudgetFlow flow={budget} selectedId={selectedId} onSelect={(id) => router.push(href({ id, view: 'budget' }), { scroll: false })} />
 					) : view === 'power' ? (
