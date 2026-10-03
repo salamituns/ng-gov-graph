@@ -1,0 +1,23 @@
+{
+  "name": "whoruns9ja-launch-video",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "capture": "node capture/capture.mjs",
+    "studio": "remotion studio",
+    "render": "remotion render LaunchVertical out/whoruns9ja-launch-vertical.mp4"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "playwright": "^1.57.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.532",
+    "@remotion/fonts": "^4.0.532",
+    "@remotion/media": "^4.0.532",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "remotion": "^4.0.532"
+  }
+}
