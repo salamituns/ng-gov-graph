@@ -29,14 +29,16 @@ The dashboard credits each platform from these tags (WhatsApp otherwise shows up
 
 ## Posts, ready to paste
 
+The message, in one line: **open-source intelligence on your government, for the people.** (Chosen over "Palantir for the people", which some readers link to surveillance.) The name is always **Who Runs Naija**; the address is whoruns9ja.com.
+
 ### X (thread, 16:9 video on the first post)
 
 1/
-Who actually runs Nigeria? 🇳🇬
+Introducing Who Runs Naija: every office in Nigeria's federal government, who holds it, and who put them there. 🇳🇬
 
-Meet Who Runs Naija: a free, interactive map of the federal government. Every office, who holds it, and who put them there, each link sourced to the Constitution or the law.
+To fix our institutions, we must understand how they work.
 
-https://whoruns9ja.com/ng?utm_source=x&utm_campaign=launch
+Open-source intelligence on your government, for the people → https://whoruns9ja.com/ng?utm_source=x&utm_campaign=launch
 
 2/
 Click any office (the Presidency, a ministry, an agency) to see its powers, who holds it today, and the section of the Constitution behind it.
@@ -54,46 +56,55 @@ In English, Pidgin, Hausa, Yorùbá and Igbo. See something wrong? Every office 
 
 ### TikTok / Instagram Reels / YouTube Shorts (9:16 video)
 
-Who actually runs Nigeria? 🇳🇬 Tap any office and see who holds it, and who put them there. Find your governor, senators and reps, and follow the ₦68 trillion budget. Free, every fact sourced. Link in bio: whoruns9ja.com
+Introducing Who Runs Naija: a complete map of the people and positions of power in Nigeria's federal government.
+
+To fix our institutions, we must first understand how they work. So we're using AI to map and keep track of every level of government in Nigeria, starting with the federal government and all 36 states.
+
+Open-source intelligence on your government, for the people. 🇳🇬
+
+Check it out 👉 link in bio (whoruns9ja.com)
 
 #WhoRunsNaija #Nigeria #Naija #NigeriaDecides2027 #2027Elections #CivicTech
 
 ### WhatsApp (Status: the 720p video; chats and groups: this text plus the video)
 
-Who actually runs Nigeria? 🇳🇬
-I found this free map of the whole government: tap any office to see who holds it and who put them there, find your governor, senators and reps, and see where the ₦68 trillion budget goes.
-https://whoruns9ja.com/ng?utm_source=whatsapp&utm_campaign=launch
+Introducing Who Runs Naija: a complete map of the people and positions of power in Nigeria's federal government.
+
+To fix our institutions, we must first understand how they work. So we're using AI to map and keep track of every level of government in Nigeria, starting with the federal government and all 36 states.
+
+Open-source intelligence on your government, for the people. 🇳🇬
+
+Check it out 👉 https://whoruns9ja.com/ng?utm_source=whatsapp&utm_campaign=launch
 
 Optional Pidgin line (have a native speaker check it first): *You sabi who dey run your state? Check am for whoruns9ja.com.*
 
 ### LinkedIn (16:9 video)
 
-Who actually runs Nigeria?
+Introducing Who Runs Naija: a complete map of the people and positions of power in Nigeria's federal government.
 
-Most Nigerians can name the President. Far fewer can name their senators, say which body appoints the INEC chairman, or trace where the ₦68.32 trillion budget goes. That gap makes accountability hard.
+To fix our institutions, we must first understand how they work. Most of us can name the President, but not our senators, who appoints the INEC chairman, or where the ₦68 trillion budget goes. So we're using AI to map and keep track of government in Nigeria: every office, who holds it, who put them there, and the law behind it.
 
-Who Runs Naija is a free, open map of the federal government:
-• Every office, who holds it, and who put them there, sourced to the 1999 Constitution and the statutes
-• "Who represents me?": your governor, senators, House reps and state assembly, by state
-• The 2026 budget, followed from the total to each ministry and what it buys
-• In English, Pidgin, Hausa, Yorùbá and Igbo
+Open-source intelligence on your government, for the people.
 
-With the general election on 16 January 2027, it's a good moment to know what each office does. Feedback and corrections are welcome: every page has a "Spot an error?" button.
-
-https://whoruns9ja.com/ng?utm_source=linkedin&utm_campaign=launch
+Explore it, find your representatives, and tell us what we got wrong: https://whoruns9ja.com/ng?utm_source=linkedin&utm_campaign=launch
 
 #CivicTech #OpenGovernment #Nigeria #Transparency
 
 ### Facebook (16:9 or 9:16 video)
 
-Who actually runs Nigeria? 🇳🇬 This free map shows every federal office, who holds it and who put them there, your governor, senators and reps by state, and where the ₦68 trillion budget goes. In English, Pidgin, Hausa, Yorùbá and Igbo.
-https://whoruns9ja.com/ng?utm_source=facebook&utm_campaign=launch
+Introducing Who Runs Naija: a complete map of the people and positions of power in Nigeria's federal government.
+
+To fix our institutions, we must first understand how they work. So we're using AI to map and keep track of every level of government in Nigeria, starting with the federal government and all 36 states.
+
+Open-source intelligence on your government, for the people. 🇳🇬
+
+Check it out 👉 https://whoruns9ja.com/ng?utm_source=facebook&utm_campaign=launch
 
 ## Who to share it with
 
 A short, personal note works better than a tag. Suggested message:
 
-> Hi [name], I built Who Runs Naija (whoruns9ja.com), a free, sourced map of Nigeria's government: every office, who holds it and who put them there, plus a who-represents-me lookup and the 2026 budget. I thought it might be useful to your audience ahead of 2027. Feedback very welcome, especially corrections. A 46-second walkthrough is attached.
+> Hi [name], I built Who Runs Naija (whoruns9ja.com), a complete map of the people and positions of power in Nigeria's government: every office, who holds it and who put them there, plus a who-represents-me lookup and the 2026 budget. Open-source intelligence on your government, for the people. I thought it might be useful to your audience ahead of 2027. Feedback very welcome, especially corrections. A 46-second walkthrough is attached.
 
 - **Budget and accountability:** BudgIT, Connected Development (CODE) / Follow The Money
 - **Elections and civic participation:** Yiaga Africa, Enough is Enough (EiE) Nigeria
