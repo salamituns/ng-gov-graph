@@ -2,7 +2,7 @@ import { Composition } from 'remotion'
 import { Scene, type SceneProps } from './Scene'
 import opening from '../public/clips/opening.json'
 import './theme'
-import { Film, FILM_FRAMES, FPS as FILM_FPS } from './film/Film'
+import { Film, FILM_FRAMES, FilmVertical, VERTICAL_FRAMES, FPS as FILM_FPS } from './film/Film'
 
 const FPS = 30
 
@@ -27,6 +27,7 @@ export function Root() {
 	return (
 		<>
 			<Composition id="LaunchFilm" component={Film} width={1920} height={1080} fps={FILM_FPS} durationInFrames={FILM_FRAMES} />
+			<Composition id="LaunchFilmVertical" component={FilmVertical} width={1080} height={1920} fps={FILM_FPS} durationInFrames={VERTICAL_FRAMES} />
 			<Composition id="PreviewOpening" component={Scene} defaultProps={OPENING} width={1080} height={1920} fps={FPS} durationInFrames={Math.round(9.6 * FPS)} />
 		</>
 	)
