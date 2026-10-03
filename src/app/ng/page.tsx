@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
+import { FeedbackButton } from '@/components/feedback'
 import { ChevronRight } from 'lucide-react'
 import { BrandBar } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
@@ -180,6 +181,10 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 				</p>
 			</section>
 			<footer className="panel-footer">
+				<div className="footer-feedback">
+					<FeedbackButton kind="feature" label="Suggest a feature" />
+					<FeedbackButton kind="error" label="Report an error" />
+				</div>
 				Who Runs Naija is an independent Nigerian civic project. It maps the country’s institutions, the offices inside them, and the constitutional and statutory links between them, and every entity links to its legal basis.
 				<span>
 					Inspired by <a href="https://graph.civlab.org/us" target="_blank" rel="noreferrer">CivLab’s US Gov Graph</a>, and built for Nigeria.

@@ -56,7 +56,7 @@ const HINT_NODE = 'ng-president'
 // Where storage is blocked, the hint still goes once something is chosen, for the rest of the visit.
 let hintSeenThisVisit = false
 const noSubscribe = () => () => {}
-function readHintSeen() {
+export function readHintSeen() {
 	try {
 		return hintSeenThisVisit || localStorage.getItem(HINT_SEEN) === '1'
 	} catch {

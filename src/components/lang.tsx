@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { track } from '@/lib/track'
 import { createContext, useContext, type ReactNode } from 'react'
 import { LANG_COOKIE, LANGS, t, type Lang, type MessageKey } from '@/lib/i18n'
 
@@ -21,6 +22,7 @@ export function LangSelect() {
 	const router = useRouter()
 	const { lang, t: tr } = useT()
 	const choose = (code: string) => {
+		track('language_changed', { from: lang, to: code })
 		document.cookie = `${LANG_COOKIE}=${code}; path=/; max-age=31536000; samesite=lax`
 		document.documentElement.lang = code
 		router.refresh()
