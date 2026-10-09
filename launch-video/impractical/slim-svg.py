@@ -56,5 +56,7 @@ for el in root.iter():
     for a in [a for a in el.attrib if a.startswith('aria-')]: del el.attrib[a]
 out = ET.tostring(root, encoding='unicode').replace('ns0:','').replace(':ns0','')
 out = re.sub(r'\s+', ' ', out)
+# An SVG loaded through <img> renders only with its namespace declared; the default-namespace export drops it.
+if 'xmlns=' not in out[:200]: out = out.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ', 1)
 open(dst,'w').write(out)
 print(dst, f'{len(out)/1024:.0f} KB')
