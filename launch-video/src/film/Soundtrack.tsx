@@ -37,10 +37,18 @@ export function soundHits(shots: Placed[], title: number): Hit[] {
  */
 const MUSIC = { file: 'Music/jonasblakewood-afro-house-afro-house-music-567328.mp3', delay: 1.3, level: 0.16 }
 
-/** Effects always; a music bed only where asked for and only once a track has been added to public/music. */
-export function Soundtrack({ hits, fps, total, music = false }: { hits: Hit[]; fps: number; total: number; music?: boolean }) {
+/** Where the track's drop falls, in seconds into the track. */
+const DROP = 18.0
+
+/**
+ * Effects always; a music bed only where asked for and only once a track has been added to public/music.
+ * `musicDrop` (seconds into the film) moves the track so its drop lands there, trimming its intro if need be.
+ */
+export function Soundtrack({ hits, fps, total, music = false, musicDrop }: { hits: Hit[]; fps: number; total: number; music?: boolean; musicDrop?: number }) {
 	const hasMusic = music && getStaticFiles().some((file) => file.name === MUSIC.file)
-	const start = Math.round(MUSIC.delay * fps)
+	const offset = musicDrop === undefined ? MUSIC.delay : musicDrop - DROP
+	const start = Math.max(0, Math.round(offset * fps))
+	const trimBefore = Math.max(0, Math.round(-offset * fps))
 	const length = total - start
 	return (
 		<>
@@ -53,6 +61,7 @@ export function Soundtrack({ hits, fps, total, music = false }: { hits: Hit[]; f
 				<Sequence from={start} layout="none">
 					<Audio
 						src={staticFile(MUSIC.file)}
+						trimBefore={trimBefore || undefined}
 						// Under everything: in over two seconds, out over the last three, never louder than the effects.
 						volume={(f) => MUSIC.level * interpolate(f, [0, 2 * fps, length - 3 * fps, length], [0, 1, 1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })}
 					/>

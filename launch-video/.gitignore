@@ -4,3 +4,11 @@ public/clips
 capture/frames
 public/Music
 public/music
+public/voice
+.env
+__pycache__/
+# Raw wheel captures (impractical/grab-svg.mjs); only the slimmed *.min.svg are kept.
+impractical/wheel.svg
+impractical/wheel-*.svg
+!impractical/wheel-*.min.svg
+impractical/*.film.svg

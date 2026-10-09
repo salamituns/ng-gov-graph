@@ -30,6 +30,31 @@ const SCENES = {
 		await click(page.locator('.graph-svg .node[aria-label^="President of"]'), 900)
 		await hold(3400)
 	},
+	/** The map for the narrated cut: a shorter look around, the click sooner, then a long hold on the fan-out. */
+	async mapvo({ go, moveTo, click, hover, hold, page }) {
+		await go('/ng', { firstVisit: true })
+		await hold(1800)
+		await moveTo({ x: 1240, y: 560 }, 800)
+		await hover(page.locator('.graph-svg .node[aria-label^="Federal Ministry of Finance"]').first(), 700)
+		await hold(500)
+		await click(page.locator('.graph-svg .node[aria-label^="President of"]'), 900)
+		await hold(7500)
+	},
+	/** "Most covered this week": a topic in the news, the offices responsible for it, and one of them's budget. */
+	async news({ go, click, hover, scrollPanel, hold, page }) {
+		await go('/ng')
+		await hold(1000)
+		await hover(page.locator('.trending-chips a', { hasText: 'Education' }).first(), 900)
+		await hold(400)
+		await click(page.locator('.trending-chips a', { hasText: 'Education' }).first(), 200)
+		await page.waitForURL(/topics\/education/)
+		await hold(2800)
+		await click(page.locator('.topic-bodies a', { hasText: 'Federal Ministry of Education' }).first(), 900)
+		await page.waitForURL(/ministry-of-education/)
+		await hold(1800)
+		await scrollPanel(page.locator('.budget-card').first(), 1300)
+		await hold(6500)
+	},
 	/** Search for a ministry, open it, and read its budget. */
 	async education({ go, moveTo, click, type, scrollPanel, hold, page }) {
 		await go('/ng')
@@ -70,7 +95,8 @@ const SCENES = {
 		await go('/ng')
 		await hold(600)
 		await moveTo(page.locator('.election-count').first(), 1100)
-		await hold(3400)
+		// Long enough to sit under a spoken line as well as a caption.
+		await hold(7200)
 	},
 }
 

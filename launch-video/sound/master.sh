@@ -6,10 +6,19 @@
 set -euo pipefail
 cd "$(dirname "$0")/../out"
 
+# Two-pass loudnorm to -14 LUFS for a 16:9 cut (music + effects), video untouched.
+loud() {
+	local stats measured
+	stats=$(ffmpeg -nostats -v info -i "$1" -af loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json -vn -f null - 2>&1 | sed -n '/^{/,/^}/p')
+	measured=$(echo "$stats" | python3 -c "import json,sys; d=json.load(sys.stdin); print(f\"measured_I={d['input_i']}:measured_TP={d['input_tp']}:measured_LRA={d['input_lra']}:measured_thresh={d['input_thresh']}:offset={d['target_offset']}\")")
+	ffmpeg -y -loglevel error -i "$1" -c:v copy -af "loudnorm=I=-14:TP=-1.5:LRA=11:$measured:linear=true" -ar 48000 -c:a aac -b:a 192k -movflags +faststart tmp.mp4 && mv tmp.mp4 "$1"
+}
+
 wide=whoruns9ja-launch-16x9.mp4
-stats=$(ffmpeg -nostats -v info -i "$wide" -af loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json -vn -f null - 2>&1 | sed -n '/^{/,/^}/p')
-measured=$(echo "$stats" | python3 -c "import json,sys; d=json.load(sys.stdin); print(f\"measured_I={d['input_i']}:measured_TP={d['input_tp']}:measured_LRA={d['input_lra']}:measured_thresh={d['input_thresh']}:offset={d['target_offset']}\")")
-ffmpeg -y -loglevel error -i "$wide" -c:v copy -af "loudnorm=I=-14:TP=-1.5:LRA=11:$measured:linear=true" -ar 48000 -c:a aac -b:a 192k -movflags +faststart tmp.mp4 && mv tmp.mp4 "$wide"
+loud "$wide"
+# The motion cut (LaunchFilmMotion), when it has been rendered.
+motion=whoruns9ja-launch-motion-16x9.mp4
+if [ -f "$motion" ]; then loud "$motion"; fi
 
 tall=whoruns9ja-launch-9x16-sfx.mp4
 peak=$(ffmpeg -nostats -v info -i "$tall" -af volumedetect -vn -f null - 2>&1 | grep -oE "max_volume: [-0-9.]+" | awk '{print $2}')
