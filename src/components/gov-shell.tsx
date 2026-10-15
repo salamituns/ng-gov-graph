@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Moon, Sun } from 'lucide-react'
 import { track } from '@/lib/track'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react'
 import { GraphMap, readHintSeen } from '@/components/graph-map'
 import { GraphSearch } from '@/components/graph-search'
@@ -15,6 +15,7 @@ import { CIVIC_TOPICS } from '@/data/nigeria/topics'
 import type { CompiledGraph } from '@/lib/graph/types'
 import { LangSelect, useT } from '@/components/lang'
 import { PanelSheet } from '@/components/panel-sheet'
+import { useQuery } from '@/components/query'
 import { BudgetFlow } from '@/components/budget-flow'
 import type { BudgetFlow as BudgetFlowData } from '@/lib/graph/budget-flow'
 
@@ -38,7 +39,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
-	const params = useSearchParams()
+	const params = useQuery()
 	const [, section, slug] = pathname.split('/').filter(Boolean)
 	// /ng/represent/lagos selects Lagos State; every other section's third segment is a node id.
 	// A topic page's slug is a topic, not a node: nothing is selected (its bodies are lit by TopicSpotlight).

@@ -13,6 +13,11 @@ interface PageProps {
 	params: Promise<{ topic: string }>
 }
 
+/** None at build time: each page is rendered on its first visit, then cached (see the /ng layout's revalidate). */
+export function generateStaticParams() {
+	return []
+}
+
 export async function generateMetadata({ params }: PageProps) {
 	const { topic: id } = await params
 	const topic = CIVIC_TOPICS.find((item) => item.id === id)

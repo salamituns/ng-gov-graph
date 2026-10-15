@@ -47,6 +47,11 @@ interface PageProps {
 	params: Promise<{ collection: string; slug: string }>
 }
 
+/** None at build time: each page is rendered on its first visit, then cached (see the /ng layout's revalidate). */
+export function generateStaticParams() {
+	return []
+}
+
 export async function generateMetadata({ params }: PageProps) {
 	const { slug } = await params
 	const { graph } = await loadNigeriaGraph()

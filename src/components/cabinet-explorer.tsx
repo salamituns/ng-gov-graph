@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@/components/query'
 import { SeeOn } from '@/components/see-on-map'
 import { naira, perNigerian } from '@/data/nigeria/budget'
 import { stateAgainstMinimum, zoneAgainstMinimum } from '@/lib/graph/fc-minimum'
@@ -105,9 +105,11 @@ function MinisterRow({ minister }: { minister: ExplorerMinister }) {
 }
 
 export function CabinetExplorer({ states, zones, shapes, width, height }: { states: ExplorerState[]; zones: ExplorerZone[]; shapes: Record<string, string>; width: number; height: number }) {
-	const params = useSearchParams()
+	const params = useQuery()
 	const fromUrl: Pick = params.get('state') ? { kind: 'state', slug: params.get('state')! } : params.get('zone') ? { kind: 'zone', slug: params.get('zone')! } : null
-	const [pick, setPick] = useState<Pick>(fromUrl)
+	// The URL's pick until the reader makes one: the query only arrives after hydration (see useQuery).
+	const [chosen, setChosen] = useState<{ pick: Pick } | null>(null)
+	const pick = chosen ? chosen.pick : fromUrl
 	// Desktop hover previews a state in the card without pinning it.
 	const [preview, setPreview] = useState<string | null>(null)
 	const card = useRef<HTMLDivElement>(null)
@@ -125,7 +127,7 @@ export function CabinetExplorer({ states, zones, shapes, width, height }: { stat
 	const choose = (next: Pick) => {
 		const same = next && pick && next.kind === pick.kind && next.slug === pick.slug
 		const value = same ? null : next
-		setPick(value)
+		setChosen({ pick: value })
 		setPreview(null)
 		moved.current = true
 		const url = new URL(window.location.href)

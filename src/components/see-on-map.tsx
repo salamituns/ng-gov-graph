@@ -1,7 +1,8 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
+import { useQuery } from '@/components/query'
 
 type MapView = 'graph' | 'budget'
 
@@ -15,7 +16,7 @@ const lowerSheet = () => window.dispatchEvent(new CustomEvent('govgraph:open-pan
  */
 export function useMapView() {
 	const router = useRouter()
-	const params = useSearchParams()
+	const params = useQuery()
 	const section = usePathname().split('/').filter(Boolean)[1]
 	const asked = params.get('view')
 	// The same rule as GovShell: the budget page shows the flow unless asked for the map.
