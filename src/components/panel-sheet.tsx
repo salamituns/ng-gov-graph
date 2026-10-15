@@ -1,7 +1,8 @@
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useQuery } from '@/components/query'
 import { SNAPS, snapFor, type Snap } from '@/lib/sheet'
 
 /**
@@ -40,7 +41,7 @@ export function PanelSheet({
 	onClose: () => void
 }) {
 	const pathname = usePathname()
-	const params = useSearchParams()
+	const params = useQuery()
 	const view = params.get('view')
 	const routeKey = `${pathname}?${view ?? ''}`
 	// The sheet answers navigation: each place has the snap it reads best at (snapFor), and the reader's own

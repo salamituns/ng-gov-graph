@@ -1,15 +1,17 @@
 import Link from 'next/link'
+import { T } from '@/components/lang'
 import type { Trending } from '@/lib/graph/trending'
+import type { MessageKey } from '@/lib/i18n'
 
 /**
  * "Trending this week": civic topics by this week's coverage, each opening its stories and the bodies involved.
  * With under two weeks of news it says "Most covered this week" instead: nothing can be rising yet.
  */
-export function TrendingTopics({ gov, trending, heading }: { gov: string; trending: Trending; heading: string }) {
+export function TrendingTopics({ gov, trending, heading }: { gov: string; trending: Trending; heading: MessageKey }) {
 	if (!trending.topics.length) return null
 	return (
-		<section className="panel-card trending" aria-label={heading}>
-			<h2>{heading}</h2>
+		<section className="panel-card trending" aria-labelledby="trending-heading">
+			<h2 id="trending-heading"><T k={heading} /></h2>
 			<ul className="trending-chips">
 				{trending.topics.map((topic) => (
 					<li key={topic.id}>

@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { useQuery } from '@/components/query'
 import { SeeOn } from '@/components/see-on-map'
 import { SpendBar } from '@/components/spend-bar'
 import { naira, perNigerian } from '@/data/nigeria/budget'
@@ -33,8 +33,10 @@ type Unit = 'total' | 'person'
  * or as a share for every Nigerian.
  */
 export function BudgetExplorer({ rows }: { rows: ExplorerBudget[] }) {
-	const params = useSearchParams()
-	const [open, setOpen] = useState<string | null>(params.get('ministry'))
+	const fromUrl = useQuery().get('ministry')
+	// The URL's row until the reader opens one: the query only arrives after hydration (see useQuery).
+	const [chosen, setChosen] = useState<{ open: string | null } | null>(null)
+	const open = chosen ? chosen.open : fromUrl
 	const [preview, setPreview] = useState<string | null>(null)
 	const [unit, setUnit] = useState<Unit>('total')
 	const opened = useRef<HTMLLIElement>(null)
@@ -44,7 +46,7 @@ export function BudgetExplorer({ rows }: { rows: ExplorerBudget[] }) {
 
 	const toggle = (id: string) => {
 		const next = open === id ? null : id
-		setOpen(next)
+		setChosen({ open: next })
 		setPreview(null)
 		moved.current = true
 		const url = new URL(window.location.href)

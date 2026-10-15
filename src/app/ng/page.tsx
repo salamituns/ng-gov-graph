@@ -23,8 +23,7 @@ import type { CompiledGraph, PersonnelChange } from '@/lib/graph/types'
 import { federalCharacter } from '@/lib/graph/federal-character'
 import { BUDGET_2026, naira } from '@/data/nigeria/budget'
 import { MINISTRY_BUDGETS } from '@/data/nigeria/budget-2026'
-import { t, type Lang } from '@/lib/i18n'
-import { getLang } from '@/lib/i18n-server'
+import { T } from '@/components/lang'
 import { Fold } from '@/components/fold'
 
 interface PageProps {
@@ -45,7 +44,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 	const params = await searchParams
 	const layer = parseLayer(params.layer) === 'state' ? 'state' : 'federal'
 	const days = WINDOWS.find((value) => String(value) === params.days) ?? 30
-	const [data, lang] = await Promise.all([loadNigeriaGraph(), getLang()])
+	const data = await loadNigeriaGraph()
 	const now = new Date()
 	const today = now.toISOString().slice(0, 10)
 	const graph = filterGraph(data.graph, layer)
@@ -86,17 +85,17 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 		<>
 			<BrandBar layer={layer} tagline />
 			{layer === 'federal' ? <QuickActions gov={data.gov} /> : null}
-			{layer === 'federal' ? <TrendingTopics gov={data.gov} trending={trending} heading={t(lang, trending.hasHistory ? 'trendingThisWeek' : 'mostCoveredThisWeek')} /> : null}
+			{layer === 'federal' ? <TrendingTopics gov={data.gov} trending={trending} heading={trending.hasHistory ? 'trendingThisWeek' : 'mostCoveredThisWeek'} /> : null}
 			<ElectionCountdown serverNow={now.toISOString()} inecHref={data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng'} guideHref={`/${data.gov}/elections`} />
 			<RepresentPicker
 				gov={data.gov}
 				states={Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name }))}
 			/>
-			{layer === 'federal' ? <FederalCharacterCard gov={data.gov} graph={data.graph} lang={lang} /> : null}
-			{layer === 'federal' ? <BudgetHomeCard gov={data.gov} graph={data.graph} lang={lang} /> : null}
+			{layer === 'federal' ? <FederalCharacterCard gov={data.gov} graph={data.graph} /> : null}
+			{layer === 'federal' ? <BudgetHomeCard gov={data.gov} graph={data.graph} /> : null}
 			<section className="panel-card">
 				<h1 className="sr-only">Who Runs Naija: Nigeria’s government, mapped and sourced</h1>
-				<h2>{t(lang, 'newsHeading')}</h2>
+				<h2><T k="newsHeading" /></h2>
 				{prose.length ? <NewsProse items={prose} /> : <p className="muted-copy">No sourced news is available yet.</p>}
 				<Link href="/ng?view=newsmakers" className="news-people" scroll={false}>
 					<span className="avatar-stack">
@@ -115,7 +114,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 
 			<section className="panel-card">
 				<div className="section-heading">
-					<h2>{t(lang, 'appointmentsHeading')}</h2>
+					<h2><T k="appointmentsHeading" /></h2>
 					<nav className="segmented" aria-label="Change window">
 						{WINDOWS.map((value) => (
 							<Link key={value} href={`/ng?${new URLSearchParams({ ...(layer === 'state' ? { layer: 'states' } : {}), days: String(value) })}`} aria-current={days === value ? 'page' : undefined} scroll={false}>
@@ -167,7 +166,7 @@ export default async function NigeriaHome({ searchParams }: PageProps) {
 			</section>
 
 			<section className="panel-card">
-				<h2>{t(lang, 'numbersHeading')}</h2>
+				<h2><T k="numbersHeading" /></h2>
 				<p className="muted-copy">What the {layer === 'state' ? 'state governments' : 'Federal Government of Nigeria'} is made of, as mapped here.</p>
 				<div className="overview-columns">
 					<CountList title="By type" items={overview.byType} />
@@ -257,15 +256,15 @@ function CountList({ title, items }: { title: string; items: Record<string, numb
 }
 
 /** The cabinet's spread across the states, measured against section 147(3). */
-function FederalCharacterCard({ gov, graph, lang }: { gov: string; graph: CompiledGraph; lang: Lang }) {
+function FederalCharacterCard({ gov, graph }: { gov: string; graph: CompiledGraph }) {
 	const report = federalCharacter(graph)
 	const covered = report.states.length - report.uncovered.length
 	return (
 		<Link href={`/${gov}/federal-character`} className="panel-card fc-card">
 			<div>
-				<h2>{t(lang, 'federalCharacter')}</h2>
+				<h2><T k="federalCharacter" /></h2>
 				<p className="muted-copy">
-					{t(lang, 'federalCharacterCard', { covered, states: report.states.length, members: report.members.length })}
+					<T k="federalCharacterCard" values={{ covered, states: report.states.length, members: report.members.length }} />
 				</p>
 			</div>
 			<span aria-hidden="true" className="fc-card-arrow">→</span>
@@ -294,7 +293,7 @@ function hostOf(url: string) {
 }
 
 /** The 2026 budget at a glance: the total and the three largest ministries, linking to the full ranking. */
-function BudgetHomeCard({ gov, graph, lang }: { gov: string; graph: CompiledGraph; lang: Lang }) {
+function BudgetHomeCard({ gov, graph }: { gov: string; graph: CompiledGraph }) {
 	const top = Object.entries(MINISTRY_BUDGETS)
 		.filter(([id]) => id.startsWith('ng-ministry-of-') && graph.nodes[id])
 		.sort((a, b) => b[1].total - a[1].total)
@@ -303,8 +302,8 @@ function BudgetHomeCard({ gov, graph, lang }: { gov: string; graph: CompiledGrap
 	return (
 		<Link href={`/${gov}/budget`} className="panel-card fc-card budget-home">
 			<div>
-				<h2>{t(lang, 'budgetTitle')}</h2>
-				<p className="muted-copy">{t(lang, 'budgetCard', { total: naira(BUDGET_2026.total) })}</p>
+				<h2><T k="budgetTitle" /></h2>
+				<p className="muted-copy"><T k="budgetCard" values={{ total: naira(BUDGET_2026.total) }} /></p>
 				<ul className="budget-home-bars">
 					{top.map(([id, budget]) => (
 						<li key={id}>
