@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { spawn, execFileSync } from 'node:child_process'
 import { createServer } from 'node:net'
 import { once } from 'node:events'
+import { randomBytes } from 'node:crypto'
 
 const temp = mkdtempSync(join(tmpdir(), 'govgraph-outage-'))
 let server
@@ -44,7 +45,8 @@ try {
 	const after = read('/ng', 'after')
 	assert.equal(after.status, 200)
 	assert.equal(after.body, before.body, 'Failed regeneration replaced the last good page')
-	const graph = read('/api/graph/0000000000000000', 'failed-graph')
+	// A fresh version each run: a fixed one may already be generated in .next/server by an earlier check.
+	const graph = read(`/api/graph/${randomBytes(8).toString('hex')}`, 'failed-graph')
 	assert.equal(graph.status, 500)
 	assert.doesNotMatch(graph.headers, /immutable/i, 'A failed graph response must never be immutable')
 	console.log('PASS: DB outage rejects regeneration (500); previous page remains byte-identical (200); failed graph is not immutable.')
