@@ -1,20 +1,17 @@
-import { createHash } from 'node:crypto'
-import { loadNigeriaGraph } from '@/lib/graph/nigeria'
-import { budgetFlow, budgetTotals } from '@/lib/graph/budget-flow'
+import { loadGraphResource } from '@/lib/graph/resource'
 
 // The stored-data tag invalidates this output when the daily refresh succeeds.
 export const dynamic = 'force-static'
 export const revalidate = false
 
 export async function GET() {
-	const { graph, news } = await loadNigeriaGraph()
-	const body = JSON.stringify({ graph, news, budget: budgetFlow(graph), budgets: budgetTotals(graph) })
+	const { body, digest } = await loadGraphResource()
 	return new Response(body, {
 		headers: {
 			'Content-Type': 'application/json; charset=utf-8',
-			// The browser reuses one download across pages, with a bounded five-minute freshness window.
-			'Cache-Control': 'public, max-age=300, must-revalidate',
-			ETag: `"${createHash('sha256').update(body).digest('hex')}"`,
+			// New data gives pages a new URL. Older version URLs may safely receive current data.
+			'Cache-Control': 'public, max-age=31536000, immutable',
+			ETag: `"${digest}"`,
 		},
 	})
 }

@@ -13,37 +13,34 @@ export interface GraphData {
 }
 
 const Context = createContext<{ data: GraphData | null; error: boolean; retry: () => void }>({ data: null, error: false, retry: () => {} })
-let pending: Promise<GraphData> | null = null
+const pending = new Map<string, Promise<GraphData>>()
 
-function readGraph() {
+function readGraph(url: string) {
 	// Strict Mode and consumers share one request; the HTTP cache handles later visits.
-	if (!pending) {
-		pending = fetch('/api/graph').then(async (response) => {
+	let request = pending.get(url)
+	if (!request) {
+		request = fetch(url).then(async (response) => {
 			if (!response.ok) throw new Error('Graph unavailable')
 			return response.json() as Promise<GraphData>
-		}).finally(() => { pending = null })
+		}).finally(() => { pending.delete(url) })
+		pending.set(url, request)
 	}
-	return pending
+	return request
 }
 
 /** Shared by the map, search and newsmakers. No graph is serialized into a page's HTML. */
-export function GraphDataProvider({ children }: { children: ReactNode }) {
+export function GraphDataProvider({ url, children }: { url: string; children: ReactNode }) {
 	const [data, setData] = useState<GraphData | null>(null)
 	const [error, setError] = useState(false)
 	const [attempt, setAttempt] = useState(0)
 	const retry = useCallback(() => setAttempt((last) => last + 1), [])
 	useEffect(() => {
 		let active = true
-		const load = () => {
-			readGraph().then((value) => {
-				if (active) { setData(value); setError(false) }
-			}).catch(() => { if (active) setError(true) })
-		}
-		const resume = () => { if (document.visibilityState === 'visible') load() }
-		load()
-		document.addEventListener('visibilitychange', resume)
-		return () => { active = false; document.removeEventListener('visibilitychange', resume) }
-	}, [attempt])
+		readGraph(url).then((value) => {
+			if (active) { setData(value); setError(false) }
+		}).catch(() => { if (active) setError(true) })
+		return () => { active = false }
+	}, [url, attempt])
 	const value = useMemo(() => ({ data, error, retry }), [data, error, retry])
 	return <Context.Provider value={value}>{children}</Context.Provider>
 }

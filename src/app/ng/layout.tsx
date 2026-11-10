@@ -3,15 +3,17 @@ import { GovShell } from '@/components/gov-shell'
 import { GraphDataProvider } from '@/components/graph-data'
 import { LangProvider } from '@/components/lang'
 import { QueryProvider } from '@/components/query'
+import { loadGraphResource } from '@/lib/graph/resource'
 
 // No clock-driven regeneration. Pages reading stored data follow its refresh tag.
 export const revalidate = false
 
-export default function NigeriaLayout({ children }: { children: ReactNode }) {
+export default async function NigeriaLayout({ children }: { children: ReactNode }) {
+	const { url } = await loadGraphResource()
 	return (
 		<LangProvider>
 			<QueryProvider>
-				<GraphDataProvider>
+				<GraphDataProvider url={url}>
 					<GovShell gov="ng">
 						{children}
 					</GovShell>
