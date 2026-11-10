@@ -38,6 +38,10 @@ try {
 	}
 	assert(before, 'Isolated server did not start')
 	assert.equal(before.status, 200)
+	const malformed = read('/api/graph/not-a-version', 'malformed-graph')
+	assert.equal(malformed.status, 404, 'Invalid input must be rejected before reading the unavailable database')
+	assert(Buffer.byteLength(malformed.body) < 1024)
+	assert.doesNotMatch(malformed.headers, /immutable/i)
 	const { preview } = JSON.parse(readFileSync(join(temp, '.next/prerender-manifest.json'), 'utf8'))
 	// This internal build-only token is used without logging it.
 	const regeneration = read('/ng', 'regeneration', ['-H', `x-prerender-revalidate: ${preview.previewModeId}`])
@@ -49,7 +53,7 @@ try {
 	const graph = read(`/api/graph/${randomBytes(8).toString('hex')}`, 'failed-graph')
 	assert.equal(graph.status, 500)
 	assert.doesNotMatch(graph.headers, /immutable/i, 'A failed graph response must never be immutable')
-	console.log('PASS: DB outage rejects regeneration (500); previous page remains byte-identical (200); failed graph is not immutable.')
+	console.log('PASS: DB outage rejects regeneration (500); previous page remains byte-identical (200); invalid version is a tiny 404 before DB access; cold valid graph fails without immutable caching.')
 } finally {
 	if (server && server.exitCode === null) {
 		server.kill('SIGTERM')
