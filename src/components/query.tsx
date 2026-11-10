@@ -29,6 +29,7 @@ function QuerySync({ onChange }: { onChange: (update: (last: URLSearchParams) =>
 	// A layout effect, so a navigation's new query lands before the frame that shows the new page.
 	useLayoutEffect(() => {
 		onChange((last) => (last.toString() === key ? last : new URLSearchParams(key)))
+		delete document.documentElement.dataset.homeQueryPending
 	}, [key, onChange])
 	return null
 }

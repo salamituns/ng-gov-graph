@@ -1,3 +1,4 @@
+import { TopicSummary } from '@/components/topic-summary'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BrandBar } from '@/components/brand-bar'
@@ -7,13 +8,13 @@ import { TopicSpotlight } from '@/components/topic-spotlight'
 import { CIVIC_TOPICS } from '@/data/nigeria/topics'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath } from '@/lib/graph/paths'
-import { storiesByTopic, trendingTopics } from '@/lib/graph/trending'
+import { storiesByTopic } from '@/lib/graph/trending'
 
 interface PageProps {
 	params: Promise<{ topic: string }>
 }
 
-/** None at build time: each page is rendered on its first visit, then cached (see the /ng layout's revalidate). */
+/** None at build time: each page is rendered on its first visit, then cached (until the stored-data tag is invalidated). */
 export function generateStaticParams() {
 	return []
 }
@@ -31,7 +32,6 @@ export default async function TopicPage({ params }: PageProps) {
 	if (!topic) notFound()
 	const { gov, graph, news } = await loadNigeriaGraph()
 	const stories = storiesByTopic(news, [topic]).get(topic.id) ?? []
-	const trend = trendingTopics(news, [topic], new Date(), 1).topics[0]
 	const bodies = topic.bodies.map((id) => graph.nodes[id]).filter((node) => node)
 
 	return (
@@ -39,13 +39,7 @@ export default async function TopicPage({ params }: PageProps) {
 			<BrandBar crumbs={[{ label: 'Trending' }, { label: topic.label }]} />
 			<TopicSpotlight label={topic.label} bodyIds={bodies.map((node) => node.id)} />
 			<article className="panel-card entity-card">
-				<p className="represent-zone">{trend?.rising ? 'Rising this week' : 'In the news'}</p>
-				<h1>{topic.label}</h1>
-				<p className="entity-description">
-					{trend
-						? `${trend.coverage} ${trend.coverage === 1 ? 'story' : 'stories'} from ${trend.outlets} outlets this week; ${stories.length} in all.`
-						: `${stories.length} ${stories.length === 1 ? 'story' : 'stories'} in the news we follow.`}
-				</p>
+				<TopicSummary topic={topic} total={stories.length} />
 				{bodies.length ? (
 					<>
 						<p className="entity-seat-title">Who is responsible</p>

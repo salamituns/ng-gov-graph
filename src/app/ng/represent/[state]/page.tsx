@@ -19,7 +19,7 @@ interface PageProps {
 	params: Promise<{ state: string }>
 }
 
-/** None at build time: each page is rendered on its first visit, then cached (see the /ng layout's revalidate). */
+/** None at build time: each page is rendered on its first visit, then cached (until the stored-data tag is invalidated). */
 export function generateStaticParams() {
 	return []
 }

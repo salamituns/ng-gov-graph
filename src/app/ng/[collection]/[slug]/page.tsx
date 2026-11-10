@@ -47,7 +47,7 @@ interface PageProps {
 	params: Promise<{ collection: string; slug: string }>
 }
 
-/** None at build time: each page is rendered on its first visit, then cached (see the /ng layout's revalidate). */
+/** None at build time: each page is rendered on its first visit, then cached (until the stored-data tag is invalidated). */
 export function generateStaticParams() {
 	return []
 }
@@ -219,7 +219,7 @@ export default async function EntityPage({ params }: PageProps) {
 			</article>
 			<ConstitutionCard node={node} provisions={provisionsFor(graph, node.id)} />
 			<BudgetCard id={orgId} gov={gov} graph={graph} />
-			{node.id === GENERAL_ELECTION.authorityId ? <ElectionCountdown serverNow={new Date().toISOString()} inecHref={nodePath(gov, node)} /> : null}
+			{node.id === GENERAL_ELECTION.authorityId ? <ElectionCountdown inecHref={nodePath(gov, node)} /> : null}
 
 			<Tabs defaultValue="news" className="entity-tabs">
 				<TabsList aria-label="About this entity">

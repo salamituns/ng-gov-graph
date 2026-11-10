@@ -1,7 +1,8 @@
+import { ElectionMilestones } from '@/components/election-milestones'
 import Link from 'next/link'
 import { BrandBar } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
-import { GENERAL_ELECTION, MILESTONES, OFF_CYCLE, VOTER_LINKS } from '@/data/nigeria/elections'
+import { GENERAL_ELECTION, OFF_CYCLE, VOTER_LINKS } from '@/data/nigeria/elections'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, representPath } from '@/lib/graph/paths'
 
@@ -17,10 +18,6 @@ function month(iso: string) {
 
 export default async function ElectionsPage() {
 	const { gov, graph } = await loadNigeriaGraph()
-	const now = new Date()
-	// Lagos date, so a milestone turns "done" at midnight in Nigeria, not UTC.
-	const today = now.toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' })
-	const nextIndex = MILESTONES.findIndex((item) => (item.ends ?? item.starts) >= today)
 	const inec = graph.nodes['ng-inec']
 
 	return (
@@ -34,7 +31,7 @@ export default async function ElectionsPage() {
 				</p>
 			</article>
 
-			<ElectionCountdown serverNow={now.toISOString()} inecHref={inec ? nodePath(gov, inec) : '/ng'} />
+			<ElectionCountdown inecHref={inec ? nodePath(gov, inec) : '/ng'} />
 
 			<section className="panel-card">
 				<h2>Before you vote</h2>
@@ -55,19 +52,7 @@ export default async function ElectionsPage() {
 
 			<section className="panel-card">
 				<h2>The road to polling day</h2>
-				<ol className="milestones">
-					{MILESTONES.map((item, index) => {
-						const state = index < nextIndex || nextIndex === -1 ? 'is-done' : index === nextIndex ? 'is-next' : ''
-						return (
-							<li key={item.id} className={state}>
-								<span className="milestone-date">{item.ends ? `${day(item.starts)} – ${day(item.ends)}` : day(item.starts)}</span>
-								<strong>{item.label}</strong>
-								{item.detail ? <small>{item.detail}</small> : null}
-								<a href={item.sourceUrl} target="_blank" rel="noreferrer" className="milestone-source">source</a>
-							</li>
-						)
-					})}
-				</ol>
+				<ElectionMilestones />
 			</section>
 
 			<section className="detail-roster">

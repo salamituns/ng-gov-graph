@@ -9,7 +9,7 @@ import { GraphSearch } from '@/components/graph-search'
 import { PowerMap } from '@/components/power-map'
 import { filterGraph } from '@/lib/graph/filter'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
-import type { PowerLink, PowerPerson } from '@/lib/graph/power'
+import { powerPeople } from '@/lib/graph/power'
 import { seatTitle } from '@/lib/graph/seat-title'
 import { CIVIC_TOPICS } from '@/data/nigeria/topics'
 import type { CompiledGraph } from '@/lib/graph/types'
@@ -17,25 +17,26 @@ import { LangSelect, useT } from '@/components/lang'
 import { PanelSheet } from '@/components/panel-sheet'
 import { useQuery } from '@/components/query'
 import { BudgetFlow } from '@/components/budget-flow'
-import type { BudgetFlow as BudgetFlowData } from '@/lib/graph/budget-flow'
+import { useGraphData } from '@/components/graph-data'
+import { useClock } from '@/components/clock'
 
 interface GovShellProps {
 	gov: string
-	graph: CompiledGraph
-	power: { people: PowerPerson[]; links: PowerLink[]; articles: number; sources: string[]; days: number }
-	/** The 2026 budget as a flow, for the Budget view. */
-	budget: BudgetFlowData
-	/** Each funded body's 2026 total, for search results. */
-	budgets: Record<string, number>
-	asOf: string
 	children: ReactNode
 }
+
+const EMPTY_GRAPH: CompiledGraph = { nodes: {}, edges: {}, constituency: '', elected: [], departments: [], commissions: [], advisories: [], courts: [], corporations: [], deptHeads: [], satellites: [] }
 
 /**
  * The map lives in the /ng layout, so it stays mounted while the left panel changes.
  * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
-export function GovShell({ gov, graph, power, budget, budgets, asOf, children }: GovShellProps) {
+export function GovShell({ gov, children }: GovShellProps) {
+	const { data, error, retry } = useGraphData()
+	const graph = data?.graph ?? EMPTY_GRAPH
+	const now = useClock()
+	const power = useMemo(() => now && data ? powerPeople(data.graph, data.news, 90, new Date(now)) : null, [data, now])
+	const asOf = now ? new Date(now).toISOString().slice(0, 10) : ''
 	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -80,7 +81,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 		: section === 'budget' ? t('budgetTitle')
 		: section === 'federal-character' ? t('federalCharacter')
 		: section === 'topics' ? (CIVIC_TOPICS.find((topic) => topic.id === slug)?.label ?? 'Trending')
-		: section ? (selected ? seatTitle(graph, selected) : 'Not found')
+		: section ? (selected ? seatTitle(graph, selected) : data ? 'Not found' : undefined)
 		: undefined
 	const select = (id: string) => {
 		const node = graph.nodes[id]
@@ -100,7 +101,7 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 			</PanelSheet>
 			<section className="shell-map" aria-label="Government map">
 				<div className="map-toolbar">
-					<GraphSearch gov={gov} graph={graph} budgets={budgets} />
+					{data ? <GraphSearch gov={gov} graph={graph} budgets={data.budgets} /> : <span />}
 					<div className="map-toolbar-right">
 						<LangSelect />
 						<ThemeToggle />
@@ -111,9 +112,11 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 					</div>
 				</div>
 				<div className={`map-canvas${view === 'budget' || view === 'power' ? '' : ' is-wheel'}`}>
-					{view === 'budget' ? (
-						<BudgetFlow flow={budget} selectedId={selectedId} onSelect={(id) => router.push(href({ id, view: 'budget' }), { scroll: false })} />
-					) : view === 'power' ? (
+					{!data ? (
+						<p role="status">{error ? <>The map could not load. <button type="button" onClick={retry}>Try again</button></> : 'Loading map…'}</p>
+					) : view === 'budget' ? (
+						<BudgetFlow flow={data.budget} selectedId={selectedId} onSelect={(id) => router.push(href({ id, view: 'budget' }), { scroll: false })} />
+					) : view === 'power' && power ? (
 						<PowerMap
 							{...power}
 							asOf={asOf}
