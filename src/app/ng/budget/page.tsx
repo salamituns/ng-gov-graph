@@ -1,3 +1,4 @@
+import { PagePanel } from '@/components/page-panel'
 import { BrandBar } from '@/components/brand-bar'
 import { actPage } from '@/components/budget-card'
 import { BudgetExplorer, type ExplorerBudget } from '@/components/budget-explorer'
@@ -42,7 +43,7 @@ export default async function BudgetPage() {
 	const passThrough = ranked.flatMap((item) => item.budget.passThrough ?? [])
 
 	return (
-		<>
+		<PagePanel titleKey="budgetTitle">
 			<BrandBar crumbs={[{ label: 'Where the money goes' }]} />
 			<article className="panel-card entity-card">
 				<p className="represent-zone">{BUDGET_2026.title}</p>
@@ -76,6 +77,6 @@ export default async function BudgetPage() {
 					Not counted against any ministry: {passThrough.map((item) => `${naira(item.total)} (${item.label})`).join('; ')}. The National Assembly, the judiciary and INEC are funded by statutory transfers, outside these lines. Where the Act prints no total for a ministry, the figure is the sum of its lines.
 				</p>
 			</section>
-		</>
+		</PagePanel>
 	)
 }

@@ -1,24 +1,27 @@
 import type { ReactNode } from 'react'
 import { GovShell } from '@/components/gov-shell'
-import { loadNigeriaGraph } from '@/lib/graph/nigeria'
-import { budgetFlow, budgetTotals } from '@/lib/graph/budget-flow'
-import { powerPeople } from '@/lib/graph/power'
+import { GraphDataProvider } from '@/components/graph-data'
 import { LangProvider } from '@/components/lang'
 import { QueryProvider } from '@/components/query'
+import { loadGraphResource } from '@/lib/graph/resource'
+import { PanelHistoryProvider } from '@/components/panel-history'
 
-// Pages are cached and rebuilt at most every six hours, and at once when the daily refresh revalidates the data.
-export const revalidate = 21600
+// Refresh-tag invalidation, with a 24-hour recovery backstop.
+export const revalidate = 86400
 
 export default async function NigeriaLayout({ children }: { children: ReactNode }) {
-	const data = await loadNigeriaGraph()
-	const now = new Date()
-	const power = powerPeople(data.graph, data.news, 90, now)
+	const { url } = await loadGraphResource()
 	return (
 		<LangProvider>
+			<link rel="preload" as="fetch" crossOrigin="anonymous" href={url} />
 			<QueryProvider>
-				<GovShell gov={data.gov} graph={data.graph} power={power} budget={budgetFlow(data.graph)} budgets={budgetTotals(data.graph)} asOf={now.toISOString().slice(0, 10)}>
-					{children}
-				</GovShell>
+				<PanelHistoryProvider>
+					<GraphDataProvider url={url}>
+						<GovShell gov="ng">
+							{children}
+						</GovShell>
+					</GraphDataProvider>
+				</PanelHistoryProvider>
 			</QueryProvider>
 		</LangProvider>
 	)

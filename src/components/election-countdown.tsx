@@ -1,18 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useSyncExternalStore } from 'react'
 import { GENERAL_ELECTION, nextPoll } from '@/data/nigeria/elections'
 import { useT } from '@/components/lang'
-
-function subscribeMinute(onTick: () => void) {
-	const timer = setInterval(onTick, 15000)
-	return () => clearInterval(timer)
-}
-
-function currentMinute() {
-	return Math.floor(Date.now() / 60000) * 60000
-}
+import { useClock } from '@/components/clock'
 
 function parts(ms: number) {
 	const minutes = Math.max(0, Math.floor(ms / 60000))
@@ -24,13 +15,14 @@ function pollDate(iso: string) {
 }
 
 /**
- * Days, hours and minutes to the next general election poll. The first render uses the server's clock so
- * the markup matches; it then ticks every minute and moves to the next poll once one opens.
+ * Days, hours and minutes to the next general election poll. The cached HTML shows absolute poll dates;
+ * the browser adds a live countdown and moves to the next poll once one opens.
  */
-export function ElectionCountdown({ serverNow, inecHref, guideHref }: { serverNow: string; inecHref: string; guideHref?: string }) {
-	// Minute-resolution clock: the server's time during hydration, the browser's afterwards.
+export function ElectionCountdown({ inecHref, guideHref }: { inecHref: string; guideHref?: string }) {
+	// Relative time is never frozen into the page cache.
 	const { t } = useT()
-	const nowMs = useSyncExternalStore(subscribeMinute, currentMinute, () => Date.parse(serverNow))
+	const nowMs = useClock()
+	if (!nowMs) return <section className="panel-card election-card"><h2>{GENERAL_ELECTION.name}</h2><p className="election-meta">{GENERAL_ELECTION.polls.map((poll) => `${poll.label}: ${pollDate(poll.opensAt)}`).join(' · ')}</p></section>
 	const now = new Date(nowMs)
 	const poll = nextPoll(now)
 	if (!poll) return null

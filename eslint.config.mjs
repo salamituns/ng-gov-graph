@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // The launch video is its own Remotion project with its own tooling.
     "launch-video/**",
+    // Local investigation scratch files are not application source.
+    ".tmp-check/**",
   ]),
 ]);
 

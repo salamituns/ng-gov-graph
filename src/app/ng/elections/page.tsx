@@ -1,15 +1,16 @@
+import { PagePanel } from '@/components/page-panel'
+
+import { formatLagosDate } from '@/lib/dates'
+import { ElectionMilestones } from '@/components/election-milestones'
 import Link from 'next/link'
 import { BrandBar } from '@/components/brand-bar'
 import { ElectionCountdown } from '@/components/election-countdown'
-import { GENERAL_ELECTION, MILESTONES, OFF_CYCLE, VOTER_LINKS } from '@/data/nigeria/elections'
+import { GENERAL_ELECTION, OFF_CYCLE, VOTER_LINKS } from '@/data/nigeria/elections'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, representPath } from '@/lib/graph/paths'
 
 export const metadata = { title: 'Nigeria Decides 2027 · Who Runs Naija' }
 
-function day(iso: string) {
-	return new Date(`${iso}T12:00:00+01:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Lagos' })
-}
 
 function month(iso: string) {
 	return new Date(`${iso}-15T12:00:00+01:00`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'Africa/Lagos' })
@@ -17,14 +18,10 @@ function month(iso: string) {
 
 export default async function ElectionsPage() {
 	const { gov, graph } = await loadNigeriaGraph()
-	const now = new Date()
-	// Lagos date, so a milestone turns "done" at midnight in Nigeria, not UTC.
-	const today = now.toLocaleDateString('en-CA', { timeZone: 'Africa/Lagos' })
-	const nextIndex = MILESTONES.findIndex((item) => (item.ends ?? item.starts) >= today)
 	const inec = graph.nodes['ng-inec']
 
 	return (
-		<>
+		<PagePanel title="Nigeria Decides 2027">
 			<BrandBar crumbs={[{ label: 'Nigeria Decides 2027' }]} />
 			<article className="panel-card entity-card">
 				<p className="represent-zone">Nigeria Decides 2027</p>
@@ -34,7 +31,7 @@ export default async function ElectionsPage() {
 				</p>
 			</article>
 
-			<ElectionCountdown serverNow={now.toISOString()} inecHref={inec ? nodePath(gov, inec) : '/ng'} />
+			<ElectionCountdown inecHref={inec ? nodePath(gov, inec) : '/ng'} />
 
 			<section className="panel-card">
 				<h2>Before you vote</h2>
@@ -55,19 +52,7 @@ export default async function ElectionsPage() {
 
 			<section className="panel-card">
 				<h2>The road to polling day</h2>
-				<ol className="milestones">
-					{MILESTONES.map((item, index) => {
-						const state = index < nextIndex || nextIndex === -1 ? 'is-done' : index === nextIndex ? 'is-next' : ''
-						return (
-							<li key={item.id} className={state}>
-								<span className="milestone-date">{item.ends ? `${day(item.starts)} – ${day(item.ends)}` : day(item.starts)}</span>
-								<strong>{item.label}</strong>
-								{item.detail ? <small>{item.detail}</small> : null}
-								<a href={item.sourceUrl} target="_blank" rel="noreferrer" className="milestone-source">source</a>
-							</li>
-						)
-					})}
-				</ol>
+				<ElectionMilestones />
 			</section>
 
 			<section className="detail-roster">
@@ -88,7 +73,7 @@ export default async function ElectionsPage() {
 									<Link href={representPath(gov, item.stateId)} className="fc-state-name">{state?.name ?? item.stateId}</Link>
 									<span>Next expected <strong>{month(item.nextExpected)}</strong></span>
 									<small>
-										Last held {day(item.lastPoll)} · <a href={item.sourceUrl} target="_blank" rel="noreferrer">source</a>
+										Last held {formatLagosDate(item.lastPoll)} · <a href={item.sourceUrl} target="_blank" rel="noreferrer">source</a>
 									</small>
 								</li>
 							)
@@ -99,6 +84,6 @@ export default async function ElectionsPage() {
 			<p className="panel-footer">
 				Dates from <a href={GENERAL_ELECTION.sourceUrl} target="_blank" rel="noreferrer">{GENERAL_ELECTION.sourceLabel}</a> and INEC’s later notices. INEC can revise its timetable; we update this page when it does.
 			</p>
-		</>
+		</PagePanel>
 	)
 }

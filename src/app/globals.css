@@ -1191,3 +1191,6 @@
   /* The home quick actions already open these; their cards would repeat them. */
   .sheet-page > .fc-card { display:none; }
 }
+
+/* A query deep link waits for browser selection, rather than flashing the federal homepage. */
+html[data-home-query-pending] .sheet-page { visibility:hidden; }

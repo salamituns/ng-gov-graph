@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 		'Who holds power in Nigeria, and who gave it to them: the Presidency, ministries, the National Assembly, the courts and the states, with every officeholder and every link sourced.',
 }
 
-const THEME_SCRIPT = `try{var l=document.cookie.match(/(?:^|; )lang=([^;]*)/);if(l)document.documentElement.lang=l[1];var t=localStorage.getItem('theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}`
+const THEME_SCRIPT = `try{if((location.pathname==='/ng'||location.pathname==='/ng/')&&(new URLSearchParams(location.search).has('layer')||new URLSearchParams(location.search).has('days'))){document.documentElement.dataset.homeQueryPending='true';setTimeout(function(){delete document.documentElement.dataset.homeQueryPending},2500)};var l=document.cookie.match(/(?:^|; )lang=([^;]*)/);if(l)document.documentElement.lang=l[1];var t=localStorage.getItem('theme');var d=t?t==='dark':matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}`
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
 	return (

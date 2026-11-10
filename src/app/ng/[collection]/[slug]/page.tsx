@@ -1,3 +1,4 @@
+import { PagePanel } from '@/components/page-panel'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FeedbackButton } from '@/components/feedback'
@@ -47,7 +48,7 @@ interface PageProps {
 	params: Promise<{ collection: string; slug: string }>
 }
 
-/** None at build time: each page is rendered on its first visit, then cached (see the /ng layout's revalidate). */
+/** None at build time: each page is rendered on its first visit, then cached (until the stored-data tag is invalidated). */
 export function generateStaticParams() {
 	return []
 }
@@ -150,7 +151,7 @@ export default async function EntityPage({ params }: PageProps) {
 	if (parent && parent.type !== 'constituency') crumbs.push({ label: parent.name, href: nodePath(gov, parent) })
 
 	return (
-		<>
+		<PagePanel title={seatTitle(graph, node)}>
 			<BrandBar crumbs={crumbs} layer={node.layer === 'state' || parent?.layer === 'state' ? 'state' : 'federal'} />
 			{/* On phones the sheet's header already names the page, so this heading is visually hidden there. */}
 			<article className="panel-card entity-card is-titled-by-sheet">
@@ -219,7 +220,7 @@ export default async function EntityPage({ params }: PageProps) {
 			</article>
 			<ConstitutionCard node={node} provisions={provisionsFor(graph, node.id)} />
 			<BudgetCard id={orgId} gov={gov} graph={graph} />
-			{node.id === GENERAL_ELECTION.authorityId ? <ElectionCountdown serverNow={new Date().toISOString()} inecHref={nodePath(gov, node)} /> : null}
+			{node.id === GENERAL_ELECTION.authorityId ? <ElectionCountdown inecHref={nodePath(gov, node)} /> : null}
 
 			<Tabs defaultValue="news" className="entity-tabs">
 				<TabsList aria-label="About this entity">
@@ -237,6 +238,6 @@ export default async function EntityPage({ params }: PageProps) {
 				</TabsContent>
 			</Tabs>
 			{roster ? <ChamberRosterList gov={gov} roster={roster} /> : null}
-		</>
+		</PagePanel>
 	)
 }

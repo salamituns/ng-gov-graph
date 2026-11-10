@@ -49,7 +49,7 @@ export interface StoredData {
 
 const NOTHING_STORED: StoredData = { snapshot: null, news: null, changes: null }
 
-/** Revalidated by the refresh (revalidateTag), so the cache can live for hours. */
+/** Daily refresh invalidates this tag; a 24-hour expiry is the recovery backstop. */
 export const STORED_DATA_TAG = 'ng-stored-data'
 
 /** Throws on a database error (a quota, an outage), so a failure is never cached as an empty site. */
@@ -64,7 +64,7 @@ async function readStoredData(): Promise<StoredData> {
 }
 
 /**
- * The stored data, read from the database a few times a day instead of on every page view. Each read moves
+ * The stored data, read from the database after a refresh instead of on every page view. Each read moves
  * the whole snapshot (over a megabyte), and per-request reads used up the free plan's monthly transfer in
  * two days (October 2026). The cache keeps it gzipped: Next.js skips caching any entry over 2 MB, silently
  * in production, and the snapshot only grows; compressed it is a tenth of that.
@@ -72,16 +72,13 @@ async function readStoredData(): Promise<StoredData> {
 const cachedStoredData = unstable_cache(
 	async () => gzipSync(JSON.stringify(await readStoredData())).toString('base64'),
 	['ng-stored-data-v1'],
-	{ tags: [STORED_DATA_TAG], revalidate: 21600 },
+	{ tags: [STORED_DATA_TAG], revalidate: 86400 },
 )
 
-/** A fresh copy for each request (resolving the graph edits it in place). Empty when the database can't be read. */
+/** A fresh copy per request. Only an intentionally unconfigured database uses the demo catalog. */
 export async function loadStoredData(): Promise<StoredData> {
 	if (!process.env.DATABASE_URL) return NOTHING_STORED
-	try {
-		return JSON.parse(gunzipSync(Buffer.from(await cachedStoredData(), 'base64')).toString('utf8')) as StoredData
-	} catch {
-		return NOTHING_STORED
-	}
+	// A configured DB failure must reject regeneration, so Next retains its last good output.
+	return JSON.parse(gunzipSync(Buffer.from(await cachedStoredData(), 'base64')).toString('utf8')) as StoredData
 }
 

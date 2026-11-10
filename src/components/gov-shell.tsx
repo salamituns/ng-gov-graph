@@ -9,33 +9,26 @@ import { GraphSearch } from '@/components/graph-search'
 import { PowerMap } from '@/components/power-map'
 import { filterGraph } from '@/lib/graph/filter'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
-import type { PowerLink, PowerPerson } from '@/lib/graph/power'
-import { seatTitle } from '@/lib/graph/seat-title'
-import { CIVIC_TOPICS } from '@/data/nigeria/topics'
 import type { CompiledGraph } from '@/lib/graph/types'
 import { LangSelect, useT } from '@/components/lang'
-import { PanelSheet } from '@/components/panel-sheet'
 import { useQuery } from '@/components/query'
 import { BudgetFlow } from '@/components/budget-flow'
-import type { BudgetFlow as BudgetFlowData } from '@/lib/graph/budget-flow'
+import { useGraphData } from '@/components/graph-data'
 
 interface GovShellProps {
 	gov: string
-	graph: CompiledGraph
-	power: { people: PowerPerson[]; links: PowerLink[]; articles: number; sources: string[]; days: number }
-	/** The 2026 budget as a flow, for the Budget view. */
-	budget: BudgetFlowData
-	/** Each funded body's 2026 total, for search results. */
-	budgets: Record<string, number>
-	asOf: string
 	children: ReactNode
 }
+
+const EMPTY_GRAPH: CompiledGraph = { nodes: {}, edges: {}, constituency: '', elected: [], departments: [], commissions: [], advisories: [], courts: [], corporations: [], deptHeads: [], satellites: [] }
 
 /**
  * The map lives in the /ng layout, so it stays mounted while the left panel changes.
  * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
-export function GovShell({ gov, graph, power, budget, budgets, asOf, children }: GovShellProps) {
+export function GovShell({ gov, children }: GovShellProps) {
+	const { data, error, retry, power, asOf } = useGraphData()
+	const graph = data?.graph ?? EMPTY_GRAPH
 	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -73,15 +66,6 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 		const base = node ? nodePath(gov, node) : pathname
 		return `${base}${query.size ? `?${query}` : ''}`
 	}
-	// The phone sheet's header names the page it holds; home has no header.
-	const sheetTitle =
-		section === 'represent' ? (selected ? `Who represents ${selected.name}` : t('whoRepresents'))
-		: section === 'elections' ? 'Nigeria Decides 2027'
-		: section === 'budget' ? t('budgetTitle')
-		: section === 'federal-character' ? t('federalCharacter')
-		: section === 'topics' ? (CIVIC_TOPICS.find((topic) => topic.id === slug)?.label ?? 'Trending')
-		: section ? (selected ? seatTitle(graph, selected) : 'Not found')
-		: undefined
 	const select = (id: string) => {
 		const node = graph.nodes[id]
 		if (!node) return
@@ -91,16 +75,10 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 
 	return (
 		<main className="shell">
-			<PanelSheet
-				title={sheetTitle}
-				onBack={() => router.back()}
-				onClose={() => router.push(`/${gov}${view === 'power' ? '?view=newsmakers' : view === 'budget' ? '?view=budget' : ''}`, { scroll: false })}
-			>
-				{children}
-			</PanelSheet>
+			{children}
 			<section className="shell-map" aria-label="Government map">
 				<div className="map-toolbar">
-					<GraphSearch gov={gov} graph={graph} budgets={budgets} />
+					{data ? <GraphSearch gov={gov} graph={graph} budgets={data.budgets} /> : <span />}
 					<div className="map-toolbar-right">
 						<LangSelect />
 						<ThemeToggle />
@@ -111,9 +89,11 @@ export function GovShell({ gov, graph, power, budget, budgets, asOf, children }:
 					</div>
 				</div>
 				<div className={`map-canvas${view === 'budget' || view === 'power' ? '' : ' is-wheel'}`}>
-					{view === 'budget' ? (
-						<BudgetFlow flow={budget} selectedId={selectedId} onSelect={(id) => router.push(href({ id, view: 'budget' }), { scroll: false })} />
-					) : view === 'power' ? (
+					{!data ? (
+						<p role="status">{error ? <>The map could not load. <button type="button" onClick={retry}>Try again</button></> : 'Loading map…'}</p>
+					) : view === 'budget' ? (
+						<BudgetFlow flow={data.budget} selectedId={selectedId} onSelect={(id) => router.push(href({ id, view: 'budget' }), { scroll: false })} />
+					) : view === 'power' && power ? (
 						<PowerMap
 							{...power}
 							asOf={asOf}

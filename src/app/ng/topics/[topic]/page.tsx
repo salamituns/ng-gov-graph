@@ -1,3 +1,5 @@
+import { PagePanel } from '@/components/page-panel'
+import { TopicSummary } from '@/components/topic-summary'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BrandBar } from '@/components/brand-bar'
@@ -13,7 +15,7 @@ interface PageProps {
 	params: Promise<{ topic: string }>
 }
 
-/** None at build time: each page is rendered on its first visit, then cached (see the /ng layout's revalidate). */
+/** None at build time: each page is rendered on its first visit, then cached (until the stored-data tag is invalidated). */
 export function generateStaticParams() {
 	return []
 }
@@ -35,17 +37,11 @@ export default async function TopicPage({ params }: PageProps) {
 	const bodies = topic.bodies.map((id) => graph.nodes[id]).filter((node) => node)
 
 	return (
-		<>
+		<PagePanel title={topic.label}>
 			<BrandBar crumbs={[{ label: 'Trending' }, { label: topic.label }]} />
 			<TopicSpotlight label={topic.label} bodyIds={bodies.map((node) => node.id)} />
 			<article className="panel-card entity-card">
-				<p className="represent-zone">{trend?.rising ? 'Rising this week' : 'In the news'}</p>
-				<h1>{topic.label}</h1>
-				<p className="entity-description">
-					{trend
-						? `${trend.coverage} ${trend.coverage === 1 ? 'story' : 'stories'} from ${trend.outlets} outlets this week; ${stories.length} in all.`
-						: `${stories.length} ${stories.length === 1 ? 'story' : 'stories'} in the news we follow.`}
-				</p>
+				<TopicSummary topic={topic} total={stories.length} trend={trend} />
 				{bodies.length ? (
 					<>
 						<p className="entity-seat-title">Who is responsible</p>
@@ -68,6 +64,6 @@ export default async function TopicPage({ params }: PageProps) {
 				<h2>Stories</h2>
 				<StoryList stories={stories} empty="No story on this topic yet." />
 			</section>
-		</>
+		</PagePanel>
 	)
 }
