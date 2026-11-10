@@ -1,3 +1,8 @@
+import { PagePanel } from '@/components/page-panel'
+import { formatNewsDate } from '@/lib/dates'
+import { trendingTopics } from '@/lib/graph/trending'
+import { CIVIC_TOPICS } from '@/data/nigeria/topics'
+import { powerPeople } from '@/lib/graph/power'
 import Link from 'next/link'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { filterGraph } from '@/lib/graph/filter'
@@ -16,25 +21,30 @@ import { HomeContent } from '@/components/home-content'
 /** Only homepage content crosses this boundary; map/search data has its own shared JSON resource. */
 export default async function NigeriaHome() {
 	const data = await loadNigeriaGraph()
+	const now = new Date()
+	const trending = trendingTopics(data.news, CIVIC_TOPICS, now)
+	const inNews = powerPeople(data.graph, data.news, 90, now).people.slice(0, 5)
 	const labels = mentionLabels(data.graph)
 	const stories = data.news.filter((item) => item.entityIds?.length && hostOf(item.url)).sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? ''))
 	const prose = stories.slice(0, 12).map((item) => ({
 		id: item.id, url: item.url, source: hostOf(item.url),
 		// An absolute publication date remains true however long this page is cached.
-		when: item.publishedAt ? new Date(item.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Lagos' }) : undefined,
+		when: formatNewsDate(item.publishedAt),
 		segments: newsSegments(newsLead(item), labels).map((segment) => {
 			const node = segment.id ? data.graph.nodes[segment.id] : undefined
 			return node ? { text: segment.text, href: nodePath(data.gov, node), tone: toneOf(node), type: node.type } : { text: segment.text }
 		}),
 	}))
-	return <HomeContent data={{
+	return <PagePanel><HomeContent data={{
 		gov: data.gov,
 		inecHref: data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng',
 		states: Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name })),
 		overviews: { federal: summarizeOverview(filterGraph(data.graph, 'federal')), state: summarizeOverview(filterGraph(data.graph, 'state')) },
 		prose,
+		trending,
+		inNews,
 		changes: data.changes.map((change) => ({ ...change, href: data.graph.nodes[change.groupId] ? nodePath(data.gov, data.graph.nodes[change.groupId]) : undefined })),
-	}} federalCards={<><FederalCharacterCard gov={data.gov} graph={data.graph} /><BudgetHomeCard gov={data.gov} graph={data.graph} /></>} />
+	}} federalCards={<><FederalCharacterCard gov={data.gov} graph={data.graph} /><BudgetHomeCard gov={data.gov} graph={data.graph} /></>} /></PagePanel>
 }
 
 function hostOf(url: string) {

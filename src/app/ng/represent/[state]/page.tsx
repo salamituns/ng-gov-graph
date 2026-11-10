@@ -1,3 +1,4 @@
+import { PagePanel } from '@/components/page-panel'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -160,7 +161,7 @@ export default async function RepresentPage({ params }: PageProps) {
 	const states = Object.values(graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name }))
 	const isFct = state.id === 'ng-fct'
 	return (
-		<>
+		<PagePanel title={`Who represents ${state.name}`}>
 			<BrandBar layer="state" crumbs={[{ label: 'Who represents me?' }, { label: state.name.replace(/ State$/, ''), href: nodePath(gov, state) }]} />
 			<article className="panel-card entity-card">
 				<p className="represent-zone">{STATE_ZONES[state.id] ?? 'North Central'} zone</p>
@@ -223,6 +224,6 @@ export default async function RepresentPage({ params }: PageProps) {
 			) : null}
 
 			<RepresentPicker gov={gov} states={states} compact />
-		</>
+		</PagePanel>
 	)
 }

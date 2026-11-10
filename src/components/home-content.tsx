@@ -9,19 +9,17 @@ import { ElectionCountdown } from '@/components/election-countdown'
 import { QuickActions } from '@/components/quick-actions'
 import { RepresentPicker } from '@/components/represent-picker'
 import { TrendingTopics } from '@/components/trending-topics'
-import { CIVIC_TOPICS } from '@/data/nigeria/topics'
-import { trendingTopics } from '@/lib/graph/trending'
+import type { Trending } from '@/lib/graph/trending'
 import { NewsProse, type ProseItem } from '@/components/panel-client'
 import { changesInWindow } from '@/lib/graph/feed'
 import { parseLayer } from '@/lib/graph/filter'
-import { powerPeople } from '@/lib/graph/power'
+import type { PowerPerson } from '@/lib/graph/power'
 import type { OverviewCounts, PersonnelChange } from '@/lib/graph/types'
 import { T } from '@/components/lang'
 import { Fold } from '@/components/fold'
 
-import { useMemo, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useQuery } from '@/components/query'
-import { useGraphData } from '@/components/graph-data'
 import { useClock } from '@/components/clock'
 
 interface HomeData {
@@ -30,6 +28,8 @@ interface HomeData {
 	states: { id: string; name: string }[]
 	overviews: Record<'federal' | 'state', OverviewCounts>
 	prose: ProseItem[]
+	trending: Trending
+	inNews: PowerPerson[]
 	changes: Array<PersonnelChange & { href?: string }>
 }
 
@@ -52,9 +52,7 @@ export function HomeContent({ data, federalCards }: { data: HomeData; federalCar
 	const today = now?.toISOString().slice(0, 10) ?? ''
 	const overview = data.overviews[layer]
 	const prose = data.prose
-	const shared = useGraphData().data
-	const inNews = useMemo(() => shared && clock ? powerPeople(shared.graph, shared.news, 90, new Date(clock)).people.slice(0, 5) : [], [shared, clock])
-	const trending = useMemo(() => trendingTopics(shared?.news ?? [], CIVIC_TOPICS, new Date(clock)), [shared, clock])
+	const { inNews, trending } = data
 
 	const changes = [...data.changes].sort((a, b) => b.date.localeCompare(a.date))
 	const windowed = now ? changesInWindow(changes, days, now) : []

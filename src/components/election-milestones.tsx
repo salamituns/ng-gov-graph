@@ -1,11 +1,10 @@
 'use client'
 
+import { formatLagosDate } from '@/lib/dates'
+
 import { MILESTONES } from '@/data/nigeria/elections'
 import { useClock } from '@/components/clock'
 
-function day(iso: string) {
-	return new Date(`${iso}T12:00:00+01:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Lagos' })
-}
 
 export function ElectionMilestones() {
 	const clock = useClock()
@@ -14,7 +13,7 @@ export function ElectionMilestones() {
 	return <ol className="milestones">{MILESTONES.map((item, index) => {
 		const state = !today ? '' : index < nextIndex || nextIndex === -1 ? 'is-done' : index === nextIndex ? 'is-next' : ''
 		return <li key={item.id} className={state}>
-			<span className="milestone-date">{item.ends ? `${day(item.starts)} – ${day(item.ends)}` : day(item.starts)}</span>
+			<span className="milestone-date">{item.ends ? `${formatLagosDate(item.starts)} – ${formatLagosDate(item.ends)}` : formatLagosDate(item.starts)}</span>
 			<strong>{item.label}</strong>
 			{item.detail ? <small>{item.detail}</small> : null}
 			<a href={item.sourceUrl} target="_blank" rel="noreferrer" className="milestone-source">source</a>

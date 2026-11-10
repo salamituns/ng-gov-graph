@@ -1,3 +1,4 @@
+import { PagePanel } from '@/components/page-panel'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FeedbackButton } from '@/components/feedback'
@@ -150,7 +151,7 @@ export default async function EntityPage({ params }: PageProps) {
 	if (parent && parent.type !== 'constituency') crumbs.push({ label: parent.name, href: nodePath(gov, parent) })
 
 	return (
-		<>
+		<PagePanel title={seatTitle(graph, node)}>
 			<BrandBar crumbs={crumbs} layer={node.layer === 'state' || parent?.layer === 'state' ? 'state' : 'federal'} />
 			{/* On phones the sheet's header already names the page, so this heading is visually hidden there. */}
 			<article className="panel-card entity-card is-titled-by-sheet">
@@ -237,6 +238,6 @@ export default async function EntityPage({ params }: PageProps) {
 				</TabsContent>
 			</Tabs>
 			{roster ? <ChamberRosterList gov={gov} roster={roster} /> : null}
-		</>
+		</PagePanel>
 	)
 }

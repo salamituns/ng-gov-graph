@@ -1,10 +1,11 @@
+import { PagePanel } from '@/components/page-panel'
 import Link from 'next/link'
 import { BrandBar } from '@/components/brand-bar'
 
 /** Shown inside the map's layout for any unknown office, body or state, with a real 404 status. */
 export default function NotFound() {
 	return (
-		<>
+		<PagePanel title="Not found">
 			<BrandBar crumbs={[{ label: 'Not found' }]} />
 			<article className="panel-card entity-card">
 				<p className="represent-zone">404</p>
@@ -19,6 +20,6 @@ export default function NotFound() {
 					<li><Link href="/ng/budget" className="entity-link">Where the 2026 budget goes</Link></li>
 				</ul>
 			</article>
-		</>
+		</PagePanel>
 	)
 }

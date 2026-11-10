@@ -9,16 +9,11 @@ import { GraphSearch } from '@/components/graph-search'
 import { PowerMap } from '@/components/power-map'
 import { filterGraph } from '@/lib/graph/filter'
 import { nodePath, stateIdFromSlug } from '@/lib/graph/paths'
-import { powerPeople } from '@/lib/graph/power'
-import { seatTitle } from '@/lib/graph/seat-title'
-import { CIVIC_TOPICS } from '@/data/nigeria/topics'
 import type { CompiledGraph } from '@/lib/graph/types'
 import { LangSelect, useT } from '@/components/lang'
-import { PanelSheet } from '@/components/panel-sheet'
 import { useQuery } from '@/components/query'
 import { BudgetFlow } from '@/components/budget-flow'
 import { useGraphData } from '@/components/graph-data'
-import { useClock } from '@/components/clock'
 
 interface GovShellProps {
 	gov: string
@@ -32,11 +27,8 @@ const EMPTY_GRAPH: CompiledGraph = { nodes: {}, edges: {}, constituency: '', ele
  * The URL is the only selection state: /ng/<collection>/<id> selects, ?view=newsmakers swaps the map.
  */
 export function GovShell({ gov, children }: GovShellProps) {
-	const { data, error, retry } = useGraphData()
+	const { data, error, retry, power, asOf } = useGraphData()
 	const graph = data?.graph ?? EMPTY_GRAPH
-	const now = useClock()
-	const power = useMemo(() => now && data ? powerPeople(data.graph, data.news, 90, new Date(now)) : null, [data, now])
-	const asOf = now ? new Date(now).toISOString().slice(0, 10) : ''
 	const { t } = useT()
 	const router = useRouter()
 	const pathname = usePathname()
@@ -74,15 +66,6 @@ export function GovShell({ gov, children }: GovShellProps) {
 		const base = node ? nodePath(gov, node) : pathname
 		return `${base}${query.size ? `?${query}` : ''}`
 	}
-	// The phone sheet's header names the page it holds; home has no header.
-	const sheetTitle =
-		section === 'represent' ? (selected ? `Who represents ${selected.name}` : t('whoRepresents'))
-		: section === 'elections' ? 'Nigeria Decides 2027'
-		: section === 'budget' ? t('budgetTitle')
-		: section === 'federal-character' ? t('federalCharacter')
-		: section === 'topics' ? (CIVIC_TOPICS.find((topic) => topic.id === slug)?.label ?? 'Trending')
-		: section ? (selected ? seatTitle(graph, selected) : data ? 'Not found' : undefined)
-		: undefined
 	const select = (id: string) => {
 		const node = graph.nodes[id]
 		if (!node) return
@@ -92,13 +75,7 @@ export function GovShell({ gov, children }: GovShellProps) {
 
 	return (
 		<main className="shell">
-			<PanelSheet
-				title={sheetTitle}
-				onBack={() => router.back()}
-				onClose={() => router.push(`/${gov}${view === 'power' ? '?view=newsmakers' : view === 'budget' ? '?view=budget' : ''}`, { scroll: false })}
-			>
-				{children}
-			</PanelSheet>
+			{children}
 			<section className="shell-map" aria-label="Government map">
 				<div className="map-toolbar">
 					{data ? <GraphSearch gov={gov} graph={graph} budgets={data.budgets} /> : <span />}

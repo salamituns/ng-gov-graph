@@ -4,20 +4,24 @@ import { GraphDataProvider } from '@/components/graph-data'
 import { LangProvider } from '@/components/lang'
 import { QueryProvider } from '@/components/query'
 import { loadGraphResource } from '@/lib/graph/resource'
+import { PanelHistoryProvider } from '@/components/panel-history'
 
-// No clock-driven regeneration. Pages reading stored data follow its refresh tag.
-export const revalidate = false
+// Refresh-tag invalidation, with a 24-hour recovery backstop.
+export const revalidate = 86400
 
 export default async function NigeriaLayout({ children }: { children: ReactNode }) {
 	const { url } = await loadGraphResource()
 	return (
 		<LangProvider>
+			<link rel="preload" as="fetch" crossOrigin="anonymous" href={url} />
 			<QueryProvider>
-				<GraphDataProvider url={url}>
-					<GovShell gov="ng">
-						{children}
-					</GovShell>
-				</GraphDataProvider>
+				<PanelHistoryProvider>
+					<GraphDataProvider url={url}>
+						<GovShell gov="ng">
+							{children}
+						</GovShell>
+					</GraphDataProvider>
+				</PanelHistoryProvider>
 			</QueryProvider>
 		</LangProvider>
 	)

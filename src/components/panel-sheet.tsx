@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQuery } from '@/components/query'
 import { SNAPS, snapFor, type Snap } from '@/lib/sheet'
+import { usePanelMoves } from '@/components/panel-history'
 
 /**
  * On portrait phones the panel is a bottom sheet, after Google Maps: the map is the page and the details
@@ -62,12 +63,7 @@ export function PanelSheet({
 		[routeKey, routeSnap],
 	)
 	// How many places the reader has been, for the header's Back button.
-	const [lastRoute, setLastRoute] = useState(routeKey)
-	const [moves, setMoves] = useState(0)
-	if (lastRoute !== routeKey) {
-		setLastRoute(routeKey)
-		setMoves((n) => n + 1)
-	}
+	const moves = usePanelMoves()
 
 	const panel = useRef<HTMLElement>(null)
 	const body = useRef<HTMLDivElement>(null)

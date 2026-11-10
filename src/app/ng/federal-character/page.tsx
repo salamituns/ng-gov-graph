@@ -1,3 +1,4 @@
+import { PagePanel } from '@/components/page-panel'
 import Link from 'next/link'
 import { BrandBar } from '@/components/brand-bar'
 import { CabinetExplorer, type ExplorerState } from '@/components/cabinet-explorer'
@@ -42,7 +43,7 @@ export default async function FederalCharacterPage() {
 	const zones = report.zones.map((zone) => ({ zone: zone.zone, slug: zone.zone.toLowerCase().replace(/\s+/g, '-'), states: zone.states, ministers: zone.members.length, money: money(zone.members) }))
 
 	return (
-		<>
+		<PagePanel titleKey="federalCharacter">
 			<BrandBar crumbs={[{ label: 'Federal character' }]} />
 			<article className="panel-card entity-card">
 				<p className="represent-zone">Constitution · sections 14(3) and 147(3)</p>
@@ -114,6 +115,6 @@ export default async function FederalCharacterPage() {
 					Each state comes from the nomination or Senate screening report{hometownOnly ? `, except ${hometownOnly} marked †, which use the minister’s recorded hometown` : ''}. The President, who also holds the Petroleum portfolio, is not counted.
 				</p>
 			</section>
-		</>
+		</PagePanel>
 	)
 }

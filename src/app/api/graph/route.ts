@@ -1,16 +1,18 @@
 import { loadGraphResource } from '@/lib/graph/resource'
+import { gunzipSync } from 'node:zlib'
 
 // The stored-data tag invalidates this output when the daily refresh succeeds.
 export const dynamic = 'force-static'
-export const revalidate = false
+export const revalidate = 86400
 
 export async function GET() {
-	const { body, digest } = await loadGraphResource()
+	const { compressed, digest } = await loadGraphResource()
+	const body = gunzipSync(Buffer.from(compressed, 'base64')).toString('utf8')
 	return new Response(body, {
 		headers: {
 			'Content-Type': 'application/json; charset=utf-8',
-			// New data gives pages a new URL. Older version URLs may safely receive current data.
-			'Cache-Control': 'public, max-age=31536000, immutable',
+			// Legacy, unchecked URLs must never pin current data for a year.
+			'Cache-Control': 'public, max-age=60',
 			ETag: `"${digest}"`,
 		},
 	})

@@ -1,3 +1,4 @@
+import { PagePanel } from '@/components/page-panel'
 import { TopicSummary } from '@/components/topic-summary'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -8,7 +9,7 @@ import { TopicSpotlight } from '@/components/topic-spotlight'
 import { CIVIC_TOPICS } from '@/data/nigeria/topics'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath } from '@/lib/graph/paths'
-import { storiesByTopic } from '@/lib/graph/trending'
+import { storiesByTopic, trendingTopics } from '@/lib/graph/trending'
 
 interface PageProps {
 	params: Promise<{ topic: string }>
@@ -32,14 +33,15 @@ export default async function TopicPage({ params }: PageProps) {
 	if (!topic) notFound()
 	const { gov, graph, news } = await loadNigeriaGraph()
 	const stories = storiesByTopic(news, [topic]).get(topic.id) ?? []
+	const trend = trendingTopics(news, [topic], new Date(), 1).topics[0]
 	const bodies = topic.bodies.map((id) => graph.nodes[id]).filter((node) => node)
 
 	return (
-		<>
+		<PagePanel title={topic.label}>
 			<BrandBar crumbs={[{ label: 'Trending' }, { label: topic.label }]} />
 			<TopicSpotlight label={topic.label} bodyIds={bodies.map((node) => node.id)} />
 			<article className="panel-card entity-card">
-				<TopicSummary topic={topic} total={stories.length} />
+				<TopicSummary topic={topic} total={stories.length} trend={trend} />
 				{bodies.length ? (
 					<>
 						<p className="entity-seat-title">Who is responsible</p>
@@ -62,6 +64,6 @@ export default async function TopicPage({ params }: PageProps) {
 				<h2>Stories</h2>
 				<StoryList stories={stories} empty="No story on this topic yet." />
 			</section>
-		</>
+		</PagePanel>
 	)
 }
