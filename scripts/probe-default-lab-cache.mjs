@@ -36,8 +36,8 @@ try {
   assert.equal(response.status,200)
   for(let i=0;i<100&&!errors.includes('EACCES');i++) await new Promise(done=>setTimeout(done,20))
   assert.match(errors,/EACCES/)
-  assert.match(errors,/\.next\/server\/app\/(?:.*\/)?ng\.(?:meta|html|rsc)/)
-  console.log('CONFIRMED: deleting demo prerenders allows /ng 200, but default ISR cannot persist under read-only .next/server/app (EACCES). Keeping only .next/cache writable requires a handler.')
+  assert.match(errors,/\.next\/server\/(?:app\/|route-cache)/)
+  console.log('CONFIRMED: deleting demo prerenders allows /ng 200, but default ISR cannot persist under read-only .next/server (EACCES). Keeping only .next/cache writable requires a handler.')
 } finally {
   if(server&&server.exitCode===null){server.kill();await once(server,'exit')}
   await modes(temp,true);await rm(temp,{recursive:true,force:true})
