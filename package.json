@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/bundle-refresh.mjs && node scripts/prepare-lab.mjs",
+    "build": "next build && node scripts/prepare-lab.mjs",
     "start": "next start",
     "lint": "eslint",
     "test": "tsx --test src/lib/*.test.ts src/lib/graph/*.test.ts scripts/*.test.mjs",

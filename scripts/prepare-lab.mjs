@@ -1,6 +1,7 @@
 import { cp, rm, mkdir, readFile, readdir } from 'node:fs/promises'
 
 if (process.env.LAB_BUILD === '1') {
+	await import('./bundle-refresh.mjs')
 	const runtime = '.next/standalone'
 	await cp('public', `${runtime}/public`, { recursive: true })
 	await cp('.next/static', `${runtime}/.next/static`, { recursive: true })
