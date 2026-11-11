@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {cp,mkdtemp,readFile,readdir,chmod,rm,writeFile,stat} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join,resolve} from 'node:path'
-import {spawn} from 'node:child_process'
+import {spawn,execFileSync} from 'node:child_process'
 import {once} from 'node:events'
 import {randomBytes,createHash} from 'node:crypto'
 import {getRouteCacheKey} from 'next/dist/server/lib/route-cache-key.js'
@@ -92,7 +92,30 @@ try {
   const entityCount=new Set(Object.values(resource.graph.nodes).filter(node=>node.type!=='constituency').map(node=>node.id)).size
   const entityFile=cachePath('/ng/departments/ng-ministry-of-finance','/ng/[collection]/[slug]/page','APP_PAGE','.html')
   const sampledBytes=(await stat(entityFile)).size+(await stat(entityFile.replace(/\.html$/,'.rsc'))).size+(await stat(entityFile.replace(/\.html$/,'.meta'))).size
-  console.log(JSON.stringify({entityCount,sampledEntityBytes:sampledBytes,conservativeRouteBytes:entityCount*256*1024},null,2))
+  let measured
+  if(process.env.CRAWL_ALL_ENTITIES==='1') {
+    const paths=JSON.parse(execFileSync(process.execPath,['--import','tsx','-e',`const {nodePath}=require('./src/lib/graph/paths.ts');let input='';process.stdin.on('data',d=>input+=d);process.stdin.on('end',()=>console.log(JSON.stringify([...new Set(Object.values(JSON.parse(input).nodes).map(n=>nodePath('ng',n)).filter(p=>p!=='/ng'))])));`],{input:JSON.stringify(resource.graph),encoding:'utf8'}))
+    let next=0,rendered=0
+    await Promise.all(Array.from({length:4},async()=>{
+      while(next<paths.length) {
+        const path=paths[next++],response=await fetch(origin+path,{signal:AbortSignal.timeout(30000)})
+        assert.equal(response.status,200,`Entity crawl failed: ${path}`);await response.arrayBuffer();rendered++
+        if(rendered%200===0)console.log(`Entity crawl: ${rendered}/${paths.length}`)
+      }
+    }))
+    await new Promise(done=>setTimeout(done,250))
+    measured={rendered,files:0,bytes:0,allocatedBytes:0}
+    async function measure(directory) {
+      for(const entry of await readdir(directory,{withFileTypes:true})) {
+        const file=join(directory,entry.name)
+        if(entry.isDirectory())await measure(file)
+        else {const info=await stat(file);measured.files++;measured.bytes+=info.size;measured.allocatedBytes+=info.blocks*512}
+      }
+    }
+    await measure(join(app,'.next/server/route-cache'))
+    assert(!/EROFS|EACCES|Failed to update prerender cache/.test(errors()),'Entity crawl attempted a write outside mounted paths')
+  }
+  console.log(JSON.stringify({entityCount,sampledEntityBytes:sampledBytes,conservativeRouteBytes:entityCount*256*1024,routeCacheAfterFullCrawl:measured},null,2))
   // Restart with stale files still on disk. The real entrypoint must remove both before readiness.
   server.kill('SIGTERM');await once(server,'exit')
   await start()

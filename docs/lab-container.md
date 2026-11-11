@@ -2,11 +2,11 @@
 
 **Web command: `node start.mjs`, working directory `/app`, port `3000`, uid/gid `1001:1001`.**
 
-**Writable mounts: `/app/.next/cache` and `/app/.next/server/route-cache`, each an `emptyDir`. All other paths remain read-only.** Set `readOnlyRootFilesystem: true` and `fsGroup: 1001`. Suggested size limits are **128Mi** and **1Gi**, respectively. Do not mount over `.next/server/app`, which contains compiled modules.
+**Writable mounts: `/app/.next/cache` and `/app/.next/server/route-cache`, each an `emptyDir`. All other paths remain read-only.** Set `readOnlyRootFilesystem: true` and `fsGroup: 1001`. Suggested size limits are **128Mi** and **2Gi**, respectively. Do not mount over `.next/server/app`, which contains compiled modules.
 
 ## Startup and caching
 
-The app uses **Next 16.4.6's default filesystem cache**, with its default bounded memory cache. There is no custom cache handler. `start.mjs` empties the contents of both writable mount roots before requiring `server.js`; it preserves the mount roots and permissions. A container/process restart therefore cannot retain filesystem entries after losing the corresponding in-memory invalidation tags. No shell or init-container copy step is needed. Run one web process per pod and use this entrypoint on every production start.
+The app uses **Next 16.4.6's default filesystem cache**, with its default bounded memory cache. There is no custom cache handler. `start.mjs` empties the contents of both writable mount roots before requiring `server.js`; it preserves the mount roots and permissions. A container/process restart therefore cannot retain filesystem entries after losing the corresponding in-memory invalidation tags. **The refresh job needs no writable path**, including no `.next/cache` mount and no `/tmp` mount; it runs `node refresh.mjs` directly and does not use start.mjs. No shell or init-container copy step is needed. Run one web process per pod and use this entrypoint on every production start.
 
 CI has no database credentials. `LAB_BUILD=1` selects standalone output, disables server image optimization and the PostHog ingestion rewrite, and clears `DATABASE_URL` during the production build, including a value loaded from local dotenv. Packaging removes both build caches and all data-bearing `/ng*` and `/api/graph` `.html`, `.rsc`, `.meta`, and `.body` prerenders. Compiled route modules and static metadata prerenders remain. The first data-bearing request generates from the runtime database rather than serving the build's demo catalog for a day.
 
@@ -23,20 +23,36 @@ Next owns stale handling, retry backoff, serialization and seed promotion. A fai
 | Web secrets | `DATABASE_URL` (Supabase transaction pooler), `CRON_SECRET` |
 | Public build-time Actions variables | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (default `https://us.i.posthog.com`) |
 | Refresh job secrets | `DATABASE_URL`, `CRON_SECRET`, `CF_ZONE_ID`, `CF_API_TOKEN` |
-| Refresh job configuration | `REVALIDATE_HOST`, `REVALIDATE_PORT=3000` |
+| Refresh job configuration | `REVALIDATE_HOST`, `REVALIDATE_PORT=3000`, `REVALIDATE_SETTLE_MS=10000` |
 | Refresh job command | `node refresh.mjs`, same image and `/app` working directory |
 | Health probes | `GET /healthz`, HTTP 200, body `ok`, no database calls |
 | Revalidation | Authenticated POST: 200 `{"ok":true}` after completion; 401 without the correct secret; GET 405 |
 
-**The revalidation headless Service must set `publishNotReadyAddresses: true`.** DNS must include briefly NotReady pods so they cannot later rejoin with stale entries. The job persists with the existing `liveNass`, `wikiFill`, `portraits`, and `monitor` options, closes its DB pool, resolves every A record, deduplicates addresses, and waits for every pod acknowledgement. It logs `revalidated N pods`. Only after every pod succeeds does it request a zone-wide Cloudflare purge. Persistence, DNS or pod failure means no purge; Cloudflare failure also exits nonzero. Logs use short redacted reasons.
+**The revalidation headless Service must set `publishNotReadyAddresses: true`.** DNS must include briefly NotReady pods so they cannot later rejoin with stale entries. The job persists with the existing `liveNass`, `wikiFill`, `portraits`, and `monitor` options, closes its DB pool, resolves every A record and deduplicates addresses. The same address snapshot is used throughout this sequence:
+
+1. Revalidate every pod and require every acknowledgement.
+2. Wait **`REVALIDATE_SETTLE_MS`**, default **10000 ms**.
+3. Revalidate every pod a second time and again require every acknowledgement.
+4. Request exactly one zone-wide Cloudflare purge.
+5. Warm every pod's `/ng` page and the versioned graph URL found in that page, using GET requests to its captured IP.
+
+The second round expires cache entries written by renders that read the old snapshot before round one and completed during the settle interval. **Configure the settle delay longer than the longest possible render**, including DB latency; 10 seconds is the default, not a guarantee against arbitrarily slow renders. The setting accepts nonnegative integer milliseconds up to the Node timer limit; short values/zero are for tests, not the production race guard. Job deadlines must cover persistence, the settle interval, both rounds and warmup. Each round logs its pod count. Persistence, DNS or a failure in either round means **no purge and no warmup**. Cloudflare failure exits nonzero without warming. A warmup failure exits nonzero after the already completed purge; it cannot undo that purge. Logs use short redacted reasons.
 
 `CF_API_BASE` defaults to `https://api.cloudflare.com/client/v4/` and is overridable for tests; HTTP is allowed only on loopback. Scope the Cloudflare token to cache purge for this zone. The job needs DNS, database, existing enrichment sources and Cloudflare egress. The web needs DNS and Supabase Postgres only. Browsers load portraits and contact PostHog directly. The default Vercel build retains optimized images, the ingestion proxy and the cron refresh route. In the lab build, that legacy enrichment endpoint rejects requests after authentication; enrichment runs in the job.
 
 ## Storage sizing
 
-The runtime graph exposes **975 distinct entity routes**. The sampled finance route's HTML, RSC and metadata total **139,301 bytes**. Using **256 KiB per entity** gives **255,590,400 bytes (243.75 MiB)** for entities, before the smaller fixed routes and metadata images. This is an estimate, not a full crawl. A **1Gi route-cache emptyDir** provides roughly four times that entity estimate; **128Mi for `.next/cache`** provides ample headroom for the small set of compressed data entries. Revisit the estimate as the graph grows.
+A full crawl rendered **all 975 distinct entity routes**, with four concurrent requests, against the read-only standalone and the real local database. After the crawl, `.next/server/route-cache` contained **6,841 files**, **157,782,875 bytes of content (150.47 MiB)** and **171,474,944 allocated bytes (163.53 MiB)** on the Mac filesystem. The measurement includes routes warmed by the regression checks as well as entity HTML, RSC, segment and metadata files. Linux filesystem allocation can differ; repeat the crawl as the graph grows.
 
-Regeneration overwrites a route's key, rather than creating a file for every refresh. The versioned graph route is dynamic and does not create per-version ISR entries; the regression check inspects both compiled outputs and the native cache subtree owned by that route. Size limits provide an enforced bound for unexpected route traffic as well as normal growth. Filling a volume can prevent cache writes, so monitor volume usage and error logs. Startup clears both volumes every time the process starts.
+Recommend route-cache `sizeLimit = max(2Gi, roundUpMiB(2 × measured allocated size))`. Twice this measurement is **342,949,888 bytes (327.06 MiB)**, so use **`sizeLimit: 2Gi`**. Keep **`128Mi`** for `.next/cache`. Reproduce the measurement with `CRAWL_ALL_ENTITIES=1 node scripts/check-lab-runtime.mjs`. Regeneration overwrites route keys; the dynamic versioned graph route does not create per-version ISR entries, which the regression check verifies in both compiled and native cache outputs.
+
+**Exceeding a disk-backed emptyDir sizeLimit causes the kubelet to EVICT the pod once it observes the excess.** It is not a filesystem quota that merely turns the next cache write into a failed write. Kubelet storage isolation/accounting must be enabled, and scans are periodic, so usage can temporarily exceed the limit before eviction. Budget the pod's overall ephemeral-storage request/limit for both cache volumes and logs, and monitor usage and eviction events. See the [Kubernetes project's local ephemeral storage documentation](https://kubernetes.io/docs/concepts/storage/ephemeral-storage/#ephemeral-storage-consumption-management) (n.d.). Startup clears both volumes every time the process starts.
+
+## Accepted availability risks
+
+A **database outage exactly at refresh can leave the pre-refresh page cached at the edge for up to one day**, particularly when persistence or a revalidation fails and the job correctly skips the purge. This accepts stale edge content rather than purging into an unavailable origin. If the purge already succeeded before warmup hits a DB outage, the purge cannot be reversed and cold origin requests may fail until the DB recovers.
+
+A **restarted pod needs the database for its first data-bearing requests**, because start.mjs deliberately clears both caches along with the lost in-memory tags. The health endpoint can still return 200 while the database is unavailable. These are accepted tradeoffs of the process-local default cache and its daily edge TTL.
 
 ## Image and CI
 
@@ -52,7 +68,7 @@ Commands, with supported Node 24 selected:
 
 ```sh
 env -u DATABASE_URL LAB_BUILD=1 npm run build
-node scripts/check-lab-runtime.mjs
+CRAWL_ALL_ENTITIES=1 node scripts/check-lab-runtime.mjs
 node scripts/check-lab-refresh.mjs
 npm run lint
 npx tsc --noEmit
@@ -66,8 +82,10 @@ The read-only proof copies the prepared artifact, plants old files in both writa
 
 That same proof runs both regression scripts against the actual lab artifact. The page check verifies lean cached HTML, per-page weekly coverage dates, a topic chosen from the trending card, cache headers, graph digests, redirects, malformed versions and absence of per-version cache files. The regeneration-failure check copies a warmed artifact and starts its **server.js directly solely to inject an outage while retaining the successful cache fixture**. Production starts always use start.mjs. The isolated process uses an unreachable DB, clears only its data cache, requires forced regeneration to fail with 500, and requires the previous page to remain byte-identical at 200. It requests `/opengraph-image` and `/icon.svg` twice, verifies HIT responses and identical bytes, and checks that native cache-body files are not rewritten on hits. Malformed graph versions return tiny 404s before DB access; cold valid versions fail without immutable caching.
 
-The refresh proof runs the shipped CLI with persistence and DNS/address routing stubbed at test boundaries: two real pod servers on different ports and a fake Cloudflare endpoint. It covers all-pods-before-purge ordering, deduplication, no purge on persistence/pod failure, and nonzero exit on Cloudflare failure. A startup test separately verifies both cache directories are emptied before the server loads while compiled modules are preserved.
+The refresh proof runs the shipped CLI from a directory made read-only, with Node's permission model allowing filesystem reads and **no filesystem writes anywhere**. Guard self-tests confirm that writes to `.next/cache` and `/tmp` are denied. With persistence and DNS/address routing stubbed at test boundaries, two real pod servers on different ports and one fake Cloudflare endpoint verify both rounds for each pod, a real configured settle delay, exactly one purge after round two, and homepage/graph warmup only after that purge. A round-two failure must attempt both pods and produce zero purge calls. It also covers round-one, persistence, purge and post-purge warmup failures. The default 10000 ms delay is asserted by a unit test without actually sleeping for ten seconds.
 
-**Local results, 2026-11-11:** no-DB build passed; read-only standalone and restart proofs passed with only the two documented writable paths; both regression scripts passed against the actual artifact, including metadata caching; refresh proof passed; lint, typecheck and actionlint passed; **170 tests passed with zero failures**. `git diff --check` passed. The newer base's Debian package scan reports zero fixable HIGH/CRITICAL findings. Its raw npm distribution has findings, but npm is removed by the Dockerfile; a supplementary base scan excluding precisely those removed npm/yarn directories reports zero fixable HIGH/CRITICAL findings. No exclusions were added to the actual CI gate.
+The actual bundled persistence adapter is also loaded and exercised under the same write denial, with empty NASS data, other enrichment fetches failing closed, and an unreachable local DB. It reaches the expected DB connection failure without filesystem writes or production mutations. A successful live persistence run was not performed against production; the successful orchestration proof stubs that boundary. Source inspection of the persistence/enrichment path found no filesystem-write dependency. The refresh job therefore requires **no writable mounts**, while the web entrypoint still needs the two documented mounts. A startup test separately verifies both cache directories are emptied before the server loads while compiled modules are preserved.
 
-**CI result:** implementation commit `a3afbaa` passed the PR image build and Trivy gate in run **43100330983**; the release job was skipped. This validates the actual new Linux image, not just the supplementary base scan. The completion report includes the final documentation/proof commit and its run status. During the GitHub Actions outage noted in review, monitoring is capped at approximately twenty minutes per final run; queued status is reported without claiming success if that limit is reached.
+**R4 verification:** no-DB lab build passed; read-only standalone/restart proofs and both regression scripts passed; all 975 entity routes rendered and were measured; the read-only refresh proof passed, including round-two failure and no purge; lint, typecheck, actionlint and **171 tests** passed with zero failures. The new ordering unit test failed against the one-round implementation before the fix and passed afterward. `git diff --check` passed. The completion report records the pushed commit and final PR image-build result, with a maximum twenty-minute CI wait.
+
+Reference audit for the storage citation: publisher/author **Kubernetes project: CERTAIN**; supporting URL **CERTAIN**; original publication date **UNCERTAIN**, recorded as **n.d.**. No author or publication date was invented.
