@@ -46,3 +46,25 @@ test('two pod rounds bracket the settle delay before one purge and warmup',async
   assert.equal(events.filter(event=>event==='purge').length,1)
   assert.equal(events.filter(event=>event.startsWith('warm:')).length,4)
 })
+test('warm-up failures are logged with reasons and do not fail the refresh',async()=>{
+  const logs:string[]=[];let purges=0;const warmed:string[]=[]
+  await runRefresh(env,{
+    persist:async()=>{},resolve4:async()=>['127.0.0.1','127.0.0.2','127.0.0.3'],log:(m:string)=>{logs.push(m)},sleep:async()=>{},
+    fetch:(async(url,options)=>{
+      const u=new URL(String(url))
+      if(options?.method==='POST'&&u.pathname==='/api/revalidate')return Response.json({ok:true})
+      if(u.pathname.endsWith('/purge_cache')){purges++;return Response.json({success:true})}
+      if(u.hostname==='127.0.0.2'&&u.pathname==='/ng')return new Response('down',{status:500})
+      if(u.hostname==='127.0.0.3'&&u.pathname==='/ng')return new Response('<html>no graph link</html>')
+      warmed.push(`${u.hostname}${u.pathname}`)
+      return u.pathname==='/ng'?new Response('<link href="/api/graph/0123456789abcdef">'):Response.json({graph:{}})
+    }) as typeof fetch,
+  })
+  assert.equal(purges,1)
+  assert.deepEqual(warmed.sort(),['127.0.0.1/api/graph/0123456789abcdef','127.0.0.1/ng'])
+  const warning=logs.find(m=>m.startsWith('warning:'))
+  assert(warning,'expected a warm-up warning')
+  assert.match(warning,/2\/3 pod warmups failed/)
+  assert.match(warning,/127\.0\.0\.2: homepage warmup failed \(500\)/)
+  assert.match(warning,/127\.0\.0\.3: homepage warmup has no versioned graph URL/)
+})

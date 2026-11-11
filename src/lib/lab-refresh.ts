@@ -1,6 +1,7 @@
 import dns from 'node:dns'
 import { isIP } from 'node:net'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { reason } from './refresh-reason'
 
 interface Dependencies {
 	persist: () => Promise<unknown>
@@ -70,7 +71,7 @@ export async function runRefresh(env: Record<string, string | undefined>, deps: 
 	}))
 	// Warm-up is best effort: the refresh already succeeded. Failing here would make a
 	// Job with restartPolicy OnFailure re-run persist + purge, so only log it.
-	const failedWarmups = warmed.filter((item) => item.status === 'rejected').length
-	if (failedWarmups) log(`warning: ${failedWarmups}/${ips.length} pod warmups failed after purge; refresh succeeded`)
+	const failures = warmed.flatMap((item, i) => (item.status === 'rejected' ? [`${ips[i]}: ${reason(item.reason)}`] : []))
+	if (failures.length) log(`warning: ${failures.length}/${ips.length} pod warmups failed after purge; refresh succeeded (${failures.join('; ')})`)
 	else log(`warmed ${ips.length} pods`)
 }
