@@ -24,3 +24,9 @@ export function getDb() {
 	}
 	return db
 }
+
+/** The one-shot refresh command closes its pool before exiting. Web requests keep theirs. */
+export async function closeDb() {
+	if (db) await db.$client.end({ timeout: 5 })
+	db = null
+}

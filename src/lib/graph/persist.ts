@@ -2,7 +2,7 @@ import { nigeriaChanges } from '@/data/nigeria/changes'
 import { nigeriaNews } from '@/data/nigeria/news'
 import { getDb } from '@/db'
 import { civicFeed, graphSnapshots } from '@/db/schema'
-import { compileNigeriaGraph, parseGraphSnapshot } from '@/lib/graph/nigeria'
+import { compileNigeriaGraph, parseGraphSnapshot } from '@/lib/graph/nigeria-compile'
 import { overlayNassOccupancy } from '@/lib/graph/nass-live'
 import { carryPortraits, overlayPortraits } from '@/lib/graph/portraits'
 import { overlayNaltfOccupancy } from '@/lib/graph/naltf-fill'
@@ -14,7 +14,7 @@ import {
 	fetchNeonSnapshot,
 	NEWS_FEED_ID,
 	NIGERIA_SNAPSHOT_ID,
-} from '@/lib/graph/store'
+} from '@/lib/graph/snapshot-store'
 import type { CompiledGraph } from '@/lib/graph/types'
 
 async function upsertSnapshot(graph: CompiledGraph) {

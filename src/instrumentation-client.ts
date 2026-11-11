@@ -1,13 +1,12 @@
 import posthog from 'posthog-js'
 
 // Product analytics and the feedback inbox (PostHog). Off unless the project key is set, so local runs send nothing.
-// Events go through /ingest on our own domain (rewritten in next.config.ts): ad blockers drop requests to posthog.com,
-// and with them people's error reports.
+// Lab browsers contact PostHog directly. The Vercel fallback uses the /ingest proxy.
 const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
 if (key) {
 	try {
 		posthog.init(key, {
-			api_host: '/ingest',
+			api_host: process.env.NEXT_PUBLIC_LAB_BUILD === '1' ? (process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com') : '/ingest',
 			ui_host: process.env.NEXT_PUBLIC_POSTHOG_UI_HOST ?? 'https://us.posthog.com',
 			// Pageviews on client-side navigation, page leaves and autocaptured clicks, per PostHog's current defaults.
 			defaults: '2026-08-30',

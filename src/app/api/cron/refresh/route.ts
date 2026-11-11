@@ -1,19 +1,9 @@
 import { revalidateTag } from 'next/cache'
 import { persistNigeriaGraph } from '@/lib/graph/persist'
 import { STORED_DATA_TAG } from '@/lib/graph/store'
+import { reason } from '@/lib/refresh-reason'
 
 export const maxDuration = 300
-
-/**
- * Why a refresh failed, short enough to read: the database's own message (a quota, a missing table, a
- * wrong password), not the query, whose parameters carry the whole snapshot and bury the cause in the logs.
- */
-function reason(error: unknown): string {
-	const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error
-	const message = cause instanceof Error ? cause.message : String(cause)
-	const code = typeof cause === 'object' && cause && 'code' in cause ? ` (${String(cause.code)})` : ''
-	return `${message.slice(0, 300)}${code}`
-}
 
 export async function GET(request: Request) {
 	const secret = process.env.CRON_SECRET
@@ -21,6 +11,7 @@ export async function GET(request: Request) {
 	if (!secret || auth !== `Bearer ${secret}`) {
 		return new Response('unauthorized', { status: 401 })
 	}
+	if (process.env.NEXT_PUBLIC_LAB_BUILD === '1') return new Response('Use the refresh job', { status: 404 })
 	let graph
 	try {
 		graph = await persistNigeriaGraph({

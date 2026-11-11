@@ -1,19 +1,22 @@
 // Build with real data first. This test copies the build, drops only that copy's data cache,
 // and runs it against an unreachable database. It never reads or modifies the real database.
 import assert from 'node:assert/strict'
-import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs'
+import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, readdirSync, unlinkSync, existsSync } from 'node:fs'
 import { join, resolve, basename } from 'node:path'
 import { tmpdir } from 'node:os'
 import { spawn, execFileSync } from 'node:child_process'
 import { createServer } from 'node:net'
 import { once } from 'node:events'
 import { randomBytes } from 'node:crypto'
+import { deserialize } from 'node:v8'
 
 const temp = mkdtempSync(join(tmpdir(), 'govgraph-outage-'))
 let server
 try {
 	cpSync('.next', join(temp, '.next'), { recursive: true, filter: (path) => !['cache', 'dev'].includes(basename(path)) })
 	for (const path of ['next.config.ts', 'package.json']) cpSync(path, join(temp, path))
+	if (existsSync('cache-handler.cjs')) cpSync('cache-handler.cjs', join(temp, 'cache-handler.cjs'))
+	if (process.env.LAB_CACHE_SEED) cpSync(process.env.LAB_CACHE_SEED, join(temp, '.next/cache/lab'), { recursive: true })
 	symlinkSync(resolve('node_modules'), join(temp, 'node_modules'), 'dir')
 	const probe = createServer()
 	probe.listen(0, '127.0.0.1')
@@ -44,6 +47,14 @@ try {
 	assert.doesNotMatch(malformed.headers, /immutable/i)
 	const { preview } = JSON.parse(readFileSync(join(temp, '.next/prerender-manifest.json'), 'utf8'))
 	// This internal build-only token is used without logging it.
+	if (process.env.LAB_CACHE_SEED) {
+		// Keep the last good HTML, but make all stored/derived data cold before the outage.
+		const cache = join(temp, '.next/cache/lab')
+		for (const file of readdirSync(cache)) {
+			const entry = deserialize(readFileSync(join(cache, file)))
+			if (entry.value?.kind === 'FETCH') unlinkSync(join(cache, file))
+		}
+	}
 	const regeneration = read('/ng', 'regeneration', ['-H', `x-prerender-revalidate: ${preview.previewModeId}`])
 	assert.equal(regeneration.status, 500, 'A cold regeneration against a failed database must reject, not cache catalog data')
 	const after = read('/ng', 'after')

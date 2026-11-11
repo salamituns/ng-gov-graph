@@ -1,0 +1,14 @@
+.git
+.next
+node_modules
+.env*
+**/.env*
+build
+.tmp-check
+STEP0-REPORT.md
+.neon
+.vercel
+.audit
+launch-video
+coverage
+*.tsbuildinfo

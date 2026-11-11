@@ -27,7 +27,6 @@ try {
 	const query = read('/ng?layer=state&days=7', 2)
 	assert.equal(home.body, homeAgain.body, 'Homepage must reuse its cached representation')
 	assert.equal(home.body, query.body, 'Query controls must not create server-rendered variants')
-	assert.match(home.body, /class="panel-card trending"/, 'Trending card must be in cached HTML')
 	assert.doesNotMatch(home.body, />Invalid Date</, 'Invalid feed date leaked into HTML')
 	const themeScript = home.body.match(/<script[^>]*>(try\{if\([\s\S]*?)<\/script>/)?.[1]
 	assert(themeScript, 'Homepage pre-paint script is missing')
@@ -67,7 +66,10 @@ try {
 	assert.match(resource.headers, /(?:^|[,\s])s-maxage=31536000(?:\D|$)/i, 'Canonical graph must be cacheable by the CDN')
 	const version = createHash('sha256').update(resource.body).digest('hex').slice(0, 16)
 	assert.equal(graphUrl, `/api/graph/${version}`, 'HTML version must match the JSON content')
-	const { graph } = JSON.parse(resource.body)
+	const { graph, news } = JSON.parse(resource.body)
+	// A stopped refresh feed eventually has no eligible weekly trends. Check the actual rendering contract.
+	const expectedTrends = Number(execFileSync(process.execPath, ['--import', 'tsx', '-e', `const { trendingTopics } = require('./src/lib/graph/trending.ts'); const { CIVIC_TOPICS } = require('./src/data/nigeria/topics.ts'); let input='';process.stdin.on('data',d=>input+=d);process.stdin.on('end',()=>console.log(trendingTopics(JSON.parse(input),CIVIC_TOPICS,new Date()).topics.length));`], { input: JSON.stringify(news), encoding: 'utf8' }))
+	assert.equal(home.body.includes('class="panel-card trending"'), expectedTrends > 0, 'Cached trending card must match eligible current-week coverage')
 	assert(Object.keys(graph.nodes).length > 0 && Object.keys(graph.edges).length > 0, 'Shared graph resource is empty')
 	for (const candidate of ['0000000000000000', ...Array.from({ length: 5 }, () => randomBytes(8).toString('hex'))]) {
 		if (candidate === version) continue
@@ -88,9 +90,9 @@ try {
 	const legacy = read('/api/graph?v=unchecked', 7)
 	assert.doesNotMatch(legacy.headers, /immutable/i, 'Unchecked legacy URL must never be immutable')
 	const topicPath = home.body.match(/href="(\/ng\/topics\/[^"?]+)"/)?.[1]
-	assert(topicPath, 'Trending topic link is missing')
-	const topic = read(topicPath, 8)
-	assert.match(topic.body, /outlets this week/, 'Topic weekly coverage must be in cached HTML')
+	if (expectedTrends > 0) assert(topicPath, 'Trending topic link is missing')
+	const topic = read(topicPath ?? '/ng/topics/fuel-prices', 8)
+	assert.match(topic.body, expectedTrends > 0 ? /outlets this week/ : /in the news we follow/, 'Topic summary must be in cached HTML')
 	const outputsAfter = listOutputs()
 	assert.deepEqual(outputsAfter, outputsBefore, 'Attacker-controlled versions created per-path ISR files')
 	console.log(JSON.stringify({ graphFilesBefore: outputsBefore, graphFilesAfter: outputsAfter }, null, 2))
