@@ -10,7 +10,8 @@ import {spawn} from 'node:child_process'
 const temp=await mkdtemp(join(tmpdir(),'govgraph-refresh-')),job=join(temp,'job'),actual=join(temp,'actual')
 const servers=[],events=[],rounds=[0,0],times=[[],[]]
 const settleMs=40
-let failRound=0,failCf=false,failWarm=false
+let failRound=0,failCf=false,failWarm=false,failFirst=false,skipPurge=false
+let expectedRounds=[2,2]
 async function modes(dir,writable) {
   for(const entry of await readdir(dir,{withFileTypes:true})) {
     const file=join(dir,entry.name)
@@ -29,10 +30,10 @@ try {
     if(req.method==='POST') {
       assert.equal(req.url,'/api/revalidate');assert.equal(req.headers.authorization,'Bearer test-cron')
       const round=++rounds[id];times[id].push(performance.now());events.push(`pod${id}:round${round}`)
-      const failed=id===1&&round===failRound
+      const failed=(id===1&&round===failRound)||(failFirst&&id===1&&round===1)
       res.writeHead(failed?503:200);res.end(JSON.stringify({ok:!failed}));return
     }
-    assert.equal(req.method,'GET');assert(events.includes('purge'),'Warmup must follow the purge')
+    assert.equal(req.method,'GET');assert(skipPurge||events.includes('purge'),'Warmup must follow the purge')
     if(req.url==='/ng') {
       events.push(`warm${id}:home`);res.writeHead(failWarm&&id===1?500:200,{'Content-Type':'text/html'})
       res.end('<link rel="preload" href="/api/graph/0123456789abcdef">');return
@@ -41,11 +42,12 @@ try {
   })))
   assert.notEqual(podPorts[0],podPorts[1])
   const cfPort=await listen(async(req,res)=>{
+    assert(!skipPurge,'Cloudflare must not be called when REFRESH_PURGE=skip')
     assert.equal(req.method,'POST');assert.equal(req.url,'/client/v4/zones/test-zone/purge_cache')
     assert.equal(req.headers.authorization,'Bearer test-cf')
     let body='';for await(const chunk of req)body+=chunk
-    assert.deepEqual(JSON.parse(body),{purge_everything:true});assert.deepEqual(rounds,[2,2])
-    for(const time of times)assert(time[1]-time[0]>=settleMs-5,'Configured settle delay was skipped')
+    assert.deepEqual(JSON.parse(body),{purge_everything:true});assert.deepEqual(rounds,expectedRounds)
+    for(const time of times)assert(time.at(-1)-time.at(-2)>=settleMs-5,'Configured settle delay was skipped')
     events.push('purge');res.writeHead(failCf?500:200,{'Content-Type':'application/json'});res.end(JSON.stringify({success:!failCf}))
   })
   for(const directory of [job,actual]) {
@@ -62,7 +64,7 @@ try {
   async function run(extra={},directory=job) {
     events.length=0;rounds.fill(0);for(const time of times)time.length=0
     const child=spawn(process.execPath,['--permission','--allow-fs-read=*','--import',join(directory,'preload.mjs'),'refresh.mjs'],{
-      cwd:directory,env:{PATH:process.env.PATH,NODE_ENV:'production',REVALIDATE_HOST:'pods.test',REVALIDATE_PORT:'3000',REVALIDATE_SETTLE_MS:String(settleMs),CRON_SECRET:'test-cron',CF_ZONE_ID:'test-zone',CF_API_TOKEN:'test-cf',CF_API_BASE:`http://127.0.0.1:${cfPort}/client/v4/`,...extra},stdio:['ignore','pipe','pipe'],
+      cwd:directory,env:{PATH:process.env.PATH,NODE_ENV:'production',REVALIDATE_HOST:'pods.test',REVALIDATE_PORT:'3000',REVALIDATE_SETTLE_MS:String(settleMs),REVALIDATE_ROUND_RETRIES:'0',REVALIDATE_RETRY_MS:'0',CRON_SECRET:'test-cron',CF_ZONE_ID:'test-zone',CF_API_TOKEN:'test-cf',CF_API_BASE:`http://127.0.0.1:${cfPort}/client/v4/`,...extra},stdio:['ignore','pipe','pipe'],
     })
     let output='';child.stdout.on('data',data=>output+=data);child.stderr.on('data',data=>output+=data)
     const [code]=await once(child,'exit')
@@ -83,12 +85,27 @@ try {
   assert.notEqual((await run({TEST_FAIL_PERSIST:'1'})).code,0);assert.deepEqual(events,[])
   failCf=true;assert.notEqual((await run()).code,0);assert.equal(events.at(-1),'purge');failCf=false
   failWarm=true;result=await run();assert.equal(result.code,0,'warm-up failure must not fail the job');assert.match(result.output,/warmups failed after purge; refresh succeeded/);failWarm=false
+  // REFRESH_PURGE=skip: the whole sequence runs without CF_* secrets or a Cloudflare call, warm-up included.
+  skipPurge=true;result=await run({REFRESH_PURGE:'skip',CF_ZONE_ID:'',CF_API_TOKEN:''})
+  assert.equal(result.code,0,result.output);assert(!events.includes('purge'))
+  assert.match(result.output,/purge skipped \(REFRESH_PURGE=skip\)/)
+  assert.deepEqual(rounds,[2,2],'skip mode still runs both revalidation rounds')
+  assert.deepEqual(events.filter(event=>event.startsWith('warm')).sort(),['warm0:graph','warm0:home','warm1:graph','warm1:home'])
+  skipPurge=false
+  // A pod that fails one try succeeds on the retried try: fresh revalidation of every pod per try, still exactly one purge.
+  failFirst=true;expectedRounds=[3,3];result=await run({REVALIDATE_ROUND_RETRIES:'2',REVALIDATE_RETRY_MS:'5'})
+  assert.equal(result.code,0,result.output)
+  assert.match(result.output,/1\/2 pod revalidations failed \(.+\); retrying in 5 ms/)
+  assert.deepEqual(events.filter(event=>event.startsWith('pod')).sort(),['pod0:round1','pod0:round2','pod0:round3','pod1:round1','pod1:round2','pod1:round3'])
+  assert.equal(events.filter(event=>event==='purge').length,1)
+  assert.deepEqual(events.filter(event=>event.startsWith('warm')).sort(),['warm0:graph','warm0:home','warm1:graph','warm1:home'])
+  failFirst=false;expectedRounds=[2,2]
   // Real bundled persistence code is also loaded/exercised without writes. External fetches fail closed,
   // and an unreachable DB prevents production data mutation. Its expected failure is a DB connection error.
   result=await run({DATABASE_URL:'postgres://unavailable@127.0.0.1:1/unavailable'},actual)
   assert.notEqual(result.code,0);assert.match(result.output,/ECONNREFUSED/);assert(!result.output.includes('ERR_ACCESS_DENIED'));assert.deepEqual(events,[])
   assert(!(await readdir(job)).includes('.next'));assert(!(await readdir(actual)).includes('.next'))
-  console.log('PASS: read-only refresh CLI, all filesystem writes denied including .next/cache and /tmp; two revalidation rounds per pod separated by settle delay precede one purge, then warmup; round-2 failure skips purge; actual persistence fails safely at unavailable DB without filesystem writes.')
+  console.log('PASS: read-only refresh CLI, all filesystem writes denied including .next/cache and /tmp; two revalidation rounds per pod separated by settle delay precede one purge, then warmup; a failed round is retried with fresh revalidation per try (retry-to-success covered) and still exactly one purge; REFRESH_PURGE=skip runs the full sequence with no Cloudflare call; round-2 failure skips purge; actual persistence fails safely at unavailable DB without filesystem writes.')
 } finally {
   await Promise.all(servers.map(server=>new Promise(done=>server.close(done))))
   await modes(temp,true);await rm(temp,{recursive:true,force:true})
