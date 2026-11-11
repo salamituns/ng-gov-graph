@@ -1,0 +1,45 @@
+name: Lab release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pr-image:
+    name: PR image build
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build and scan
+        uses: ./.github/actions/lab-image
+        with:
+          image-tag: pr-${{ github.event.pull_request.number }}
+          posthog-key: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          posthog-host: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build, scan and publish
+        uses: ./.github/actions/lab-image
+        with:
+          image-tag: ${{ github.sha }}
+          posthog-key: ${{ vars.NEXT_PUBLIC_POSTHOG_KEY }}
+          posthog-host: ${{ vars.NEXT_PUBLIC_POSTHOG_HOST }}
+          registry-token: ${{ secrets.GITHUB_TOKEN }}

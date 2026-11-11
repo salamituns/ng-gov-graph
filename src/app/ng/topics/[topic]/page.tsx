@@ -1,3 +1,4 @@
+import { renderStart } from '@/lib/render-time'
 import { PagePanel } from '@/components/page-panel'
 import { TopicSummary } from '@/components/topic-summary'
 import Link from 'next/link'
@@ -33,11 +34,13 @@ export default async function TopicPage({ params }: PageProps) {
 	if (!topic) notFound()
 	const { gov, graph, news } = await loadNigeriaGraph()
 	const stories = storiesByTopic(news, [topic]).get(topic.id) ?? []
-	const trend = trendingTopics(news, [topic], new Date(), 1).topics[0]
+	const now = new Date(renderStart())
+	const trend = trendingTopics(news, [topic], now, 1).topics[0]
 	const bodies = topic.bodies.map((id) => graph.nodes[id]).filter((node) => node)
 
 	return (
 		<PagePanel title={topic.label}>
+			<meta name="govgraph-rendered-at" content={String(now.getTime())} />
 			<BrandBar crumbs={[{ label: 'Trending' }, { label: topic.label }]} />
 			<TopicSpotlight label={topic.label} bodyIds={bodies.map((node) => node.id)} />
 			<article className="panel-card entity-card">

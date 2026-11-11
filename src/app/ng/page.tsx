@@ -1,3 +1,4 @@
+import { renderStart } from '@/lib/render-time'
 import { PagePanel } from '@/components/page-panel'
 import { formatNewsDate } from '@/lib/dates'
 import { trendingTopics } from '@/lib/graph/trending'
@@ -21,7 +22,7 @@ import { HomeContent } from '@/components/home-content'
 /** Only homepage content crosses this boundary; map/search data has its own shared JSON resource. */
 export default async function NigeriaHome() {
 	const data = await loadNigeriaGraph()
-	const now = new Date()
+	const now = new Date(renderStart())
 	const trending = trendingTopics(data.news, CIVIC_TOPICS, now)
 	const inNews = powerPeople(data.graph, data.news, 90, now).people.slice(0, 5)
 	const labels = mentionLabels(data.graph)
@@ -35,7 +36,7 @@ export default async function NigeriaHome() {
 			return node ? { text: segment.text, href: nodePath(data.gov, node), tone: toneOf(node), type: node.type } : { text: segment.text }
 		}),
 	}))
-	return <PagePanel><HomeContent data={{
+	return <PagePanel><meta name="govgraph-rendered-at" content={String(now.getTime())} /><HomeContent data={{
 		gov: data.gov,
 		inecHref: data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng',
 		states: Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name })),
