@@ -2,11 +2,12 @@
 // This checks the production behavior, rather than matching implementation source text.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { readFileSync, mkdtempSync, rmSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, mkdtempSync, rmSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { runInNewContext } from 'node:vm'
 import { createHash, randomBytes } from 'node:crypto'
+import { getRouteCacheKey } from 'next/dist/server/lib/route-cache-key.js'
 
 const origin = process.argv[2] ?? 'http://127.0.0.1:3127'
 const temp = mkdtempSync(join(tmpdir(), 'govgraph-cache-'))
@@ -57,8 +58,12 @@ try {
 	const graphUrl = home.body.match(/\/api\/graph\/[a-f0-9]{16}/)?.[0]
 	assert(graphUrl, 'HTML must carry a versioned graph URL')
 	assert(home.body.match(/<link\b[^>]*>/g)?.some((tag) => tag.includes('rel="preload"') && tag.includes('as="fetch"') && tag.includes('crossorigin="anonymous"') && tag.includes(`href="${graphUrl}"`)), 'Exact graph URL must be preloaded with anonymous fetch credentials')
-	const outputDir = '.next/server/app/api/graph'
-	const listOutputs = () => readdirSync(outputDir, { recursive: true }).filter((path) => statSync(join(outputDir, path)).isFile()).sort()
+	const artifact = process.env.LAB_RUNTIME_ARTIFACT ?? '.'
+	const outputDir = join(artifact, '.next/server/app/api/graph')
+	const dynamicOwner = getRouteCacheKey('/api/graph/probe', {kind:'APP_ROUTE',sourceRoute:'/api/graph/[version]/route'}).split('/$/')[0]
+	const runtimeDir = join(artifact, '.next/server', dynamicOwner.slice(1))
+	const files = (directory) => existsSync(directory) ? readdirSync(directory, {recursive:true}).filter(path => statSync(join(directory,path)).isFile()).sort() : []
+	const listOutputs = () => [...files(outputDir).map(file => `compiled/${file}`), ...files(runtimeDir).map(file => `runtime/${file}`)]
 	const outputsBefore = listOutputs()
 	const resource = read(graphUrl, 5)
 	assert.match(resource.headers, /max-age=31536000/, 'Versioned graph must have a long browser cache lifetime')

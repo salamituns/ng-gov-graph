@@ -87,7 +87,7 @@ try {
   assert.equal((await fetch(origin+'/api/revalidate',{method:'POST',headers:{Authorization:`Bearer ${secret}`}})).status,503)
   await rm(join(app,'.next/cache/fail-tags'))
   assert(!/EROFS|EACCES|Failed to update prerender cache/.test(errors()),'Unexpected write outside mounted paths')
-  await run('scripts/check-page-cache.mjs',[origin])
+  await run('scripts/check-page-cache.mjs',[origin],{LAB_RUNTIME_ARTIFACT:app})
   await run('scripts/check-regeneration-failure.mjs',[],{LAB_RUNTIME_ARTIFACT:app})
   const entityCount=new Set(Object.values(resource.graph.nodes).filter(node=>node.type!=='constituency').map(node=>node.id)).size
   const entityFile=cachePath('/ng/departments/ng-ministry-of-finance','/ng/[collection]/[slug]/page','APP_PAGE','.html')
