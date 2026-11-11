@@ -68,7 +68,9 @@ export async function runRefresh(env: Record<string, string | undefined>, deps: 
 		if (!graph.ok) throw new Error(`graph warmup failed (${graph.status})`)
 		await graph.arrayBuffer()
 	}))
+	// Warm-up is best effort: the refresh already succeeded. Failing here would make a
+	// Job with restartPolicy OnFailure re-run persist + purge, so only log it.
 	const failedWarmups = warmed.filter((item) => item.status === 'rejected').length
-	if (failedWarmups) throw new Error(`${failedWarmups}/${ips.length} pod warmups failed after purge`)
-	log(`warmed ${ips.length} pods`)
+	if (failedWarmups) log(`warning: ${failedWarmups}/${ips.length} pod warmups failed after purge; refresh succeeded`)
+	else log(`warmed ${ips.length} pods`)
 }

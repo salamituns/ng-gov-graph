@@ -82,7 +82,7 @@ try {
   failRound=0
   assert.notEqual((await run({TEST_FAIL_PERSIST:'1'})).code,0);assert.deepEqual(events,[])
   failCf=true;assert.notEqual((await run()).code,0);assert.equal(events.at(-1),'purge');failCf=false
-  failWarm=true;result=await run();assert.notEqual(result.code,0);assert.match(result.output,/warmups failed after purge/);failWarm=false
+  failWarm=true;result=await run();assert.equal(result.code,0,'warm-up failure must not fail the job');assert.match(result.output,/warmups failed after purge; refresh succeeded/);failWarm=false
   // Real bundled persistence code is also loaded/exercised without writes. External fetches fail closed,
   // and an unreachable DB prevents production data mutation. Its expected failure is a DB connection error.
   result=await run({DATABASE_URL:'postgres://unavailable@127.0.0.1:1/unavailable'},actual)
