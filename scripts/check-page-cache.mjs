@@ -11,13 +11,18 @@ import { createHash, randomBytes } from 'node:crypto'
 const origin = process.argv[2] ?? 'http://127.0.0.1:3127'
 const temp = mkdtempSync(join(tmpdir(), 'govgraph-cache-'))
 try {
-	const read = (path, index, { expectedStatus = '200', extra = [] } = {}) => {
+	const read = (path, index, { expectedStatus = '200', extra = [] } = {}, attempt = 0) => {
 		const headerFile = join(temp, `${index}.headers`)
 		const bodyFile = join(temp, `${index}.body`)
 		const status = execFileSync('curl', ['--max-time', '30', '-sS', '-D', headerFile, '-o', bodyFile, '-w', '%{http_code}', ...extra, origin + path], { encoding: 'utf8' })
 		const headers = readFileSync(headerFile, 'utf8')
 		const body = readFileSync(bodyFile, 'utf8')
 		assert.equal(status, expectedStatus, path)
+		// Tag-expired HTML is a temporary no-store fallback while ISR refreshes it.
+		if (/x-nextjs-cache: STALE/i.test(headers) && /cache-control: no-store/i.test(headers) && attempt < 100) {
+			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50)
+			return read(path, index, { expectedStatus, extra }, attempt + 1)
+		}
 		assert.match(headers, /cache-control:/i, `${path} must be cacheable`)
 		assert.doesNotMatch(headers, /(?:no-store|private)/i, `${path} bypasses the public cache`)
 		return { headers, body }
@@ -68,7 +73,10 @@ try {
 	assert.equal(graphUrl, `/api/graph/${version}`, 'HTML version must match the JSON content')
 	const { graph, news } = JSON.parse(resource.body)
 	// A stopped refresh feed eventually has no eligible weekly trends. Check the actual rendering contract.
-	const expectedTrends = Number(execFileSync(process.execPath, ['--import', 'tsx', '-e', `const { trendingTopics } = require('./src/lib/graph/trending.ts'); const { CIVIC_TOPICS } = require('./src/data/nigeria/topics.ts'); let input='';process.stdin.on('data',d=>input+=d);process.stdin.on('end',()=>console.log(trendingTopics(JSON.parse(input),CIVIC_TOPICS,new Date()).topics.length));`], { input: JSON.stringify(news), encoding: 'utf8' }))
+	const renderedAt = Number(home.body.match(/name="govgraph-rendered-at" content="([\d.]+)"/)?.[1])
+	assert(Number.isFinite(renderedAt), 'Page render date is required for cached weekly coverage')
+	const coverage = JSON.parse(execFileSync(process.execPath, ['--import', 'tsx', '-e', `const { trendingTopics } = require('./src/lib/graph/trending.ts'); const { CIVIC_TOPICS } = require('./src/data/nigeria/topics.ts'); let input='';process.stdin.on('data',d=>input+=d);process.stdin.on('end',()=>{const {news,renderedAt}=JSON.parse(input);console.log(JSON.stringify({ids:trendingTopics(news,CIVIC_TOPICS,new Date(renderedAt),Infinity).topics.map(t=>t.id),fallback:CIVIC_TOPICS[0].id}));});`], { input: JSON.stringify({ news, renderedAt }), encoding: 'utf8' }))
+	const expectedTrends = coverage.ids.length
 	assert.equal(home.body.includes('class="panel-card trending"'), expectedTrends > 0, 'Cached trending card must match eligible current-week coverage')
 	assert(Object.keys(graph.nodes).length > 0 && Object.keys(graph.edges).length > 0, 'Shared graph resource is empty')
 	for (const candidate of ['0000000000000000', ...Array.from({ length: 5 }, () => randomBytes(8).toString('hex'))]) {
@@ -91,7 +99,7 @@ try {
 	assert.doesNotMatch(legacy.headers, /immutable/i, 'Unchecked legacy URL must never be immutable')
 	const topicPath = home.body.match(/href="(\/ng\/topics\/[^"?]+)"/)?.[1]
 	if (expectedTrends > 0) assert(topicPath, 'Trending topic link is missing')
-	const topic = read(topicPath ?? '/ng/topics/fuel-prices', 8)
+	const topic = read(topicPath ?? `/ng/topics/${coverage.fallback}`, 8)
 	assert.match(topic.body, expectedTrends > 0 ? /outlets this week/ : /in the news we follow/, 'Topic summary must be in cached HTML')
 	const outputsAfter = listOutputs()
 	assert.deepEqual(outputsAfter, outputsBefore, 'Attacker-controlled versions created per-path ISR files')

@@ -1,12 +1,13 @@
 // Run after LAB_BUILD=1 npm run build. Never logs dotenv values.
 import assert from 'node:assert/strict'
-import { cp, mkdtemp, readFile, readdir, chmod, rm } from 'node:fs/promises'
+import { cp, mkdtemp, readFile, readdir, chmod, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
 import { randomBytes, createHash } from 'node:crypto'
 import { deserialize } from 'node:v8'
+import { getRouteCacheKey } from 'next/dist/server/lib/route-cache-key.js'
 
 try { process.loadEnvFile('.env.local') } catch (error) { if (error.code !== 'ENOENT') throw error }
 if (!process.env.DATABASE_URL) throw new Error('No local DATABASE_URL: runtime DB proof unavailable')
@@ -33,7 +34,9 @@ try {
   await modes(app, false)
   await modes(join(app, '.next/cache'), true)
   const secret = randomBytes(24).toString('hex')
-  server = spawn(process.execPath, ['server.js'], { cwd: app, env: { ...process.env, HOSTNAME: '127.0.0.1', PORT: '3000', CRON_SECRET: secret, NEXT_TELEMETRY_DISABLED: '1' }, stdio: ['ignore','ignore','pipe'] })
+  const preload = join(temp, 'delay-write.mjs')
+  await writeFile(preload, `import fs from 'node:fs/promises';import path from 'node:path';const rename=fs.rename;fs.rename=async(a,b)=>{const flag=path.join(process.cwd(),'.next/cache/hold-write');if(String(b).endsWith('/lab/manifest')){try{await fs.access(flag);await fs.writeFile(path.join(process.cwd(),'.next/cache/write-blocked'),'yes');while(true){try{await fs.access(flag)}catch{break}await new Promise(r=>setTimeout(r,20))}}catch{}}return rename(a,b)};`)
+  server = spawn(process.execPath, ['--import',preload,'server.js'], { cwd: app, env: { ...process.env, HOSTNAME: '127.0.0.1', PORT: '3000', CRON_SECRET: secret, NEXT_TELEMETRY_DISABLED: '1' }, stdio: ['ignore','ignore','pipe'] })
   let errors = ''; server.stderr.on('data', (data) => errors += data)
   const origin = 'http://127.0.0.1:3000'
   let health
@@ -54,19 +57,36 @@ try {
   assert.equal((await fetch(`${origin}/api/revalidate`)).status,405)
   const cache = join(app, '.next/cache/lab')
   async function homeEntry() {
-    const file = createHash('sha256').update('/ng').digest('hex')
-    return deserialize(await readFile(join(cache,file)))
+    const file = createHash('sha256').update(getRouteCacheKey('/ng', {kind:'APP_PAGE',sourceRoute:'/ng/page'})).digest('hex')
+    const manifest = deserialize(await readFile(join(cache,'manifest')))
+    return new Map(manifest.entries).get(file)
   }
   const before = await homeEntry()
-  const revalidation = await fetch(`${origin}/api/revalidate`, { method:'POST',headers:{Authorization:`Bearer ${secret}`} })
+  const hold = join(app,'.next/cache/hold-write')
+  await writeFile(hold,'hold')
+  let acknowledged = false
+  const pending = fetch(`${origin}/api/revalidate`, { method:'POST',headers:{Authorization:`Bearer ${secret}`} }).then(response=>{acknowledged=true;return response})
+  for(let i=0;i<100;i++) {try{await readFile(join(app,'.next/cache/write-blocked'));break}catch{await new Promise(done=>setTimeout(done,20))}}
+  assert.equal(await readFile(join(app,'.next/cache/write-blocked'),'utf8'),'yes','Durability probe did not reach the tag write')
+  assert.equal(acknowledged,false,'200 must wait for the durable tag write')
+  await rm(hold)
+  const revalidation = await pending
   assert.equal(revalidation.status,200); assert.deepEqual(await revalidation.json(),{ok:true})
+  assert(deserialize(await readFile(join(cache,'manifest'))).tags['ng-stored-data'] >= before.lastModified, 'Tag must already be on disk at 200')
   assert.equal((await fetch(`${origin}/ng`)).status,200)
+  for(let i=0;i<100 && (await homeEntry()).lastModified <= before.lastModified;i++) await new Promise(done=>setTimeout(done,50))
   assert((await homeEntry()).lastModified > before.lastModified,'Tag invalidation must regenerate runtime HTML')
   assert(!/EROFS|EACCES|Failed to update prerender cache/.test(errors),'Read-only filesystem rejected a write')
+  // Force a genuine filesystem failure: acknowledgement must fail, not schedule work after 200.
+  await chmod(cache,0o555)
+  const failed = await fetch(`${origin}/api/revalidate`,{method:'POST',headers:{Authorization:`Bearer ${secret}`}})
+  assert.equal(failed.status,503)
+  await chmod(cache,0o755)
+  console.log('PASS: delayed tag write blocks 200; manifest is durable at acknowledgement; failed tag write returns 503.')
   // Use the existing regression checks against the same runtime and its known-good cache.
   const check = spawn(process.execPath, [resolve('scripts/check-page-cache.mjs'), origin], { stdio:'inherit' })
   assert.equal((await once(check,'exit'))[0],0)
-  const outage = spawn(process.execPath, [resolve('scripts/check-regeneration-failure.mjs')], { env:{...process.env,LAB_CACHE_SEED:cache},stdio:'inherit' })
+  const outage = spawn(process.execPath, [resolve('scripts/check-regeneration-failure.mjs')], { env:{...process.env,LAB_RUNTIME_ARTIFACT:app},stdio:'inherit' })
   assert.equal((await once(outage,'exit'))[0],0)
   console.log('PASS: port 3000, read-only standalone; only .next/cache writable; health leaves cache empty; runtime DB graph differs from build catalog; home/entity/graph 200; POST 401/200, GET 405; tag regeneration succeeds.')
 } finally {
