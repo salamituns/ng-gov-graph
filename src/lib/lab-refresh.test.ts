@@ -132,3 +132,29 @@ test('REFRESH_PURGE=skip never calls Cloudflare, needs no CF secrets and still w
   assert(logs.includes('purge skipped (REFRESH_PURGE=skip)'))
   assert.deepEqual(warms,['/ng','/api/graph/0123456789abcdef'])
 })
+test('DNS failures inside a round are retried, then succeed',async()=>{
+  let calls=0;let purges=0;const logs:string[]=[]
+  await runRefresh(env,{
+    persist:async()=>{},log:(m:string)=>{logs.push(m)},sleep:async()=>{},
+    resolve4:async()=>{calls++;if(calls===2)throw Object.assign(new Error('queryA ESERVFAIL web-headless'),{code:'ESERVFAIL'});if(calls===3)return[];return['127.0.0.1']},
+    fetch:(async(url,options)=>{
+      const u=new URL(String(url))
+      if(options?.method==='POST'&&u.pathname==='/api/revalidate')return Response.json({ok:true})
+      if(u.pathname.endsWith('/purge_cache')){purges++;return Response.json({success:true})}
+      return u.pathname==='/ng'?new Response('<link href="/api/graph/0123456789abcdef">'):Response.json({graph:{}})
+    }) as typeof fetch,
+  })
+  assert.equal(purges,1);assert.equal(calls,4)
+  assert.equal(logs.filter(m=>m.includes('resolve failed')).length,2)
+})
+test('persistent DNS failure exhausts retries without purging',async()=>{
+  let purges=0
+  await assert.rejects(runRefresh({...env,REVALIDATE_ROUND_RETRIES:'1'},{
+    persist:async()=>{},log:()=>{},sleep:async()=>{},resolve4:async()=>{throw new Error('queryA ENOTFOUND web-headless')},
+    fetch:(async(url)=>{if(String(url).includes('purge_cache'))purges++;return Response.json({ok:true,success:true})}) as typeof fetch,
+  }),/round 1: .*ENOTFOUND.*purge skipped/)
+  assert.equal(purges,0)
+})
+test('REVALIDATE_ROUND_RETRIES above 10 is rejected',async()=>{
+  await assert.rejects(runRefresh({...env,REVALIDATE_ROUND_RETRIES:'11'},{persist:async()=>{},log:()=>{}}),/REVALIDATE_ROUND_RETRIES is invalid/)
+})

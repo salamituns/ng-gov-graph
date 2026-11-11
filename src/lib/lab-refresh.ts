@@ -26,15 +26,16 @@ export async function runRefresh(env: Record<string, string | undefined>, deps: 
 	const token = purge === 'cloudflare' ? required('CF_API_TOKEN') : undefined
 	const port = Number(env.REVALIDATE_PORT ?? '3000')
 	if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('REVALIDATE_PORT is invalid')
-	const settleValue = env.REVALIDATE_SETTLE_MS ?? '10000'
-	const settleMs = Number(settleValue)
-	if (!/^(0|[1-9]\d*)$/.test(settleValue) || !Number.isSafeInteger(settleMs) || settleMs > 2147483647) throw new Error('REVALIDATE_SETTLE_MS is invalid')
-	const retriesValue = env.REVALIDATE_ROUND_RETRIES ?? '3'
-	const retries = Number(retriesValue)
-	if (!/^(0|[1-9]\d*)$/.test(retriesValue) || !Number.isSafeInteger(retries) || retries > 2147483647) throw new Error('REVALIDATE_ROUND_RETRIES is invalid')
-	const retryMsValue = env.REVALIDATE_RETRY_MS ?? '15000'
-	const retryMs = Number(retryMsValue)
-	if (!/^(0|[1-9]\d*)$/.test(retryMsValue) || !Number.isSafeInteger(retryMs) || retryMs > 2147483647) throw new Error('REVALIDATE_RETRY_MS is invalid')
+	const nonNegativeInt = (name: string, fallback: string, max: number) => {
+		const value = env[name] ?? fallback
+		const parsed = Number(value)
+		if (!/^(0|[1-9]\d*)$/.test(value) || !Number.isSafeInteger(parsed) || parsed > max) throw new Error(`${name} is invalid`)
+		return parsed
+	}
+	const timerMax = 2147483647
+	const settleMs = nonNegativeInt('REVALIDATE_SETTLE_MS', '10000', timerMax)
+	const retries = nonNegativeInt('REVALIDATE_ROUND_RETRIES', '3', 10)
+	const retryMs = nonNegativeInt('REVALIDATE_RETRY_MS', '15000', timerMax)
 	const api = new URL(env.CF_API_BASE ?? 'https://api.cloudflare.com/client/v4/')
 	const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(api.hostname)
 	if (api.protocol !== 'https:' && !(api.protocol === 'http:' && loopback)) throw new Error('CF_API_BASE must use HTTPS')
@@ -51,8 +52,17 @@ export async function runRefresh(env: Record<string, string | undefined>, deps: 
 	// pod to acknowledge, so the job never purges with a pod unconfirmed.
 	async function revalidate(round: number): Promise<string[]> {
 		for (let attempt = 0; ; attempt++) {
-			const ips = [...new Set(await resolve4(host))]
-			if (!ips.length || ips.some((ip) => isIP(ip) !== 4)) throw new Error('REVALIDATE_HOST has no valid A records')
+			// DNS churn during a rollout (SERVFAIL, ENOTFOUND, no endpoints yet) is retried like a pod failure.
+			let ips: string[]
+			try {
+				ips = [...new Set(await resolve4(host))]
+				if (!ips.length || ips.some((ip) => isIP(ip) !== 4)) throw new Error('REVALIDATE_HOST has no valid A records')
+			} catch (error) {
+				if (attempt >= retries) throw new Error(`round ${round}: ${reason(error)}; purge skipped`)
+				log(`round ${round}: resolve failed (${reason(error)}); retrying in ${retryMs} ms`)
+				await sleeper(retryMs)
+				continue
+			}
 			const outcomes = await Promise.allSettled(ips.map(async (ip) => {
 				const response = await fetchImpl(`http://${ip}:${port}/api/revalidate`, {
 					method: 'POST', headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(30000), redirect: 'error',
@@ -71,7 +81,8 @@ export async function runRefresh(env: Record<string, string | undefined>, deps: 
 	log(`settling ${settleMs} ms`)
 	await sleeper(settleMs)
 	const ips = await revalidate(2)
-	if (zone === undefined || token === undefined) log('purge skipped (REFRESH_PURGE=skip)')
+	if (purge === 'skip') log('purge skipped (REFRESH_PURGE=skip)')
+	else if (zone === undefined || token === undefined) throw new Error('Cloudflare purge credentials missing')
 	else {
 		const base = api.toString().replace(/\/?$/, '/')
 		const response = await fetchImpl(new URL(`zones/${encodeURIComponent(zone)}/purge_cache`, base), {
@@ -91,8 +102,8 @@ export async function runRefresh(env: Record<string, string | undefined>, deps: 
 		if (!graph.ok) throw new Error(`graph warmup failed (${graph.status})`)
 		await graph.arrayBuffer()
 	}))
-	// Warm-up is best effort: the refresh already succeeded. Failing here would make a
-	// Job with restartPolicy OnFailure re-run persist + purge, so only log it.
+	// Warm-up is best effort: the refresh already succeeded. Failing here would make the
+	// Job retry from the start (any restartPolicy, up to backoffLimit) and purge again.
 	const failures = warmed.flatMap((item, i) => (item.status === 'rejected' ? [`${ips[i]}: ${reason(item.reason)}`] : []))
 	if (failures.length) log(`warning: ${failures.length}/${ips.length} pod warmups failed after purge; refresh succeeded (${failures.join('; ')})`)
 	else log(`warmed ${ips.length} pods`)
