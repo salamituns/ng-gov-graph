@@ -20,45 +20,67 @@ export async function runRefresh(env: Record<string, string | undefined>, deps: 
 	}
 	const host = required('REVALIDATE_HOST')
 	const secret = required('CRON_SECRET')
-	const zone = required('CF_ZONE_ID')
-	const token = required('CF_API_TOKEN')
+	const purge = env.REFRESH_PURGE?.trim() || 'cloudflare'
+	if (purge !== 'cloudflare' && purge !== 'skip') throw new Error('REFRESH_PURGE must be cloudflare or skip')
+	const zone = purge === 'cloudflare' ? required('CF_ZONE_ID') : undefined
+	const token = purge === 'cloudflare' ? required('CF_API_TOKEN') : undefined
 	const port = Number(env.REVALIDATE_PORT ?? '3000')
 	if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('REVALIDATE_PORT is invalid')
 	const settleValue = env.REVALIDATE_SETTLE_MS ?? '10000'
 	const settleMs = Number(settleValue)
 	if (!/^(0|[1-9]\d*)$/.test(settleValue) || !Number.isSafeInteger(settleMs) || settleMs > 2147483647) throw new Error('REVALIDATE_SETTLE_MS is invalid')
+	const retriesValue = env.REVALIDATE_ROUND_RETRIES ?? '3'
+	const retries = Number(retriesValue)
+	if (!/^(0|[1-9]\d*)$/.test(retriesValue) || !Number.isSafeInteger(retries) || retries > 2147483647) throw new Error('REVALIDATE_ROUND_RETRIES is invalid')
+	const retryMsValue = env.REVALIDATE_RETRY_MS ?? '15000'
+	const retryMs = Number(retryMsValue)
+	if (!/^(0|[1-9]\d*)$/.test(retryMsValue) || !Number.isSafeInteger(retryMs) || retryMs > 2147483647) throw new Error('REVALIDATE_RETRY_MS is invalid')
 	const api = new URL(env.CF_API_BASE ?? 'https://api.cloudflare.com/client/v4/')
 	const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(api.hostname)
 	if (api.protocol !== 'https:' && !(api.protocol === 'http:' && loopback)) throw new Error('CF_API_BASE must use HTTPS')
 	const fetchImpl = deps.fetch ?? fetch
 	const log = deps.log ?? console.log
+	const sleeper = deps.sleep ?? sleep
+	const resolve4 = deps.resolve4 ?? ((name: string) => dns.promises.resolve4(name))
 	await deps.persist()
 	log('refresh persisted')
-	const ips = [...new Set(await (deps.resolve4 ?? ((name) => dns.promises.resolve4(name)))(host))]
-	if (!ips.length || ips.some((ip) => isIP(ip) !== 4)) throw new Error('REVALIDATE_HOST has no valid A records')
-	async function revalidate(round: number) {
-		const outcomes = await Promise.allSettled(ips.map(async (ip) => {
-			const response = await fetchImpl(`http://${ip}:${port}/api/revalidate`, {
-				method: 'POST', headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(30000), redirect: 'error',
-			})
-			if (!response.ok || (await response.json()).ok !== true) throw new Error(`pod revalidation failed (${response.status})`)
-		}))
-		const failed = outcomes.filter((item) => item.status === 'rejected').length
-		if (failed) throw new Error(`round ${round}: ${failed}/${ips.length} pod revalidations failed; purge skipped`)
-		log(`revalidated ${ips.length} pods (round ${round})`)
+	// The revalidation Service publishes NotReady addresses, so DNS can briefly return a pod
+	// that is terminating mid-rollout (connection refused). Each round resolves fresh, and a
+	// failed try is retried after re-resolving — a terminating pod leaves DNS within its grace
+	// period, so a later try can succeed. Every try still requires every currently resolved
+	// pod to acknowledge, so the job never purges with a pod unconfirmed.
+	async function revalidate(round: number): Promise<string[]> {
+		for (let attempt = 0; ; attempt++) {
+			const ips = [...new Set(await resolve4(host))]
+			if (!ips.length || ips.some((ip) => isIP(ip) !== 4)) throw new Error('REVALIDATE_HOST has no valid A records')
+			const outcomes = await Promise.allSettled(ips.map(async (ip) => {
+				const response = await fetchImpl(`http://${ip}:${port}/api/revalidate`, {
+					method: 'POST', headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(30000), redirect: 'error',
+				})
+				if (!response.ok || (await response.json()).ok !== true) throw new Error(`pod revalidation failed (${response.status})`)
+			}))
+			const failures = outcomes.flatMap((item, index) => (item.status === 'rejected' ? [`${ips[index]}: ${reason(item.reason)}`] : []))
+			if (!failures.length) { log(`revalidated ${ips.length} pods (round ${round})`); return ips }
+			if (attempt >= retries) throw new Error(`round ${round}: ${failures.length}/${ips.length} pod revalidations failed; purge skipped`)
+			log(`round ${round}: ${failures.length}/${ips.length} pod revalidations failed (${failures.join('; ')}); retrying in ${retryMs} ms`)
+			await sleeper(retryMs)
+		}
 	}
 	await revalidate(1)
 	// Let renders which read the old snapshot finish before expiring their late cache writes.
 	log(`settling ${settleMs} ms`)
-	await (deps.sleep ?? sleep)(settleMs)
-	await revalidate(2)
-	const base = api.toString().replace(/\/?$/, '/')
-	const response = await fetchImpl(new URL(`zones/${encodeURIComponent(zone)}/purge_cache`, base), {
-		method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-		body: JSON.stringify({ purge_everything: true }), signal: AbortSignal.timeout(30000), redirect: 'error',
-	})
-	if (!response.ok || (await response.json()).success !== true) throw new Error(`Cloudflare purge failed (${response.status})`)
-	log('Cloudflare purge accepted')
+	await sleeper(settleMs)
+	const ips = await revalidate(2)
+	if (zone === undefined || token === undefined) log('purge skipped (REFRESH_PURGE=skip)')
+	else {
+		const base = api.toString().replace(/\/?$/, '/')
+		const response = await fetchImpl(new URL(`zones/${encodeURIComponent(zone)}/purge_cache`, base), {
+			method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+			body: JSON.stringify({ purge_everything: true }), signal: AbortSignal.timeout(30000), redirect: 'error',
+		})
+		if (!response.ok || (await response.json()).success !== true) throw new Error(`Cloudflare purge failed (${response.status})`)
+		log('Cloudflare purge accepted')
+	}
 	const warmed = await Promise.allSettled(ips.map(async (ip) => {
 		const origin = `http://${ip}:${port}`
 		const home = await fetchImpl(`${origin}/ng`, { signal: AbortSignal.timeout(30000), redirect: 'error' })
