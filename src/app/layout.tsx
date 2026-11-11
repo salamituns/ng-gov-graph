@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Bricolage_Grotesque, Geist_Mono, Hanken_Grotesk } from 'next/font/google'
 import './globals.css'
-import { renderStart } from '@/lib/render-time'
 
 // Body text: Hanken Grotesk. Headings and the wordmark: Bricolage Grotesque. Data labels stay in Geist Mono.
 // Both need the "vietnamese" subset: it is where Google Fonts keeps the dot-below letters
@@ -57,7 +56,6 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 			suppressHydrationWarning
 		>
 			<head>
-				<meta name="govgraph-rendered-at" content={String(renderStart())} />
 				{/* Applies the saved language and the saved or system theme before first paint, so the map never flashes. */}
 				<script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
 			</head>

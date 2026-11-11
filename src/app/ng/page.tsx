@@ -36,7 +36,7 @@ export default async function NigeriaHome() {
 			return node ? { text: segment.text, href: nodePath(data.gov, node), tone: toneOf(node), type: node.type } : { text: segment.text }
 		}),
 	}))
-	return <PagePanel><HomeContent data={{
+	return <PagePanel><meta name="govgraph-rendered-at" content={String(now.getTime())} /><HomeContent data={{
 		gov: data.gov,
 		inecHref: data.graph.nodes['ng-inec'] ? nodePath(data.gov, data.graph.nodes['ng-inec']) : '/ng',
 		states: Object.values(data.graph.nodes).filter((node) => node.type === 'state').map((node) => ({ id: node.id, name: node.name })),

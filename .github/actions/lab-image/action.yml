@@ -1,0 +1,101 @@
+name: Build, scan and optionally publish lab image
+description: Shared image pipeline; publication remains in the caller lab-release workflow identity.
+inputs:
+  image-tag:
+    description: PR-specific tag or release commit SHA
+    required: true
+  posthog-key:
+    description: Public analytics key
+    default: ''
+  posthog-host:
+    description: Public analytics host
+    default: https://us.i.posthog.com
+  registry-token:
+    description: Publication token, absent on PRs
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+    - name: Build image and load into Docker
+      env:
+        NEXT_PUBLIC_POSTHOG_KEY: ${{ inputs.posthog-key }}
+        NEXT_PUBLIC_POSTHOG_HOST: ${{ inputs.posthog-host }}
+      shell: bash
+      run: |
+        IMAGE="ghcr.io/${{ github.repository_owner }}/govgraph"
+        TAGS=(-t "${IMAGE}:${{ inputs.image-tag }}")
+        if [[ "${{ github.ref }}" == "refs/heads/main" && "${{ github.event_name }}" != "pull_request" ]]; then TAGS+=(-t "${IMAGE}:main"); fi
+        docker buildx build \
+          --load \
+          --build-arg NEXT_PUBLIC_POSTHOG_KEY \
+          --build-arg "NEXT_PUBLIC_POSTHOG_HOST=${NEXT_PUBLIC_POSTHOG_HOST:-https://us.i.posthog.com}" \
+          "${TAGS[@]}" \
+          .
+
+    - name: Trivy vulnerability scan (HIGH/CRITICAL with fixes)
+      uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+      with:
+        image-ref: ghcr.io/${{ github.repository_owner }}/govgraph:${{ inputs.image-tag }}
+        format: table
+        exit-code: "1"
+        ignore-unfixed: true
+        vuln-type: os,library
+        severity: HIGH,CRITICAL
+
+    - name: Generate SPDX JSON SBOM with Syft
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+      with:
+        image: ghcr.io/${{ github.repository_owner }}/govgraph:${{ github.sha }}
+        format: spdx-json
+        output-file: sbom.spdx.json
+        upload-artifact: false
+        upload-release-assets: false
+
+    - name: Log in to GitHub Container Registry
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.registry-token }}
+
+    - name: Push image tags and resolve digest
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      id: push
+      shell: bash
+      run: |
+        IMAGE="ghcr.io/${{ github.repository_owner }}/govgraph"
+        docker push "${IMAGE}:${{ github.sha }}"
+        docker push "${IMAGE}:main"
+        DIGEST="$(docker buildx imagetools inspect "${IMAGE}:${{ github.sha }}" --format '{{json .Manifest.Digest}}' | tr -d '"')"
+        if [[ ! "${DIGEST}" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+          echo "ERROR: failed to resolve pushed digest (got '${DIGEST}')" >&2
+          exit 1
+        fi
+        echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
+
+    - name: Install Cosign
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      with:
+        cosign-release: v3.1.4
+
+    - name: Keyless sign image by digest
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      shell: bash
+      run: |
+        cosign sign --yes \
+          "ghcr.io/${{ github.repository_owner }}/govgraph@${{ steps.push.outputs.digest }}"
+
+    - name: Keyless attest SPDX SBOM by digest
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      shell: bash
+      run: |
+        cosign attest --yes \
+          --predicate sbom.spdx.json \
+          --type spdxjson \
+          "ghcr.io/${{ github.repository_owner }}/govgraph@${{ steps.push.outputs.digest }}"

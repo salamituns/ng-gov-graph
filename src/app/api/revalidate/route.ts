@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 	}
 	try {
 		revalidateTag(STORED_DATA_TAG, { expire: 0 })
-		// Next normally defers this to waitUntil. The job needs a durable acknowledgement.
+		// Next normally defers this to waitUntil. The job needs completed invalidation before its acknowledgement.
 		const store = workAsyncStorage.getStore()
 		if (!store) throw new Error('Missing revalidation request context')
 		await executeRevalidates(store)
