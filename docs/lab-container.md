@@ -21,12 +21,14 @@ Next owns stale handling, retry backoff, serialization and seed promotion. A fai
 | Workload | Configuration |
 |---|---|
 | Web secrets | `DATABASE_URL` (Supabase transaction pooler), `CRON_SECRET` |
-| Public build-time Actions variables | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (default `https://us.i.posthog.com`) |
+| Public build-time Actions variables | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` (default `https://us.i.posthog.com`). Must be set as **repository variables**: if the key is missing the image builds fine and silently ships without analytics (the first lab images did, until 13 Nov 2026) |
 | Refresh job secrets | `DATABASE_URL`, `CRON_SECRET`; `CF_ZONE_ID`, `CF_API_TOKEN` only when `REFRESH_PURGE=cloudflare` |
 | Refresh job configuration | `REVALIDATE_HOST`, `REVALIDATE_PORT=3000`, `REVALIDATE_SETTLE_MS=10000`, `REVALIDATE_ROUND_RETRIES=3`, `REVALIDATE_RETRY_MS=15000`, `REFRESH_PURGE` (`cloudflare`, the default, or `skip`) |
 | Refresh job command | `node refresh.mjs`, same image and `/app` working directory |
 | Health probes | `GET /healthz`, HTTP 200, body `ok`, no database calls |
 | Revalidation | Authenticated POST: 200 `{"ok":true}` after completion; 401 without the correct secret; GET 405 |
+
+**`REVALIDATE_HOST` must be fully qualified** (for example `web-headless.<namespace>.svc.cluster.local`). The job resolves it with `dns.resolve4` (c-ares), which does not apply resolv.conf search domains, so a short Service name fails every round with `queryA ENOTFOUND` and the purge is skipped (first scheduled run, 13 Nov 2026).
 
 **The revalidation headless Service must set `publishNotReadyAddresses: true`.** DNS must include briefly NotReady pods so they cannot later rejoin with stale entries — the flip side is that DNS can briefly return a pod that is **terminating mid-rollout** (connection refused). The job therefore resolves `REVALIDATE_HOST` **at the start of each round, and again before every retry**; no single address snapshot spans the sequence, and warm-up uses the addresses from the final successful round two. The job persists with the existing `liveNass`, `wikiFill`, `portraits`, and `monitor` options, closes its DB pool, resolves every A record and deduplicates addresses.
 
