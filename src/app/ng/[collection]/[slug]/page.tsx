@@ -1,4 +1,5 @@
 import { PagePanel } from '@/components/page-panel'
+import { SourceLink } from '@/components/source-link'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FeedbackButton } from '@/components/feedback'
@@ -158,8 +159,8 @@ export default async function EntityPage({ params }: PageProps) {
 				<h1>{seatTitle(graph, node)}</h1>
 				<p className="entity-description">{node.description}</p>
 				<p className="entity-sources">
-					{node.legalSourceUrl ? <a href={node.legalSourceUrl} target="_blank" rel="noreferrer">Legal basis</a> : null}
-					{node.officialUrl ? <a href={node.officialUrl} target="_blank" rel="noreferrer">Website</a> : null}
+					{node.legalSourceUrl ? <SourceLink href={node.legalSourceUrl}>Legal basis</SourceLink> : null}
+					{node.officialUrl ? <SourceLink href={node.officialUrl}>Website</SourceLink> : null}
 				</p>
 				{seat && node.type !== 'dept_head' ? <p className="entity-seat-title">{seat.name}</p> : null}
 				{holder ? (
@@ -181,12 +182,12 @@ export default async function EntityPage({ params }: PageProps) {
 						</Link>
 						{holder.sourceUrl || holder.imageSourceUrl ? (
 							<p className="entity-sources">
-								{holder.sourceUrl ? <a href={holder.sourceUrl} target="_blank" rel="noreferrer">Officeholder source</a> : null}
+								{holder.sourceUrl ? <SourceLink href={holder.sourceUrl}>Officeholder source</SourceLink> : null}
 								{holder.sourceUrl && holder.sourceCheckedAt ? ` · as of ${holder.sourceCheckedAt}` : ''}
-								{holder.imageSourceUrl ? <a href={holder.imageSourceUrl} target="_blank" rel="noreferrer">Photo source</a> : null}
+								{holder.imageSourceUrl ? <SourceLink href={holder.imageSourceUrl}>Photo source</SourceLink> : null}
 							</p>
 						) : null}
-						{holder.handoverSourceUrl ? <p className="entity-sources"><a href={holder.handoverSourceUrl} target="_blank" rel="noreferrer">Handover report</a></p> : null}
+						{holder.handoverSourceUrl ? <p className="entity-sources"><SourceLink href={holder.handoverSourceUrl}>Handover report</SourceLink></p> : null}
 						{origin ? (
 							<p className="entity-origin">
 								{origin.basis === 'nominated' ? 'Nominated from' : 'From'} {graph.nodes[origin.stateId]?.name ?? origin.stateId}, {STATE_ZONES[origin.stateId]}

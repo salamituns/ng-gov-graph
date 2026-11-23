@@ -1,4 +1,5 @@
 import type { CompiledGraph } from './types'
+import { isFlaggedUrl } from '../flagged-links'
 
 /** Wikimedia serves standard widths (250, 330, 500 …) from a thumb URL; an avatar never needs the 3840px original. */
 export function portraitSize(url: string, width = 500) {
@@ -186,7 +187,7 @@ async function officialPortraits(graph: CompiledGraph, names: Set<string>) {
 			official(person.sourceUrl) ? person.sourceUrl : undefined,
 			org?.officialUrl && !/statehouse\.gov\.ng\/the-cabinet/.test(org.officialUrl) ? org.officialUrl : undefined,
 			ministrySites.get(personKey(person.name)),
-		].filter((url): url is string => Boolean(url))
+		].filter((url): url is string => Boolean(url) && !isFlaggedUrl(url))
 		for (const url of candidates) {
 			tasks.push(async () => {
 				if (found[person.name]) return
