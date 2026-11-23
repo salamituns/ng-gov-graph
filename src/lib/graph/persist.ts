@@ -4,7 +4,7 @@ import { getDb } from '@/db'
 import { civicFeed, graphSnapshots } from '@/db/schema'
 import { compileNigeriaGraph, parseGraphSnapshot } from '@/lib/graph/nigeria-compile'
 import { overlayNassOccupancy } from '@/lib/graph/nass-live'
-import { carryPortraits, overlayPortraits } from '@/lib/graph/portraits'
+import { carryPortraits, overlayPortraits, withoutFlaggedPortraits } from '@/lib/graph/portraits'
 import { overlayNaltfOccupancy } from '@/lib/graph/naltf-fill'
 import { overlayOrderpaperOccupancy } from '@/lib/graph/orderpaper-fill'
 import { overlayWikiOccupancy, adoptConstituencyIds } from '@/lib/graph/wiki-fill'
@@ -88,6 +88,8 @@ export function persistNigeriaGraph(options?: {
 		if (options?.portraits) {
 			graph = await overlayPortraits(carryPortraits(graph, previous))
 		}
+		// Also covers hand-verified portraits and faces carried over from before a host was flagged.
+		graph = withoutFlaggedPortraits(graph)
 		const { applyAppointments, diffOfficeholders, appointmentsFromNews, fetchAppointmentBodies, mergeChanges, mergeNews } = await import('@/lib/graph/changes')
 		const { enrichNewsImages, parseChangesFeed, parseNewsFeed, parseRssNews, resolveStoredFeed } = await import('@/lib/graph/feed')
 		const { mentionLabels } = await import('@/lib/graph/mentions')

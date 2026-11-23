@@ -1,4 +1,5 @@
 import type { CompiledGraph } from './types'
+import { isFlaggedUrl } from '../flagged-links'
 
 /** Wikimedia serves standard widths (250, 330, 500 …) from a thumb URL; an avatar never needs the 3840px original. */
 export function portraitSize(url: string, width = 500) {
@@ -128,7 +129,7 @@ export function officialImage(html: string, pageUrl: string, name: string): stri
 		const score = (inFile ? 3 : 2) + (first && `${file} ${caption}`.split(' ').includes(first) ? 1 : 0)
 		try {
 			const url = new URL(src, pageUrl).toString()
-			if (!/^https:/.test(url)) continue
+			if (!/^https:/.test(url) || isFlaggedUrl(url)) continue
 			if (!best || score > best.score) best = { url, score }
 		} catch {
 			continue
@@ -157,13 +158,45 @@ export function cabinetSites(html: string): Map<string, string> {
 	return sites
 }
 
+/**
+ * Fetches a page's HTML, following up to five redirects by hand so that no hop lands on a flagged
+ * host: an innocent-looking official URL that redirects to one is abandoned before it is requested.
+ */
+async function fetchUnflagged(start: string): Promise<string> {
+	let url = start
+	for (let hop = 0; hop <= 5; hop++) {
+		if (isFlaggedUrl(url)) return ''
+		const res = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (Govgraph)' }, redirect: 'manual', signal: AbortSignal.timeout(15000) })
+		if (res.status >= 300 && res.status < 400) {
+			const next = res.headers.get('location')
+			if (!next) return ''
+			url = new URL(next, url).toString()
+			continue
+		}
+		return res.ok ? res.text() : ''
+	}
+	return ''
+}
+
+/** Drops portraits (and their credits) hosted on flagged sites, so no visitor's browser loads from one. */
+export function withoutFlaggedPortraits(graph: CompiledGraph): CompiledGraph {
+	for (const node of Object.values(graph.nodes)) {
+		node.people = node.people.map((person) => {
+			if (!isFlaggedUrl(person.imageUrl) && !isFlaggedUrl(person.imageSourceUrl)) return person
+			const rest = { ...person }
+			delete rest.imageUrl
+			delete rest.imageSourceUrl
+			return rest
+		})
+	}
+	return graph
+}
+
 async function officialPortraits(graph: CompiledGraph, names: Set<string>) {
 	const pages = new Map<string, Promise<string>>()
 	const page = (url: string) => {
 		if (!pages.has(url)) {
-			pages.set(url, fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (Govgraph)' }, signal: AbortSignal.timeout(15000) })
-				.then((res) => (res.ok ? res.text() : ''))
-				.catch(() => ''))
+			pages.set(url, fetchUnflagged(url).catch(() => ''))
 		}
 		return pages.get(url)!
 	}
@@ -186,7 +219,7 @@ async function officialPortraits(graph: CompiledGraph, names: Set<string>) {
 			official(person.sourceUrl) ? person.sourceUrl : undefined,
 			org?.officialUrl && !/statehouse\.gov\.ng\/the-cabinet/.test(org.officialUrl) ? org.officialUrl : undefined,
 			ministrySites.get(personKey(person.name)),
-		].filter((url): url is string => Boolean(url))
+		].filter((url): url is string => Boolean(url) && !isFlaggedUrl(url))
 		for (const url of candidates) {
 			tasks.push(async () => {
 				if (found[person.name]) return

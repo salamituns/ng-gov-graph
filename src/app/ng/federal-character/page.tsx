@@ -7,6 +7,7 @@ import { ministriesOf, ministriesTotal } from '@/lib/graph/cabinet-budget'
 import { federalCharacter, portfolioOf, type CabinetMember } from '@/lib/graph/federal-character'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, representPath } from '@/lib/graph/paths'
+import { SourceLink } from '@/components/source-link'
 
 export const metadata = { title: 'Federal character · Who Runs Naija' }
 
@@ -97,7 +98,7 @@ export default async function FederalCharacterPage() {
 															{member.origin?.basis === 'hometown' ? <sup title="State taken from the minister’s hometown, not a nomination report">†</sup> : null}
 															<small>
 																{portfolioOf(graph, member)}
-																{member.origin ? <> · <a href={member.origin.sourceUrl} target="_blank" rel="noreferrer">source</a></> : null}
+																{member.origin ? <> · <SourceLink href={member.origin.sourceUrl}>source</SourceLink></> : null}
 															</small>
 														</li>
 													))}

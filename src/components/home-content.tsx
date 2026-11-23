@@ -21,6 +21,7 @@ import { Fold } from '@/components/fold'
 import type { ReactNode } from 'react'
 import { useQuery } from '@/components/query'
 import { useClock } from '@/components/clock'
+import { SourceLink } from '@/components/source-link'
 
 interface HomeData {
 	gov: string
@@ -190,7 +191,7 @@ function ChangeCard({ change }: { change: PersonnelChange & { href?: string } })
 				<span>
 					{displayDate(change.date)}
 					{change.sourceUrl ? (
-						<a href={change.sourceUrl} target="_blank" rel="noreferrer" aria-label={`Source for ${change.personName}`}> ↗</a>
+						<SourceLink href={change.sourceUrl} aria-label={`Source for ${change.personName}`}> ↗</SourceLink>
 					) : null}
 				</span>
 			</div>

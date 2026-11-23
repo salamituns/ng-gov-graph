@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 import type { PowerLink, PowerPerson } from '@/lib/graph/power'
+import { isFlaggedUrl } from '@/lib/flagged-links'
 
 interface PowerMapProps {
 	people: PowerPerson[]
@@ -176,7 +177,7 @@ function PersonCard({ person, asOf, days, style, onSeeOnGraph, onClose }: { pers
 				<polyline points={points} />
 			</svg>
 			<p className="person-card-caption">weekly mentions, last 12 weeks</p>
-			{person.latest ? (
+			{person.latest && !isFlaggedUrl(person.latest.url) ? (
 				<a href={person.latest.url} target="_blank" rel="noreferrer" className="person-card-latest">
 					<span>{person.latest.headline}</span>
 					<small>{person.latest.source} · {relative(person.latest.date, asOf)}</small>

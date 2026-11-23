@@ -2,6 +2,7 @@ import { Fold } from '@/components/fold'
 import { StoryImage } from '@/components/panel-client'
 import type { NewsItem } from '@/data/nigeria/news'
 import { decodeHtml, newsHeadline } from '@/lib/graph/news-text'
+import { isFlaggedUrl } from '@/lib/flagged-links'
 
 /** "punchng.com" for an http(s) link; empty for anything malformed or with another scheme. */
 export function storyHost(url: string) {
@@ -18,7 +19,7 @@ export function storyHost(url: string) {
  * http(s) links are rendered: a malformed or javascript: URL from a feed is dropped, not linked.
  */
 export function StoryList({ stories, empty }: { stories: NewsItem[]; empty: string }) {
-	const safe = stories.filter((item) => storyHost(item.url))
+	const safe = stories.filter((item) => storyHost(item.url) && !isFlaggedUrl(item.url))
 	if (!safe.length) return <p className="empty-box">{empty}</p>
 	return (
 		<Fold className="story-list" limit={6} showAll={`Show all ${safe.length} stories`}>

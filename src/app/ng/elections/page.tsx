@@ -8,6 +8,7 @@ import { ElectionCountdown } from '@/components/election-countdown'
 import { GENERAL_ELECTION, OFF_CYCLE, VOTER_LINKS } from '@/data/nigeria/elections'
 import { loadNigeriaGraph } from '@/lib/graph/nigeria'
 import { nodePath, representPath } from '@/lib/graph/paths'
+import { SourceLink } from '@/components/source-link'
 
 export const metadata = { title: 'Nigeria Decides 2027 · Who Runs Naija' }
 
@@ -73,7 +74,7 @@ export default async function ElectionsPage() {
 									<Link href={representPath(gov, item.stateId)} className="fc-state-name">{state?.name ?? item.stateId}</Link>
 									<span>Next expected <strong>{month(item.nextExpected)}</strong></span>
 									<small>
-										Last held {formatLagosDate(item.lastPoll)} · <a href={item.sourceUrl} target="_blank" rel="noreferrer">source</a>
+										Last held {formatLagosDate(item.lastPoll)} · <SourceLink href={item.sourceUrl}>source</SourceLink>
 									</small>
 								</li>
 							)
@@ -82,7 +83,7 @@ export default async function ElectionsPage() {
 			</section>
 
 			<p className="panel-footer">
-				Dates from <a href={GENERAL_ELECTION.sourceUrl} target="_blank" rel="noreferrer">{GENERAL_ELECTION.sourceLabel}</a> and INEC’s later notices. INEC can revise its timetable; we update this page when it does.
+				Dates from <SourceLink href={GENERAL_ELECTION.sourceUrl}>{GENERAL_ELECTION.sourceLabel}</SourceLink> and INEC’s later notices. INEC can revise its timetable; we update this page when it does.
 			</p>
 		</PagePanel>
 	)

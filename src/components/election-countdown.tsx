@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { GENERAL_ELECTION, nextPoll } from '@/data/nigeria/elections'
 import { useT } from '@/components/lang'
 import { useClock } from '@/components/clock'
+import { SourceLink } from '@/components/source-link'
 
 function parts(ms: number) {
 	const minutes = Math.max(0, Math.floor(ms / 60000))
@@ -49,7 +50,7 @@ export function ElectionCountdown({ inecHref, guideHref }: { inecHref: string; g
 				</p>
 			))}
 			<p className="election-foot">
-				<a className="election-source" href={GENERAL_ELECTION.sourceUrl} target="_blank" rel="noreferrer">{GENERAL_ELECTION.sourceLabel} ↗</a>
+				<SourceLink className="election-source" href={GENERAL_ELECTION.sourceUrl}>{GENERAL_ELECTION.sourceLabel} ↗</SourceLink>
 				{guideHref ? <Link href={guideHref} className="election-guide">{t('electionGuide')} →</Link> : null}
 			</p>
 		</section>
