@@ -4,6 +4,7 @@ import { formatLagosDate } from '@/lib/dates'
 
 import { MILESTONES } from '@/data/nigeria/elections'
 import { useClock } from '@/components/clock'
+import { SourceLink } from '@/components/source-link'
 
 
 export function ElectionMilestones() {
@@ -16,7 +17,7 @@ export function ElectionMilestones() {
 			<span className="milestone-date">{item.ends ? `${formatLagosDate(item.starts)} – ${formatLagosDate(item.ends)}` : formatLagosDate(item.starts)}</span>
 			<strong>{item.label}</strong>
 			{item.detail ? <small>{item.detail}</small> : null}
-			<a href={item.sourceUrl} target="_blank" rel="noreferrer" className="milestone-source">source</a>
+			<SourceLink href={item.sourceUrl} className="milestone-source">source</SourceLink>
 		</li>
 	})}</ol>
 }

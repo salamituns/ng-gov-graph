@@ -5,6 +5,7 @@ import { Newspaper } from 'lucide-react'
 import { useState } from 'react'
 import { glyphPath } from '@/lib/graph/glyph'
 import type { NodeType } from '@/lib/graph/types'
+import { SourceLink } from '@/components/source-link'
 
 export interface ProseSegment {
 	text: string
@@ -53,7 +54,7 @@ export function NewsProse({ items, collapsedCount = 5 }: { items: ProseItem[]; c
 							)}
 						</p>
 						<span className="news-meta">
-							<a href={item.url} target="_blank" rel="noreferrer">{item.source} ↗</a>
+							<SourceLink href={item.url}>{item.source} ↗</SourceLink>
 							{item.when ? <> · {item.when}</> : null}
 						</span>
 					</li>

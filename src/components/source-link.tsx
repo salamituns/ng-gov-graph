@@ -7,8 +7,9 @@ import { isFlaggedUrl } from '@/lib/flagged-links'
  */
 export function SourceLink({ href, className, children, ...rest }: { href: string; className?: string; children: ReactNode; 'aria-label'?: string }) {
 	if (isFlaggedUrl(href)) {
+		const label = rest['aria-label']
 		return (
-			<span className={className} title="Link withheld: a security filter flagged this site as unsafe">
+			<span className={className} title="Link withheld: a security filter flagged this site as unsafe" aria-label={label ? `${label} (link withheld: site flagged as unsafe)` : undefined}>
 				{children} (link withheld: site flagged as unsafe)
 			</span>
 		)
